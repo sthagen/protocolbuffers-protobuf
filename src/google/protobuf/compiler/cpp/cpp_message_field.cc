@@ -44,8 +44,9 @@ namespace compiler {
 namespace cpp {
 
 namespace {
-string ReinterpretCast(const string& type, const string& expression,
-                       bool implicit_weak_field) {
+std::string ReinterpretCast(const std::string& type,
+                            const std::string& expression,
+                            bool implicit_weak_field) {
   if (implicit_weak_field) {
     return "reinterpret_cast< " + type + " >(" + expression + ")";
   } else {
@@ -436,7 +437,7 @@ void MessageFieldGenerator::GenerateSerializeWithCachedSizesToArray(
     io::Printer* printer) const {
   Formatter format(printer, variables_);
   format(
-      "stream->EnsureSpace(&target);\n"
+      "target = stream->EnsureSpace(target);\n"
       "target = ::$proto_ns$::internal::WireFormatLite::\n"
       "  InternalWrite$declared_type$ToArray(\n"
       "    $number$, _Internal::$name$(this), target, stream);\n");
@@ -749,7 +750,7 @@ void RepeatedMessageFieldGenerator::GenerateSerializeWithCachedSizesToArray(
     format(
         "for (auto it = this->$name$_.pointer_begin(),\n"
         "          end = this->$name$_.pointer_end(); it < end; ++it) {\n"
-        "  stream->EnsureSpace(&target);\n"
+        "  target = stream->EnsureSpace(target);\n"
         "  target = ::$proto_ns$::internal::WireFormatLite::\n"
         "    InternalWrite$declared_type$ToArray($number$, **it, target, "
         "stream);\n"
@@ -760,7 +761,7 @@ void RepeatedMessageFieldGenerator::GenerateSerializeWithCachedSizesToArray(
         "    n = static_cast<unsigned int>(this->_internal_$name$_size()); i < "
         "n; i++) "
         "{\n"
-        "  stream->EnsureSpace(&target);\n"
+        "  target = stream->EnsureSpace(target);\n"
         "  target = ::$proto_ns$::internal::WireFormatLite::\n"
         "    InternalWrite$declared_type$ToArray($number$, "
         "this->_internal_$name$(i), target, "
