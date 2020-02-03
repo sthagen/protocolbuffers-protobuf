@@ -149,9 +149,11 @@
 
 #if defined(__GNUC__) || defined(__clang__)
 #define PROTOBUF_DEPRECATED __attribute__((deprecated))
+#define PROTOBUF_DEPRECATED_ENUM __attribute__((deprecated))
 #define PROTOBUF_DEPRECATED_MSG(msg) __attribute__((deprecated(msg)))
 #elif defined(_MSC_VER)
 #define PROTOBUF_DEPRECATED __declspec(deprecated)
+#define PROTOBUF_DEPRECATED_ENUM
 #define PROTOBUF_DEPRECATED_MSG(msg) __declspec(deprecated(msg))
 #endif
 
@@ -295,7 +297,7 @@
 
 // Shared google3/opensource definitions. //////////////////////////////////////
 
-#define PROTOBUF_VERSION 3011000
+#define PROTOBUF_VERSION 3011002
 #define PROTOBUF_MIN_HEADER_VERSION_FOR_PROTOC 3011000
 #define PROTOBUF_MIN_PROTOC_VERSION 3011000
 #define PROTOBUF_VERSION_SUFFIX ""
@@ -386,6 +388,10 @@
 #undef IGNORE
 #pragma push_macro("IN")
 #undef IN
+#pragma push_macro("OUT")
+#undef OUT
+#pragma push_macro("OPTIONAL")
+#undef OPTIONAL
 #pragma push_macro("min")
 #undef min
 #pragma push_macro("max")

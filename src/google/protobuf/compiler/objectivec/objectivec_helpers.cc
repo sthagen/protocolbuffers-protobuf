@@ -48,6 +48,7 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/io/io_win32.h>
+#include <google/protobuf/port.h>
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/stubs/strutil.h>
 
@@ -584,6 +585,14 @@ string OneofNameCapitalized(const OneofDescriptor* descriptor) {
   return result;
 }
 
+string ObjCClass(const string& class_name) {
+  return string("GPBObjCClass(") + class_name + ")";
+}
+
+string ObjCClassDeclaration(const string& class_name) {
+  return string("GPBObjCClassDeclaration(") + class_name + ");";
+}
+
 string UnCamelCaseFieldName(const string& name, const FieldDescriptor* field) {
   string worker(name);
   if (HasSuffixString(worker, "_p")) {
@@ -909,7 +918,7 @@ bool HasNonZeroDefaultValue(const FieldDescriptor* field) {
 
 string BuildFlagsString(const FlagType flag_type,
                         const std::vector<string>& strings) {
-  if (strings.size() == 0) {
+  if (strings.empty()) {
     return GetZeroEnumNameForFlagType(flag_type);
   } else if (strings.size() == 1) {
     return strings[0];
@@ -936,7 +945,7 @@ string BuildCommentsString(const SourceLocation& location,
     lines.pop_back();
   }
   // If there are no comments, just return an empty string.
-  if (lines.size() == 0) {
+  if (lines.empty()) {
     return "";
   }
 
@@ -1396,7 +1405,7 @@ string DirectDecodeString(const string& str) {
 // static
 string TextFormatDecodeData::DecodeDataForString(const string& input_for_decode,
                                                  const string& desired_output) {
-  if ((input_for_decode.size() == 0) || (desired_output.size() == 0)) {
+  if (input_for_decode.empty() || desired_output.empty()) {
     std::cerr << "error: got empty string for making TextFormat data, input: \""
          << input_for_decode << "\", desired: \"" << desired_output << "\"."
          << std::endl;
@@ -1506,7 +1515,7 @@ bool Parser::ParseLoop() {
     ++line_;
     RemoveComment(&line);
     TrimWhitespace(&line);
-    if (line.size() == 0) {
+    if (line.empty()) {
       continue;  // Blank line.
     }
     if (!line_consumer_->ConsumeLine(line, &error_str_)) {
@@ -1613,7 +1622,7 @@ void ImportWriter::Print(io::Printer* printer) const {
 
   bool add_blank_line = false;
 
-  if (protobuf_framework_imports_.size() > 0) {
+  if (!protobuf_framework_imports_.empty()) {
     const string framework_name(ProtobufLibraryFrameworkName);
     const string cpp_symbol(ProtobufFrameworkImportSymbol(framework_name));
 
@@ -1641,7 +1650,7 @@ void ImportWriter::Print(io::Printer* printer) const {
     add_blank_line = true;
   }
 
-  if (other_framework_imports_.size() > 0) {
+  if (!other_framework_imports_.empty()) {
     if (add_blank_line) {
       printer->Print("\n");
     }
@@ -1656,7 +1665,7 @@ void ImportWriter::Print(io::Printer* printer) const {
     add_blank_line = true;
   }
 
-  if (other_imports_.size() > 0) {
+  if (!other_imports_.empty()) {
     if (add_blank_line) {
       printer->Print("\n");
     }
@@ -1708,7 +1717,7 @@ bool ImportWriter::ProtoFrameworkCollector::ConsumeLine(
 
     StringPiece proto_file = proto_file_list.substr(start, offset - start);
     TrimWhitespace(&proto_file);
-    if (proto_file.size() != 0) {
+    if (!proto_file.empty()) {
       std::map<string, string>::iterator existing_entry =
           map_->find(string(proto_file));
       if (existing_entry != map_->end()) {
