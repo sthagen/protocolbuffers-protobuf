@@ -1,14 +1,14 @@
 /**
  * @fileoverview Tests for lazy_accessor.js.
  */
-goog.module('protobuf.binary.LazyAccessorTest');
+goog.module('protobuf.runtime.KernelTest');
 
 goog.setTestOnly();
 
 const ByteString = goog.require('protobuf.ByteString');
 const Int64 = goog.require('protobuf.Int64');
 const InternalMessage = goog.require('protobuf.binary.InternalMessage');
-const LazyAccessor = goog.require('protobuf.binary.LazyAccessor');
+const LazyAccessor = goog.require('protobuf.runtime.Kernel');
 const TestMessage = goog.require('protobuf.testing.binary.TestMessage');
 // Note to the reader:
 // Since the lazy accessor behavior changes with the checking level some of the
@@ -881,6 +881,16 @@ describe('Fixed32 access', () => {
       const accessor = LazyAccessor.createEmpty();
       accessor.setFixed32(1, /** @type {number} */ (/** @type {*} */ (null)));
       expect(accessor.getFixed32WithDefault(1)).toEqual(null);
+    }
+  });
+
+  it('throws in setter for negative value', () => {
+    if (CHECK_CRITICAL_TYPE) {
+      expect(() => LazyAccessor.createEmpty().setFixed32(1, -1)).toThrow();
+    } else {
+      const accessor = LazyAccessor.createEmpty();
+      accessor.setFixed32(1, -1);
+      expect(accessor.getFixed32WithDefault(1)).toEqual(-1);
     }
   });
 });
@@ -1872,6 +1882,16 @@ describe('Uint32 access', () => {
       const accessor = LazyAccessor.createEmpty();
       accessor.setUint32(1, /** @type {number} */ (/** @type {*} */ (null)));
       expect(accessor.getUint32WithDefault(1)).toEqual(null);
+    }
+  });
+
+  it('throws in setter for negative value', () => {
+    if (CHECK_CRITICAL_TYPE) {
+      expect(() => LazyAccessor.createEmpty().setUint32(1, -1)).toThrow();
+    } else {
+      const accessor = LazyAccessor.createEmpty();
+      accessor.setUint32(1, -1);
+      expect(accessor.getUint32WithDefault(1)).toEqual(-1);
     }
   });
 });
