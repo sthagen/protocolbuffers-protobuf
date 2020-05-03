@@ -120,20 +120,21 @@ class TextWriter(object):
     return self._writer.getvalue()
 
 
-def MessageToString(message,
-                    as_utf8=False,
-                    as_one_line=False,
-                    use_short_repeated_primitives=False,
-                    pointy_brackets=False,
-                    use_index_order=False,
-                    float_format=None,
-                    double_format=None,
-                    use_field_number=False,
-                    descriptor_pool=None,
-                    indent=0,
-                    message_formatter=None,
-                    print_unknown_fields=False,
-                    force_colon=False):
+def MessageToString(
+    message,
+    as_utf8=False,
+    as_one_line=False,
+    use_short_repeated_primitives=False,
+    pointy_brackets=False,
+    use_index_order=False,
+    float_format=None,
+    double_format=None,
+    use_field_number=False,
+    descriptor_pool=None,
+    indent=0,
+    message_formatter=None,
+    print_unknown_fields=False,
+    force_colon=False):
   # type: (...) -> str
   """Convert protobuf message to text format.
 
@@ -157,9 +158,9 @@ def MessageToString(message,
       determined by the extension number. By default, use the field number
       order.
     float_format (str): If set, use this to specify float field formatting
-      (per the "Format Specification Mini-Language"); otherwise, 8 valid
-      digits is used (default '.8g'). Also affect double field if
-      double_format is not set but float_format is set.
+      (per the "Format Specification Mini-Language"); otherwise, shortest float
+      that has same value in wire will be printed. Also affect double field
+      if double_format is not set but float_format is set.
     double_format (str): If set, use this to specify double field formatting
       (per the "Format Specification Mini-Language"); if it is not set but
       float_format is set, use float_format. Otherwise, use ``str()``
@@ -329,21 +330,22 @@ WIRETYPE_START_GROUP = 3
 class _Printer(object):
   """Text format printer for protocol message."""
 
-  def __init__(self,
-               out,
-               indent=0,
-               as_utf8=False,
-               as_one_line=False,
-               use_short_repeated_primitives=False,
-               pointy_brackets=False,
-               use_index_order=False,
-               float_format=None,
-               double_format=None,
-               use_field_number=False,
-               descriptor_pool=None,
-               message_formatter=None,
-               print_unknown_fields=False,
-               force_colon=False):
+  def __init__(
+      self,
+      out,
+      indent=0,
+      as_utf8=False,
+      as_one_line=False,
+      use_short_repeated_primitives=False,
+      pointy_brackets=False,
+      use_index_order=False,
+      float_format=None,
+      double_format=None,
+      use_field_number=False,
+      descriptor_pool=None,
+      message_formatter=None,
+      print_unknown_fields=False,
+      force_colon=False):
     """Initialize the Printer.
 
     Double values can be formatted compactly with 15 digits of precision
@@ -365,9 +367,9 @@ class _Printer(object):
         defined in source code instead of the field number. By default, use the
         field number order.
       float_format: If set, use this to specify float field formatting
-        (per the "Format Specification Mini-Language"); otherwise, 8 valid
-        digits is used (default '.8g'). Also affect double field if
-        double_format is not set but float_format is set.
+        (per the "Format Specification Mini-Language"); otherwise, shortest
+        float that has same value in wire will be printed. Also affect double
+        field if double_format is not set but float_format is set.
       double_format: If set, use this to specify double field formatting
         (per the "Format Specification Mini-Language"); if it is not set but
         float_format is set, use float_format. Otherwise, str() is used.
@@ -628,7 +630,7 @@ class _Printer(object):
       if self.float_format is not None:
         out.write('{1:{0}}'.format(self.float_format, value))
       else:
-        out.write(str(float(format(value, '.8g'))))
+        out.write(str(type_checkers.ToShortestFloat(value)))
     elif (field.cpp_type == descriptor.FieldDescriptor.CPPTYPE_DOUBLE and
           self.double_format is not None):
       out.write('{1:{0}}'.format(self.double_format, value))

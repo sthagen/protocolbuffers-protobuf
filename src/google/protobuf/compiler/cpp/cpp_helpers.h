@@ -429,9 +429,19 @@ inline bool HasFieldPresence(const FileDescriptor* file) {
 }
 
 inline bool HasHasbit(const FieldDescriptor* field) {
-  // TODO(haberman): remove, and give some proto3 fields hasbits.
-  if (field->file()->syntax() == FileDescriptor::SYNTAX_PROTO3) return false;
-  return field->is_singular_with_presence();
+  // This predicate includes proto3 message fields only if they have "optional".
+  //   Foo submsg1 = 1;           // HasHasbit() == false
+  //   optional Foo submsg2 = 2;  // HasHasbit() == true
+  // This is slightly odd, as adding "optional" to a singular proto3 field does
+  // not change the semantics or API. However whenever any field in a message
+  // has a hasbit, it forces reflection to include hasbit offsets for *all*
+  // fields, even if almost all of them are set to -1 (no hasbit). So to avoid
+  // causing a sudden size regression for ~all proto3 messages, we give proto3
+  // message fields a hasbit only if "optional" is present. If the user is
+  // explicitly writing "optional", it is likely they are writing it on
+  // primitive fields also.
+  return (field->has_optional_keyword() || field->is_required()) &&
+         !field->options().weak();
 }
 
 // Returns true if 'enum' semantics are such that unknown values are preserved
@@ -879,7 +889,9 @@ struct OneOfRangeImpl {
   };
 
   Iterator begin() const { return {0, descriptor}; }
-  Iterator end() const { return {descriptor->oneof_decl_count(), descriptor}; }
+  Iterator end() const {
+    return {descriptor->real_oneof_decl_count(), descriptor};
+  }
 
   const Descriptor* descriptor;
 };

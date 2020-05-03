@@ -1720,6 +1720,18 @@ const EnumValueDescriptor* Descriptor::FindEnumValueByName(
   }
 }
 
+const FieldDescriptor* Descriptor::map_key() const {
+  if (!options().map_entry()) return nullptr;
+  GOOGLE_DCHECK_EQ(field_count(), 2);
+  return field(0);
+}
+
+const FieldDescriptor* Descriptor::map_value() const {
+  if (!options().map_entry()) return nullptr;
+  GOOGLE_DCHECK_EQ(field_count(), 2);
+  return field(1);
+}
+
 const EnumValueDescriptor* EnumDescriptor::FindValueByName(
     const std::string& key) const {
   Symbol result =
@@ -5500,6 +5512,42 @@ void DescriptorBuilder::CrossLinkMessage(Descriptor* message,
           message->field(i);
     }
   }
+
+  for (int i = 0; i < message->field_count(); i++) {
+    const FieldDescriptor* field = message->field(i);
+    if (field->proto3_optional_) {
+      if (!field->containing_oneof() ||
+          !field->containing_oneof()->is_synthetic()) {
+        AddError(message->full_name(), proto.field(i),
+                 DescriptorPool::ErrorCollector::OTHER,
+                 "Fields with proto3_optional set must be "
+                 "a member of a one-field oneof");
+      }
+    }
+  }
+
+  // Synthetic oneofs must be last.
+  int first_synthetic = -1;
+  for (int i = 0; i < message->oneof_decl_count(); i++) {
+    const OneofDescriptor* oneof = message->oneof_decl(i);
+    if (oneof->is_synthetic()) {
+      if (first_synthetic == -1) {
+        first_synthetic = i;
+      }
+    } else {
+      if (first_synthetic != -1) {
+        AddError(message->full_name(), proto.oneof_decl(i),
+                 DescriptorPool::ErrorCollector::OTHER,
+                 "Synthetic oneofs must be after all other oneofs");
+      }
+    }
+  }
+
+  if (first_synthetic == -1) {
+    message->real_oneof_decl_count_ = message->oneof_decl_count_;
+  } else {
+    message->real_oneof_decl_count_ = first_synthetic;
+  }
 }
 
 void DescriptorBuilder::CrossLinkExtensionRange(
@@ -6186,8 +6234,8 @@ bool DescriptorBuilder::ValidateMapEntry(FieldDescriptor* field,
     return false;
   }
 
-  const FieldDescriptor* key = message->field(0);
-  const FieldDescriptor* value = message->field(1);
+  const FieldDescriptor* key = message->map_key();
+  const FieldDescriptor* value = message->map_value();
   if (key->label() != FieldDescriptor::LABEL_OPTIONAL || key->number() != 1 ||
       key->name() != "key") {
     return false;

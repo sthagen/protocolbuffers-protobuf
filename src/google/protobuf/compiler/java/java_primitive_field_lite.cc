@@ -32,6 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
+#include <google/protobuf/compiler/java/java_primitive_field_lite.h>
+
 #include <map>
 #include <string>
 
@@ -41,7 +43,6 @@
 #include <google/protobuf/compiler/java/java_doc_comment.h>
 #include <google/protobuf/compiler/java/java_helpers.h>
 #include <google/protobuf/compiler/java/java_name_resolver.h>
-#include <google/protobuf/compiler/java/java_primitive_field_lite.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/wire_format.h>
 #include <google/protobuf/stubs/strutil.h>
@@ -163,9 +164,6 @@ void SetPrimitiveVariables(const FieldDescriptor* descriptor,
           (*variables)["name"] + "_ != " + (*variables)["default"];
     }
   }
-
-  // For repeated builders, the underlying list tracks mutability state.
-  (*variables)["is_mutable"] = (*variables)["name"] + "_.isModifiable()";
 
   (*variables)["get_has_field_bit_from_local"] =
       GenerateGetBitFromLocal(builderBitIndex);
@@ -302,6 +300,7 @@ void ImmutablePrimitiveFieldLiteGenerator::GenerateBuilderMembers(
       "}\n");
   printer->Annotate("{", "}", descriptor_);
 }
+
 
 void ImmutablePrimitiveFieldLiteGenerator::GenerateFieldInfo(
     io::Printer* printer, std::vector<uint16>* output) const {
@@ -511,9 +510,11 @@ void RepeatedImmutablePrimitiveFieldLiteGenerator::GenerateMembers(
   printer->Print(
       variables_,
       "private void ensure$capitalized_name$IsMutable() {\n"
-      "  if (!$is_mutable$) {\n"
+      // Use a temporary to avoid a redundant iget-object.
+      "  $field_list_type$ tmp = $name$_;\n"
+      "  if (!tmp.isModifiable()) {\n"
       "    $name$_ =\n"
-      "        com.google.protobuf.GeneratedMessageLite.mutableCopy($name$_);\n"
+      "        com.google.protobuf.GeneratedMessageLite.mutableCopy(tmp);\n"
       "   }\n"
       "}\n");
 

@@ -537,6 +537,11 @@ Status ProtoStreamObjectSource::RenderStruct(const ProtoStreamObjectSource* os,
   ow->StartObject(field_name);
   while (tag != 0) {
     field = os->FindAndVerifyField(type, tag);
+    if (field == nullptr) {
+      WireFormat::SkipField(os->stream_, tag, nullptr);
+      tag = os->stream_->ReadTag();
+      continue;
+    }
     // google.protobuf.Struct has only one field that is a map. Hence we use
     // RenderMap to render that field.
     if (os->IsMap(*field)) {
@@ -647,7 +652,7 @@ Status ProtoStreamObjectSource::RenderAny(const ProtoStreamObjectSource* os,
                         resolved_type.status().message());
   }
   // nested_type cannot be null at this time.
-  const google::protobuf::Type* nested_type = resolved_type.ValueOrDie();
+  const google::protobuf::Type* nested_type = resolved_type.value();
 
   io::ArrayInputStream zero_copy_stream(value.data(), value.size());
   io::CodedInputStream in_stream(&zero_copy_stream);

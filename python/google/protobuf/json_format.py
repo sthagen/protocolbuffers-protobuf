@@ -60,6 +60,7 @@ import sys
 
 import six
 
+from google.protobuf.internal import type_checkers
 from google.protobuf import descriptor
 from google.protobuf import symbol_database
 
@@ -104,7 +105,7 @@ def MessageToJson(
     sort_keys=False,
     use_integers_for_enums=False,
     descriptor_pool=None,
-    float_precision=8):
+    float_precision=None):
   """Converts protobuf message to JSON format.
 
   Args:
@@ -123,7 +124,6 @@ def MessageToJson(
     descriptor_pool: A Descriptor Pool for resolving types. If None use the
         default.
     float_precision: If set, use this to specify float field valid digits.
-        Otherwise, 8 valid digits is used (default '.8g').
 
   Returns:
     A string containing the JSON formatted protocol buffer message.
@@ -143,7 +143,7 @@ def MessageToDict(
     preserving_proto_field_name=False,
     use_integers_for_enums=False,
     descriptor_pool=None,
-    float_precision=8):
+    float_precision=None):
   """Converts protobuf message to a dictionary.
 
   When the dictionary is encoded to JSON, it conforms to proto3 JSON spec.
@@ -161,7 +161,6 @@ def MessageToDict(
     descriptor_pool: A Descriptor Pool for resolving types. If None use the
         default.
     float_precision: If set, use this to specify float field valid digits.
-        Otherwise, 8 valid digits is used (default '.8g').
 
   Returns:
     A dict representation of the protocol buffer message.
@@ -315,9 +314,12 @@ class _Printer(object):
           return _INFINITY
       if math.isnan(value):
         return _NAN
-      if (self.float_format and
-          field.cpp_type == descriptor.FieldDescriptor.CPPTYPE_FLOAT):
-        return float(format(value, self.float_format))
+      if field.cpp_type == descriptor.FieldDescriptor.CPPTYPE_FLOAT:
+        if self.float_format:
+          return float(format(value, self.float_format))
+        else:
+          return type_checkers.ToShortestFloat(value)
+
     return value
 
   def _AnyMessageToJsonObject(self, message):
