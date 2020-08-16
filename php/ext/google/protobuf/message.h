@@ -28,9 +28,32 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GOOGLE_PROTOBUF_UTF8_H_
-#define GOOGLE_PROTOBUF_UTF8_H_
+#ifndef PHP_PROTOBUF_MESSAGE_H_
+#define PHP_PROTOBUF_MESSAGE_H_
 
-bool is_structurally_valid_utf8(const char* buf, int len);
+#include <stdbool.h>
 
-#endif  // GOOGLE_PROTOBUF_UTF8_H_
+#include "def.h"
+
+// Registers the PHP Message class.
+void Message_ModuleInit();
+
+// Gets a upb_msg* for the PHP object |val|, which must either be a Message
+// object or 'null'. Returns true and stores the message in |msg| if the
+// conversion succeeded (we can't return upb_msg* because null->NULL is a valid
+// conversion). Returns false and raises a PHP error if this isn't a Message
+// object or null, or if the Message object doesn't match this Descriptor.
+//
+// The given |arena| will be fused to this message's arena.
+bool Message_GetUpbMessage(zval *val, const Descriptor *desc, upb_arena *arena,
+                           upb_msg **msg);
+
+// Gets or creates a PHP Message object to wrap the given upb_msg* and |desc|
+// and returns it in |val|. The PHP object will keep a reference to this |arena|
+// to ensure the underlying message data stays alive.
+//
+// If |msg| is NULL, this will return a PHP null.
+void Message_GetPhpWrapper(zval *val, const Descriptor *desc, upb_msg *msg,
+                           zval *arena);
+
+#endif  // PHP_PROTOBUF_MESSAGE_H_

@@ -42,8 +42,6 @@ CORE_PROTO_FILES=(
   src/google/protobuf/unittest_lite.proto
   src/google/protobuf/unittest_mset.proto
   src/google/protobuf/unittest_mset_wire_format.proto
-  src/google/protobuf/unittest_no_arena.proto
-  src/google/protobuf/unittest_no_arena_import.proto
   src/google/protobuf/unittest_no_generic_services.proto
   src/google/protobuf/unittest_optimize_for.proto
   src/google/protobuf/unittest.proto
@@ -97,7 +95,7 @@ cd "${SRCROOT}/.."
 # -----------------------------------------------------------------------------
 RUN_PROTOC=no
 
-# Check to if all the output files exist (incase a new one got added).
+# Check to if all the output files exist (in case a new one got added).
 
 for PROTO_FILE in "${CORE_PROTO_FILES[@]}" "${OBJC_TEST_PROTO_FILES[@]}"; do
   DIR=${PROTO_FILE%/*}

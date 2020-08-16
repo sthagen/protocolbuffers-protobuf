@@ -225,6 +225,7 @@ void ImmutableEnumFieldGenerator::GenerateBuilderMembers(
     printer->Print(variables_,
                    "$deprecation$public Builder "
                    "${$set$capitalized_name$Value$}$(int value) {\n"
+                   "  $set_has_field_bit_builder$\n"
                    "  $name$_ = value;\n"
                    "  $on_changed$\n"
                    "  return this;\n"
@@ -711,7 +712,7 @@ void RepeatedImmutableEnumFieldGenerator::GenerateBuilderMembers(
       // list is immutable. If it's immutable, the invariant is that it must
       // either an instance of Collections.emptyList() or it's an ArrayList
       // wrapped in a Collections.unmodifiableList() wrapper and nobody else has
-      // a refererence to the underlying ArrayList. This invariant allows us to
+      // a reference to the underlying ArrayList. This invariant allows us to
       // share instances of lists between protocol buffers avoiding expensive
       // memory allocations. Note, immutable is a strong guarantee here -- not
       // just that the list cannot be modified via the reference but that the

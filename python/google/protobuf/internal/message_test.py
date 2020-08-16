@@ -1059,7 +1059,7 @@ class MessageTest(unittest.TestCase):
     self.assertIsInstance(m.optional_string, six.text_type)
 
   def testLongValuedSlice(self, message_module):
-    """It should be possible to use long-valued indicies in slices
+    """It should be possible to use long-valued indices in slices
 
     This didn't used to work in the v2 C++ implementation.
     """
@@ -1674,6 +1674,17 @@ class Proto3Test(unittest.TestCase):
     self.assertEqual('', message.optional_string)
     self.assertEqual(False, message.optional_bool)
     self.assertEqual(0, message.optional_nested_message.bb)
+
+  def testProto3ParserDropDefaultScalar(self):
+    message_proto2 = unittest_pb2.TestAllTypes()
+    message_proto2.optional_int32 = 0
+    message_proto2.optional_string = ''
+    message_proto2.optional_bytes = b''
+    self.assertEqual(len(message_proto2.ListFields()), 3)
+
+    message_proto3 = unittest_proto3_arena_pb2.TestAllTypes()
+    message_proto3.ParseFromString(message_proto2.SerializeToString())
+    self.assertEqual(len(message_proto3.ListFields()), 0)
 
   def testProto3Optional(self):
     msg = test_proto3_optional_pb2.TestProto3Optional()

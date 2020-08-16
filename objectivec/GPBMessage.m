@@ -3253,7 +3253,7 @@ static void ResolveIvarSet(__unsafe_unretained GPBFieldDescriptor *field,
 
 + (BOOL)resolveClassMethod:(SEL)sel {
   // Extensions scoped to a Message and looked up via class methods.
-  if (GPBResolveExtensionClassMethod([self descriptor].messageClass, sel)) {
+  if (GPBResolveExtensionClassMethod(self, sel)) {
     return YES;
   }
   return [super resolveClassMethod:sel];
@@ -3286,7 +3286,7 @@ static void ResolveIvarSet(__unsafe_unretained GPBFieldDescriptor *field,
     // if a sub message in a field has extensions, the issue still exists. A
     // recursive check could be done here (like the work in
     // GPBMessageDropUnknownFieldsRecursively()), but that has the potential to
-    // be expensive and could slow down serialization in DEBUG enought to cause
+    // be expensive and could slow down serialization in DEBUG enough to cause
     // developers other problems.
     NSLog(@"Warning: writing out a GPBMessage (%@) via NSCoding and it"
           @" has %ld extensions; when read back in, those fields will be"
