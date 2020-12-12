@@ -41,6 +41,7 @@
 #include "arena.h"
 #include "convert.h"
 #include "def.h"
+#include "message.h"
 #include "php-upb.h"
 #include "protobuf.h"
 
@@ -92,6 +93,26 @@ static void RepeatedField_destructor(zend_object* obj) {
   ObjCache_Delete(intern->array);
   zval_ptr_dtor(&intern->arena);
   zend_object_std_dtor(&intern->std);
+}
+
+/**
+ * RepeatedField_compare_objects()
+ *
+ * Object handler for comparing two repeated field objects. Called whenever PHP
+ * code does:
+ *
+ *   $rf1 == $rf2
+ */
+static int RepeatedField_compare_objects(zval *rf1, zval *rf2) {
+  RepeatedField* intern1 = (RepeatedField*)Z_OBJ_P(rf1);
+  RepeatedField* intern2 = (RepeatedField*)Z_OBJ_P(rf2);
+  upb_fieldtype_t type = intern1->type;
+  const upb_msgdef *m = intern1->desc ? intern1->desc->msgdef : NULL;
+
+  if (type != intern2->type) return 1;
+  if (intern1->desc != intern2->desc) return 1;
+
+  return ArrayEq(intern1->array, intern2->array, type, m) ? 0 : 1;
 }
 
 static HashTable *RepeatedField_GetProperties(PROTO_VAL *object) {
@@ -176,6 +197,27 @@ upb_array *RepeatedField_GetUpbArray(zval *val, const upb_fielddef *f,
     return NULL;
   }
 }
+
+bool ArrayEq(const upb_array *a1, const upb_array *a2, upb_fieldtype_t type,
+             const upb_msgdef *m) {
+  size_t i;
+  size_t n;
+
+  if ((a1 == NULL) != (a2 == NULL)) return false;
+  if (a1 == NULL) return true;
+
+  n = upb_array_size(a1);
+  if (n != upb_array_size(a2)) return false;
+
+  for (i = 0; i < n; i++) {
+    upb_msgval val1 = upb_array_get(a1, i);
+    upb_msgval val2 = upb_array_get(a2, i);
+    if (!ValueEq(val1, val2, type, m)) return false;
+  }
+
+  return true;
+}
+
 
 // RepeatedField PHP methods ///////////////////////////////////////////////////
 
@@ -411,9 +453,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_offsetSet, 0, 0, 2)
   ZEND_ARG_INFO(0, newval)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_void, 0)
-ZEND_END_ARG_INFO()
-
 static zend_function_entry repeated_field_methods[] = {
   PHP_ME(RepeatedField, __construct,  arginfo_construct, ZEND_ACC_PUBLIC)
   PHP_ME(RepeatedField, append,       arginfo_append,    ZEND_ACC_PUBLIC)
@@ -594,6 +633,11 @@ void Array_ModuleInit() {
   h = &RepeatedField_object_handlers;
   memcpy(h, &std_object_handlers, sizeof(zend_object_handlers));
   h->dtor_obj = RepeatedField_destructor;
+#if PHP_VERSION_ID < 80000
+  h->compare_objects = RepeatedField_compare_objects;
+#else
+  h->compare = RepeatedField_compare_objects;
+#endif
   h->get_properties = RepeatedField_GetProperties;
   h->get_property_ptr_ptr = RepeatedField_GetPropertyPtrPtr;
 
