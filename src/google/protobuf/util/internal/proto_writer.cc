@@ -40,9 +40,9 @@
 #include <google/protobuf/util/internal/constants.h>
 #include <google/protobuf/util/internal/utility.h>
 #include <google/protobuf/stubs/strutil.h>
+#include <google/protobuf/stubs/statusor.h>
 #include <google/protobuf/stubs/time.h>
 #include <google/protobuf/stubs/map_util.h>
-#include <google/protobuf/stubs/statusor.h>
 
 
 #include <google/protobuf/port_def.inc>
@@ -54,7 +54,6 @@ namespace converter {
 
 using io::CodedOutputStream;
 using ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite;
-using util::Status;
 using util::error::INVALID_ARGUMENT;
 
 

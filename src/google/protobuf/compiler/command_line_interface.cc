@@ -234,7 +234,7 @@ bool IsInstalledProtoPath(const std::string& path) {
 // Add the paths where google/protobuf/descriptor.proto and other well-known
 // type protos are installed.
 void AddDefaultProtoPaths(
-    std::vector<std::pair<std::string, std::string> >* paths) {
+    std::vector<std::pair<std::string, std::string>>* paths) {
   // TODO(xiaofeng): The code currently only checks relative paths of where
   // the protoc binary is installed. We probably should make it handle more
   // cases than that.
@@ -1216,21 +1216,9 @@ PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name) {
 
 bool CommandLineInterface::AllowProto3Optional(
     const FileDescriptor& file) const {
-  // If the --experimental_allow_proto3_optional flag was set, we allow.
-  if (allow_proto3_optional_) return true;
-
-  // Whitelist all ads protos. Ads is an early adopter of this feature.
-  if (file.name().find("google/ads/googleads") != std::string::npos) {
-    return true;
-  }
-
-  // Whitelist all protos testing proto3 optional.
-  if (file.name().find("test_proto3_optional") != std::string::npos) {
-    return true;
-  }
-
-
-  return false;
+  // Proto3 optional is enabled by default now, the experimental flag is no
+  // longer required.
+  return true;
 }
 
 

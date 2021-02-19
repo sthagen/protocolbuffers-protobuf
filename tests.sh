@@ -356,6 +356,10 @@ build_python38() {
   build_python_version py38-python
 }
 
+build_python39() {
+  build_python_version py39-python
+}
+
 build_python_cpp() {
   internal_build_cpp
   export LD_LIBRARY_PATH=../src/.libs # for Linux
@@ -408,6 +412,10 @@ build_python38_cpp() {
   build_python_cpp_version py38-cpp
 }
 
+build_python39_cpp() {
+  build_python_cpp_version py39-cpp
+}
+
 build_python_compatibility() {
   internal_build_cpp
   # Use the unit-tests extracted from 2.5.0 to test the compatibility.
@@ -441,6 +449,10 @@ build_ruby27() {
   internal_build_cpp  # For conformance tests.
   cd ruby && bash travis-test.sh ruby-2.7.0 && cd ..
 }
+build_ruby30() {
+  internal_build_cpp  # For conformance tests.
+  cd ruby && bash travis-test.sh ruby-3.0.0 && cd ..
+}
 
 build_jruby() {
   internal_build_cpp  # For conformance tests.
@@ -470,6 +482,16 @@ use_php_zts() {
   VERSION=$1
   export PATH=/usr/local/php-${VERSION}-zts/bin:$PATH
   internal_build_cpp
+}
+
+build_php5.6() {
+  use_php 5.6
+  pushd php
+  rm -rf vendor
+  composer update
+  composer test
+  popd
+  (cd conformance && make test_php)
 }
 
 build_php7.0() {
@@ -671,6 +693,7 @@ build_php8.0_all() {
 }
 
 build_php_all_32() {
+  build_php5.6
   build_php7.0
   build_php7.1
   build_php7.4
@@ -723,6 +746,7 @@ Usage: $0 { cpp |
             ruby25 |
             ruby26 |
             ruby27 |
+            ruby30 |
             jruby |
             ruby_all |
             php7.0   |
