@@ -36,6 +36,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <cstdint>
+
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
@@ -216,7 +218,7 @@ class CommandLineInterfaceTest : public testing::Test {
   // code generator that omits the given feature(s).
   void CreateGeneratorWithMissingFeatures(const std::string& name,
                                           const std::string& description,
-                                          uint64 features) {
+                                          uint64_t features) {
     MockCodeGenerator* generator = new MockCodeGenerator(name);
     generator->SuppressFeatures(features);
     mock_generators_to_delete_.push_back(generator);
@@ -523,8 +525,7 @@ void CommandLineInterfaceTest::ExpectCapturedStdoutSubstringWithZeroReturnCode(
 void CommandLineInterfaceTest::ExpectCapturedStderrSubstringWithZeroReturnCode(
     const std::string& expected_substring) {
   EXPECT_EQ(0, return_code_);
-  EXPECT_PRED_FORMAT2(testing::IsSubstring, expected_substring,
-                      error_text_);
+  EXPECT_PRED_FORMAT2(testing::IsSubstring, expected_substring, error_text_);
 }
 
 void CommandLineInterfaceTest::ExpectFileContent(const std::string& filename,
@@ -2331,20 +2332,18 @@ TEST_F(CommandLineInterfaceTest, Warnings) {
   // Test --fatal_warnings.
 
   CreateTempFile("foo.proto",
-    "syntax = \"proto2\";\n"
-    "import \"bar.proto\";\n");
-  CreateTempFile("bar.proto",
-    "syntax = \"proto2\";\n");
+                 "syntax = \"proto2\";\n"
+                 "import \"bar.proto\";\n");
+  CreateTempFile("bar.proto", "syntax = \"proto2\";\n");
 
   Run("protocol_compiler --test_out=$tmpdir "
-    "--proto_path=$tmpdir foo.proto");
+      "--proto_path=$tmpdir foo.proto");
   ExpectCapturedStderrSubstringWithZeroReturnCode(
-    "foo.proto:2:1: warning: Import bar.proto is unused.");
+      "foo.proto:2:1: warning: Import bar.proto is unused.");
 
   Run("protocol_compiler --test_out=$tmpdir --fatal_warnings "
-    "--proto_path=$tmpdir foo.proto");
-  ExpectErrorSubstring(
-    "foo.proto:2:1: warning: Import bar.proto is unused.");
+      "--proto_path=$tmpdir foo.proto");
+  ExpectErrorSubstring("foo.proto:2:1: warning: Import bar.proto is unused.");
 }
 
 // -------------------------------------------------------------------

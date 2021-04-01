@@ -55,8 +55,6 @@ namespace converter {
 
 using io::CodedOutputStream;
 using ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite;
-using util::error::INVALID_ARGUMENT;
-
 
 ProtoWriter::ProtoWriter(TypeResolver* type_resolver,
                          const google::protobuf::Type& type,
@@ -255,7 +253,7 @@ inline util::Status WriteBytes(int field_number, const DataPiece& data,
                                CodedOutputStream* stream) {
   util::StatusOr<std::string> c = data.ToBytes();
   if (c.ok()) {
-    WireFormatLite::WriteBytes(field_number, c.ValueOrDie(), stream);
+    WireFormatLite::WriteBytes(field_number, c.value(), stream);
   }
   return c.status();
 }
@@ -695,8 +693,7 @@ ProtoWriter* ProtoWriter::RenderPrimitiveField(
       break;
     }
     default:  // TYPE_GROUP, TYPE_MESSAGE, TYPE_UNKNOWN.
-      status = util::Status(util::error::INVALID_ARGUMENT,
-                            data.ValueAsStringOrDefault(""));
+      status = util::InvalidArgumentError(data.ValueAsStringOrDefault(""));
   }
 
   if (!status.ok()) {

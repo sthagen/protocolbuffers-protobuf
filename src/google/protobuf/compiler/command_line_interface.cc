@@ -34,6 +34,8 @@
 
 #include <google/protobuf/compiler/command_line_interface.h>
 
+#include <cstdint>
+
 #include <google/protobuf/stubs/platform_macros.h>
 
 #include <stdio.h>
@@ -288,7 +290,10 @@ class CommandLineInterface::ErrorPrinter
       public DescriptorPool::ErrorCollector {
  public:
   ErrorPrinter(ErrorFormat format, DiskSourceTree* tree = NULL)
-      : format_(format), tree_(tree), found_errors_(false), found_warnings_(false) {}
+      : format_(format),
+        tree_(tree),
+        found_errors_(false),
+        found_warnings_(false) {}
   ~ErrorPrinter() {}
 
   // implements MultiFileErrorCollector ------------------------------
@@ -586,10 +591,12 @@ bool CommandLineInterface::GeneratorContextImpl::WriteAllToZip(
 
   if (stream.GetErrno() != 0) {
     std::cerr << filename << ": " << strerror(stream.GetErrno()) << std::endl;
+    return false;
   }
 
   if (!stream.Close()) {
     std::cerr << filename << ": " << strerror(stream.GetErrno()) << std::endl;
+    return false;
   }
 
   return true;
@@ -1635,8 +1642,7 @@ bool CommandLineInterface::ParseArgument(const char* arg, std::string* name,
       *name == "--version" || *name == "--decode_raw" ||
       *name == "--print_free_field_numbers" ||
       *name == "--experimental_allow_proto3_optional" ||
-      *name == "--deterministic_output" ||
-      *name == "--fatal_warnings") {
+      *name == "--deterministic_output" || *name == "--fatal_warnings") {
     // HACK:  These are the only flags that don't take a value.
     //   They probably should not be hard-coded like this but for now it's
     //   not worth doing better.
@@ -2103,7 +2109,7 @@ Parse PROTO_FILES and generate output based on the options given:
 }
 
 bool CommandLineInterface::EnforceProto3OptionalSupport(
-    const std::string& codegen_name, uint64 supported_features,
+    const std::string& codegen_name, uint64_t supported_features,
     const std::vector<const FileDescriptor*>& parsed_files) const {
   bool supports_proto3_optional =
       supported_features & CodeGenerator::FEATURE_PROTO3_OPTIONAL;
