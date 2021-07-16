@@ -148,6 +148,10 @@
 #include <limits>
 #include <string>
 
+#if defined(__cpp_lib_string_view)
+#include <string_view>
+#endif
+
 #include <google/protobuf/stubs/hash.h>
 
 #include <google/protobuf/port_def.inc>
@@ -175,6 +179,23 @@ class PROTOBUF_EXPORT StringPiece {
   const char* ptr_;
   size_type length_;
 
+  static constexpr size_type kMaxSize =
+      (std::numeric_limits<difference_type>::max)();
+
+  static size_type CheckSize(size_type size) {
+#if !defined(NDEBUG) || defined(_FORTIFY_SOURCE) && _FORTIFY_SOURCE > 0
+    if (PROTOBUF_PREDICT_FALSE(size > kMaxSize)) {
+      // Some people grep for this message in logs
+      // so take care if you ever change it.
+      LogFatalSizeTooBig(size, "string length exceeds max size");
+    }
+#endif
+    return size;
+  }
+
+  // Out-of-line error path.
+  static void LogFatalSizeTooBig(size_type size, const char* details);
+
  public:
   // We provide non-explicit singleton constructors so users can pass
   // in a "const char*" or a "string" wherever a "StringPiece" is
@@ -187,7 +208,7 @@ class PROTOBUF_EXPORT StringPiece {
   StringPiece(const char* str)  // NOLINT(runtime/explicit)
       : ptr_(str), length_(0) {
     if (str != nullptr) {
-      length_ = strlen(str);
+      length_ = CheckSize(strlen(str));
     }
   }
 
@@ -195,11 +216,19 @@ class PROTOBUF_EXPORT StringPiece {
   StringPiece(  // NOLINT(runtime/explicit)
       const std::basic_string<char, std::char_traits<char>, Allocator>& str)
       : ptr_(str.data()), length_(0) {
-    length_ = str.size();
+    length_ = CheckSize(str.size());
   }
 
+#if defined(__cpp_lib_string_view)
+  StringPiece(  // NOLINT(runtime/explicit)
+      std::string_view str)
+      : ptr_(str.data()), length_(0) {
+    length_ = CheckSize(str.size());
+  }
+#endif
+
   StringPiece(const char* offset, size_type len)
-      : ptr_(offset), length_(len) {}
+      : ptr_(offset), length_(CheckSize(len)) {}
 
   // data() may return a pointer to a buffer with embedded NULs, and the
   // returned buffer may or may not be null terminated.  Therefore it is
@@ -304,8 +333,7 @@ class PROTOBUF_EXPORT StringPiece {
   size_type find_last_of(char c, size_type pos = npos) const {
     return rfind(c, pos);
   }
-  size_type find_last_not_of(StringPiece s,
-                                          size_type pos = npos) const;
+  size_type find_last_not_of(StringPiece s, size_type pos = npos) const;
   size_type find_last_not_of(char c, size_type pos = npos) const;
 
   StringPiece substr(size_type pos, size_type n = npos) const;

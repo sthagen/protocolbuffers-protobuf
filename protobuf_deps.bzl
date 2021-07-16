@@ -63,3 +63,11 @@ def protobuf_deps():
             strip_prefix = "rules_python-4b84ad270387a7c439ebdccfd530e2339601ef27",
             urls = ["https://github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz"],
         )
+
+    if not native.existing_rule("rules_jvm_external"):
+       http_archive(
+            name = "rules_jvm_external",
+            sha256 = "f36441aa876c4f6427bfb2d1f2d723b48e9d930b62662bf723ddfb8fc80f0140",
+            strip_prefix = "rules_jvm_external-4.1",
+            urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/4.1.zip"],
+        )

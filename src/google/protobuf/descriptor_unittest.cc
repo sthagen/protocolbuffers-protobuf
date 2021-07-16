@@ -205,7 +205,7 @@ class MockErrorCollector : public DescriptorPool::ErrorCollector {
   // implements ErrorCollector ---------------------------------------
   void AddError(const std::string& filename, const std::string& element_name,
                 const Message* descriptor, ErrorLocation location,
-                const std::string& message) {
+                const std::string& message) override {
     const char* location_name = nullptr;
     switch (location) {
       case NAME:
@@ -250,7 +250,7 @@ class MockErrorCollector : public DescriptorPool::ErrorCollector {
   // implements ErrorCollector ---------------------------------------
   void AddWarning(const std::string& filename, const std::string& element_name,
                   const Message* descriptor, ErrorLocation location,
-                  const std::string& message) {
+                  const std::string& message) override {
     const char* location_name = nullptr;
     switch (location) {
       case NAME:
@@ -298,7 +298,7 @@ class MockErrorCollector : public DescriptorPool::ErrorCollector {
 // Test simple files.
 class FileDescriptorTest : public testing::Test {
  protected:
-  virtual void SetUp() {
+  virtual void SetUp() override {
     // Build descriptors for the following definitions:
     //
     //   // in "foo.proto"
@@ -564,7 +564,7 @@ void ExtractDebugString(
 class SimpleErrorCollector : public io::ErrorCollector {
  public:
   // implements ErrorCollector ---------------------------------------
-  void AddError(int line, int column, const std::string& message) {
+  void AddError(int line, int column, const std::string& message) override {
     last_error_ = StringPrintf("%d:%d:", line, column) + message;
   }
 
@@ -613,7 +613,7 @@ TEST_F(FileDescriptorTest, DebugStringRoundTrip) {
 // Test simple flat messages and fields.
 class DescriptorTest : public testing::Test {
  protected:
-  virtual void SetUp() {
+  virtual void SetUp() override {
     // Build descriptors for the following definitions:
     //
     //   // in "foo.proto"
@@ -1055,7 +1055,7 @@ TEST_F(DescriptorTest, FieldEnumType) {
 // Test simple flat messages and fields.
 class OneofDescriptorTest : public testing::Test {
  protected:
-  virtual void SetUp() {
+  virtual void SetUp() override {
     // Build descriptors for the following definitions:
     //
     //   package garply;
@@ -1146,7 +1146,7 @@ TEST_F(OneofDescriptorTest, FindByName) {
 
 class StylizedFieldNamesTest : public testing::Test {
  protected:
-  void SetUp() {
+  void SetUp() override {
     FileDescriptorProto file;
     file.set_name("foo.proto");
 
@@ -1315,7 +1315,7 @@ TEST_F(StylizedFieldNamesTest, FindByCamelcaseName) {
 // Test enum descriptors.
 class EnumDescriptorTest : public testing::Test {
  protected:
-  virtual void SetUp() {
+  virtual void SetUp() override {
     // Build descriptors for the following definitions:
     //
     //   // in "foo.proto"
@@ -1466,7 +1466,7 @@ TEST_F(EnumDescriptorTest, ValueType) {
 // Test service descriptors.
 class ServiceDescriptorTest : public testing::Test {
  protected:
-  virtual void SetUp() {
+  virtual void SetUp() override {
     // Build descriptors for the following messages and service:
     //    // in "foo.proto"
     //    message FooRequest  {}
@@ -1627,7 +1627,7 @@ TEST_F(ServiceDescriptorTest, MethodOutputType) {
 // Test nested types.
 class NestedDescriptorTest : public testing::Test {
  protected:
-  virtual void SetUp() {
+  virtual void SetUp() override {
     // Build descriptors for the following definitions:
     //
     //   // in "foo.proto"
@@ -1841,7 +1841,7 @@ TEST_F(NestedDescriptorTest, FindEnumValueByName) {
 // Test extensions.
 class ExtensionDescriptorTest : public testing::Test {
  protected:
-  virtual void SetUp() {
+  virtual void SetUp() override {
     // Build descriptors for the following definitions:
     //
     //   enum Baz {}
@@ -2071,10 +2071,88 @@ TEST_F(ExtensionDescriptorTest, DuplicateFieldNumber) {
 
 // ===================================================================
 
+// Ensure that overlapping extension ranges are not allowed.
+TEST(OverlappingExtensionRangeTest, ExtensionRangeInternal) {
+  // Build descriptors for the following definitions:
+  //
+  //   message Foo {
+  //     extensions 10 to 19;
+  //     extensions 15;
+  //   }
+  FileDescriptorProto foo_file;
+  foo_file.set_name("foo.proto");
+
+  DescriptorProto* foo = AddMessage(&foo_file, "Foo");
+  AddExtensionRange(foo, 10, 20);
+  AddExtensionRange(foo, 15, 16);
+
+  DescriptorPool pool;
+  MockErrorCollector error_collector;
+  // The extensions ranges are invalid, so the proto shouldn't build.
+  ASSERT_TRUE(pool.BuildFileCollectingErrors(foo_file, &error_collector) ==
+              nullptr);
+  ASSERT_EQ(
+      "foo.proto: Foo: NUMBER: Extension range 15 to 15 overlaps with "
+      "already-defined range 10 to 19.\n",
+      error_collector.text_);
+}
+
+TEST(OverlappingExtensionRangeTest, ExtensionRangeAfter) {
+  // Build descriptors for the following definitions:
+  //
+  //   message Foo {
+  //     extensions 10 to 19;
+  //     extensions 15 to 24;
+  //   }
+  FileDescriptorProto foo_file;
+  foo_file.set_name("foo.proto");
+
+  DescriptorProto* foo = AddMessage(&foo_file, "Foo");
+  AddExtensionRange(foo, 10, 20);
+  AddExtensionRange(foo, 15, 25);
+
+  DescriptorPool pool;
+  MockErrorCollector error_collector;
+  // The extensions ranges are invalid, so the proto shouldn't build.
+  ASSERT_TRUE(pool.BuildFileCollectingErrors(foo_file, &error_collector) ==
+              nullptr);
+  ASSERT_EQ(
+      "foo.proto: Foo: NUMBER: Extension range 15 to 24 overlaps with "
+      "already-defined range 10 to 19.\n",
+      error_collector.text_);
+}
+
+TEST(OverlappingExtensionRangeTest, ExtensionRangeBefore) {
+  // Build descriptors for the following definitions:
+  //
+  //   message Foo {
+  //     extensions 10 to 19;
+  //     extensions 5 to 14;
+  //   }
+  FileDescriptorProto foo_file;
+  foo_file.set_name("foo.proto");
+
+  DescriptorProto* foo = AddMessage(&foo_file, "Foo");
+  AddExtensionRange(foo, 10, 20);
+  AddExtensionRange(foo, 5, 15);
+
+  DescriptorPool pool;
+  MockErrorCollector error_collector;
+  // The extensions ranges are invalid, so the proto shouldn't build.
+  ASSERT_TRUE(pool.BuildFileCollectingErrors(foo_file, &error_collector) ==
+              nullptr);
+  ASSERT_EQ(
+      "foo.proto: Foo: NUMBER: Extension range 5 to 14 overlaps with "
+      "already-defined range 10 to 19.\n",
+      error_collector.text_);
+}
+
+// ===================================================================
+
 // Test reserved fields.
 class ReservedDescriptorTest : public testing::Test {
  protected:
-  virtual void SetUp() {
+  virtual void SetUp() override {
     // Build descriptors for the following definitions:
     //
     //   message Foo {
@@ -2152,7 +2230,7 @@ TEST_F(ReservedDescriptorTest, IsReservedName) {
 // Test reserved enum fields.
 class ReservedEnumDescriptorTest : public testing::Test {
  protected:
-  virtual void SetUp() {
+  virtual void SetUp() override {
     // Build descriptors for the following definitions:
     //
     //   enum Foo {
@@ -2678,7 +2756,7 @@ class AllowUnknownDependenciesTest
   DescriptorPoolMode mode() { return std::get<0>(GetParam()); }
   const char* syntax() { return std::get<1>(GetParam()); }
 
-  virtual void SetUp() {
+  virtual void SetUp() override {
     FileDescriptorProto foo_proto, bar_proto;
 
     switch (mode()) {
@@ -6656,7 +6734,7 @@ class DatabaseBackedPoolTest : public testing::Test {
 
   SimpleDescriptorDatabase database_;
 
-  virtual void SetUp() {
+  virtual void SetUp() override {
     AddToDatabase(
         &database_,
         "name: 'foo.proto' "
@@ -6688,7 +6766,7 @@ class DatabaseBackedPoolTest : public testing::Test {
 
     // implements DescriptorDatabase ---------------------------------
     bool FindFileByName(const std::string& filename,
-                        FileDescriptorProto* output) {
+                        FileDescriptorProto* output) override {
       // error.proto and error2.proto cyclically import each other.
       if (filename == "error.proto") {
         output->Clear();
@@ -6705,12 +6783,12 @@ class DatabaseBackedPoolTest : public testing::Test {
       }
     }
     bool FindFileContainingSymbol(const std::string& symbol_name,
-                                  FileDescriptorProto* output) {
+                                  FileDescriptorProto* output) override {
       return false;
     }
     bool FindFileContainingExtension(const std::string& containing_type,
                                      int field_number,
-                                     FileDescriptorProto* output) {
+                                     FileDescriptorProto* output) override {
       return false;
     }
   };
@@ -6733,18 +6811,18 @@ class DatabaseBackedPoolTest : public testing::Test {
 
     // implements DescriptorDatabase ---------------------------------
     bool FindFileByName(const std::string& filename,
-                        FileDescriptorProto* output) {
+                        FileDescriptorProto* output) override {
       ++call_count_;
       return wrapped_db_->FindFileByName(filename, output);
     }
     bool FindFileContainingSymbol(const std::string& symbol_name,
-                                  FileDescriptorProto* output) {
+                                  FileDescriptorProto* output) override {
       ++call_count_;
       return wrapped_db_->FindFileContainingSymbol(symbol_name, output);
     }
     bool FindFileContainingExtension(const std::string& containing_type,
                                      int field_number,
-                                     FileDescriptorProto* output) {
+                                     FileDescriptorProto* output) override {
       ++call_count_;
       return wrapped_db_->FindFileContainingExtension(containing_type,
                                                       field_number, output);
@@ -6764,16 +6842,16 @@ class DatabaseBackedPoolTest : public testing::Test {
 
     // implements DescriptorDatabase ---------------------------------
     bool FindFileByName(const std::string& filename,
-                        FileDescriptorProto* output) {
+                        FileDescriptorProto* output) override {
       return wrapped_db_->FindFileByName(filename, output);
     }
     bool FindFileContainingSymbol(const std::string& symbol_name,
-                                  FileDescriptorProto* output) {
+                                  FileDescriptorProto* output) override {
       return FindFileByName("foo.proto", output);
     }
     bool FindFileContainingExtension(const std::string& containing_type,
                                      int field_number,
-                                     FileDescriptorProto* output) {
+                                     FileDescriptorProto* output) override {
       return FindFileByName("foo.proto", output);
     }
   };
@@ -7049,7 +7127,7 @@ class ExponentialErrorDatabase : public DescriptorDatabase {
 
   // implements DescriptorDatabase ---------------------------------
   bool FindFileByName(const std::string& filename,
-                      FileDescriptorProto* output) {
+                      FileDescriptorProto* output) override {
     int file_num = -1;
     FullMatch(filename, "file", ".proto", &file_num);
     if (file_num > -1) {
@@ -7059,7 +7137,7 @@ class ExponentialErrorDatabase : public DescriptorDatabase {
     }
   }
   bool FindFileContainingSymbol(const std::string& symbol_name,
-                                FileDescriptorProto* output) {
+                                FileDescriptorProto* output) override {
     int file_num = -1;
     FullMatch(symbol_name, "Message", "", &file_num);
     if (file_num > 0) {
@@ -7070,7 +7148,7 @@ class ExponentialErrorDatabase : public DescriptorDatabase {
   }
   bool FindFileContainingExtension(const std::string& containing_type,
                                    int field_number,
-                                   FileDescriptorProto* output) {
+                                   FileDescriptorProto* output) override {
     return false;
   }
 
@@ -7156,7 +7234,7 @@ class AbortingErrorCollector : public DescriptorPool::ErrorCollector {
   virtual void AddError(const std::string& filename,
                         const std::string& element_name, const Message* message,
                         ErrorLocation location,
-                        const std::string& error_message) {
+                        const std::string& error_message) override {
     GOOGLE_LOG(FATAL) << "AddError() called unexpectedly: " << filename << " ["
                << element_name << "]: " << error_message;
   }
@@ -7171,7 +7249,7 @@ class SingletonSourceTree : public compiler::SourceTree {
   SingletonSourceTree(const std::string& filename, const std::string& contents)
       : filename_(filename), contents_(contents) {}
 
-  virtual io::ZeroCopyInputStream* Open(const std::string& filename) {
+  virtual io::ZeroCopyInputStream* Open(const std::string& filename) override {
     return filename == filename_
                ? new io::ArrayInputStream(contents_.data(), contents_.size())
                : nullptr;

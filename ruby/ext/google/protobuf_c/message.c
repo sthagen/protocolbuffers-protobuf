@@ -277,9 +277,9 @@ static void Message_setfield(upb_msg* msg, const upb_fielddef* f, VALUE val,
                              upb_arena* arena) {
   upb_msgval msgval;
   if (upb_fielddef_ismap(f)) {
-    msgval.map_val = Map_GetUpbMap(val, f);
+    msgval.map_val = Map_GetUpbMap(val, f, arena);
   } else if (upb_fielddef_isseq(f)) {
-    msgval.array_val = RepeatedField_GetUpbArray(val, f);
+    msgval.array_val = RepeatedField_GetUpbArray(val, f, arena);
   } else {
     if (val == Qnil &&
         (upb_fielddef_issubmsg(f) || upb_fielddef_realcontainingoneof(f))) {
@@ -660,7 +660,7 @@ static VALUE Message_dup(VALUE _self) {
   // TODO(copy unknown fields?)
   // TODO(use official upb msg copy function)
   memcpy((upb_msg*)new_msg_self->msg, self->msg, size);
-  upb_arena_fuse(Arena_get(new_msg_self->arena), Arena_get(self->arena));
+  Arena_fuse(self->arena, Arena_get(new_msg_self->arena));
   return new_msg;
 }
 
@@ -734,7 +734,10 @@ uint64_t Message_Hash(const upb_msg* msg, const upb_msgdef* m, uint64_t seed) {
  */
 static VALUE Message_hash(VALUE _self) {
   Message* self = ruby_to_Message(_self);
-  return INT2FIX(Message_Hash(self->msg, self->msgdef, 0));
+  uint64_t hash_value = Message_Hash(self->msg, self->msgdef, 0);
+  // RUBY_FIXNUM_MAX should be one less than a power of 2.
+  assert((RUBY_FIXNUM_MAX & (RUBY_FIXNUM_MAX + 1)) == 0);
+  return INT2FIX(hash_value & RUBY_FIXNUM_MAX);
 }
 
 /*
@@ -790,6 +793,14 @@ static VALUE Message_CreateHash(const upb_msg *msg, const upb_msgdef *m) {
     upb_msgval msgval;
     VALUE msg_value;
     VALUE msg_key;
+
+    if (!is_proto2 && upb_fielddef_issubmsg(field) &&
+        !upb_fielddef_isseq(field) && !upb_msg_has(msg, field)) {
+      // TODO: Legacy behavior, remove when we fix the is_proto2 differences.
+      msg_key = ID2SYM(rb_intern(upb_fielddef_name(field)));
+      rb_hash_aset(hash, msg_key, Qnil);
+      continue;
+    }
 
     // Do not include fields that are not present (oneof or optional fields).
     if (is_proto2 && upb_fielddef_haspresence(field) &&
@@ -1303,7 +1314,7 @@ const upb_msg* Message_GetUpbMessage(VALUE value, const upb_msgdef* m,
   }
 
   Message* self = ruby_to_Message(value);
-  upb_arena_fuse(arena, Arena_get(self->arena));
+  Arena_fuse(self->arena, arena);
 
   return self->msg;
 }

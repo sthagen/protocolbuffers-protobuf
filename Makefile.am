@@ -280,6 +280,7 @@ java_EXTRA_DIST=                                                                
   java/core/generate-sources-build.xml                                             \
   java/core/generate-test-sources-build.xml                                        \
   java/core/pom.xml                                                                \
+  java/core/pom_template.xml                                                       \
   java/core/src/main/java/com/google/protobuf/AbstractMessage.java                 \
   java/core/src/main/java/com/google/protobuf/AbstractMessageLite.java             \
   java/core/src/main/java/com/google/protobuf/AbstractParser.java                  \
@@ -530,23 +531,56 @@ java_EXTRA_DIST=                                                                
   java/core/src/test/proto/com/google/protobuf/test_check_utf8_size.proto          \
   java/core/src/test/proto/com/google/protobuf/test_custom_options.proto           \
   java/core/src/test/proto/com/google/protobuf/wrappers_test.proto                 \
+  java/internal/BUILD                                                              \
+  java/internal/testing.bzl                                                        \
+  java/kotlin/generate-sources-build.xml                                           \
+  java/kotlin/generate-test-sources-build.xml                                      \
+  java/kotlin/pom.xml                                                              \
+  java/kotlin/src/main/kotlin/com/google/protobuf/DslList.kt                       \
+  java/kotlin/src/main/kotlin/com/google/protobuf/DslMap.kt                        \
+  java/kotlin/src/main/kotlin/com/google/protobuf/DslProxy.kt                      \
+  java/kotlin/src/main/kotlin/com/google/protobuf/ExtendableMessageExtensions.kt   \
+  java/kotlin/src/main/kotlin/com/google/protobuf/ExtendableMessageLiteExtensions.kt\
+  java/kotlin/src/main/kotlin/com/google/protobuf/ExtensionList.kt                 \
+  java/kotlin/src/main/kotlin/com/google/protobuf/OnlyForUseByGeneratedProtoCode.kt\
+  java/kotlin/src/main/kotlin/com/google/protobuf/ProtoDslMarker.kt                \
+  java/kotlin/src/main/kotlin/com/google/protobuf/UnmodifiableCollections.kt       \
+  java/kotlin/src/test/kotlin/com/google/protobuf/DslListTest.kt                   \
+  java/kotlin/src/test/kotlin/com/google/protobuf/DslMapTest.kt                    \
+  java/kotlin/src/test/kotlin/com/google/protobuf/ExtendableMessageExtensionsTest.kt\
+  java/kotlin/src/test/kotlin/com/google/protobuf/ExtensionListTest.kt             \
+  java/kotlin/src/test/kotlin/com/google/protobuf/Proto2Test.kt                    \
+  java/kotlin/src/test/kotlin/com/google/protobuf/Proto3Test.kt                    \
+  java/kotlin/src/test/proto/com/google/protobuf/evil_names_proto2.proto           \
+  java/kotlin/src/test/proto/com/google/protobuf/evil_names_proto3.proto           \
+  java/kotlin/src/test/proto/com/google/protobuf/example_extensible_message.proto  \
+  java/kotlin/src/test/proto/com/google/protobuf/multiple_files_proto3.proto       \
+  java/kotlin-lite/generate-sources-build.xml                                      \
+  java/kotlin-lite/generate-test-sources-build.xml                                 \
+  java/kotlin-lite/lite.awk                                                        \
+  java/kotlin-lite/pom.xml                                                         \
+  java/kotlin-lite/process-lite-sources-build.xml                                  \
+  java/kotlin-lite/src/test/kotlin/com/google/protobuf/ExtendableMessageLiteExtensionsTest.kt\
+  java/kotlin-lite/src/test/kotlin/com/google/protobuf/Proto2LiteTest.kt           \
   java/lite.md                                                                     \
   java/lite/BUILD                                                                  \
   java/lite/generate-sources-build.xml                                             \
   java/lite/generate-test-sources-build.xml                                        \
   java/lite/lite.awk                                                               \
   java/lite/pom.xml                                                                \
+  java/lite/pom_template.xml                                                       \
   java/lite/process-lite-sources-build.xml                                         \
   java/lite/src/test/java/com/google/protobuf/LiteTest.java                        \
   java/lite/src/test/java/com/google/protobuf/Proto2MessageLiteInfoFactory.java    \
+  java/BUILD                                                                       \
   java/pom.xml                                                                     \
   java/util/BUILD                                                                  \
   java/util/pom.xml                                                                \
+  java/util/pom_template.xml                                                       \
   java/util/src/main/java/com/google/protobuf/util/Durations.java                  \
   java/util/src/main/java/com/google/protobuf/util/FieldMaskTree.java              \
   java/util/src/main/java/com/google/protobuf/util/FieldMaskUtil.java              \
   java/util/src/main/java/com/google/protobuf/util/JsonFormat.java                 \
-  java/util/src/main/java/com/google/protobuf/util/TimeUtil.java                   \
   java/util/src/main/java/com/google/protobuf/util/Structs.java                    \
   java/util/src/main/java/com/google/protobuf/util/Timestamps.java                 \
   java/util/src/main/java/com/google/protobuf/util/Values.java                     \
@@ -554,7 +588,6 @@ java_EXTRA_DIST=                                                                
   java/util/src/test/java/com/google/protobuf/util/FieldMaskUtilTest.java          \
   java/util/src/test/java/com/google/protobuf/util/JsonFormatTest.java             \
   java/util/src/test/java/com/google/protobuf/util/StructsTest.java                \
-  java/util/src/test/java/com/google/protobuf/util/TimeUtilTest.java               \
   java/util/src/test/java/com/google/protobuf/util/ValuesTest.java                 \
   java/util/src/test/proto/com/google/protobuf/util/json_test.proto
 
@@ -769,6 +802,7 @@ objectivec_EXTRA_DIST=                                                       \
 php_EXTRA_DIST=                                                       \
   composer.json                                                       \
   php/README.md                                                       \
+  php/REFCOUNTING.md                                                  \
   php/composer.json                                                   \
   php/ext/google/protobuf/arena.c                                     \
   php/ext/google/protobuf/arena.h                                     \
@@ -792,7 +826,7 @@ php_EXTRA_DIST=                                                       \
   php/ext/google/protobuf/protobuf.h                                  \
   php/ext/google/protobuf/wkt.inc                                     \
   php/generate_descriptor_protos.sh                                   \
-  php/phpunit.xml                                                     \
+  php/generate_test_protos.sh                                         \
   php/prepare_c_extension.sh                                          \
   php/release.sh                                                      \
   php/src/GPBMetadata/Google/Protobuf/Any.php                         \
@@ -921,14 +955,12 @@ php_EXTRA_DIST=                                                       \
   php/src/Google/Protobuf/Value.php                                   \
   php/src/phpdoc.dist.xml                                             \
   php/tests/ArrayTest.php                                             \
-  php/tests/autoload.php                                              \
-  php/tests/bootstrap_phpunit.php                                     \
   php/tests/compatibility_test.sh                                     \
   php/tests/compile_extension.sh                                      \
   php/tests/DescriptorsTest.php                                       \
   php/tests/EncodeDecodeTest.php                                      \
+  php/tests/force_c_ext.php                                           \
   php/tests/gdb_test.sh                                               \
-  php/tests/generate_protos.sh                                        \
   php/tests/GeneratedClassTest.php                                    \
   php/tests/GeneratedPhpdocTest.php                                   \
   php/tests/GeneratedServiceTest.php                                  \
@@ -955,10 +987,8 @@ php_EXTRA_DIST=                                                       \
   php/tests/proto/test_service.proto                                  \
   php/tests/proto/test_service_namespace.proto                        \
   php/tests/proto/test_wrapper_type_setters.proto                     \
-  php/tests/test.sh                                                   \
   php/tests/test_base.php                                             \
   php/tests/test_util.php                                             \
-  php/tests/undefined_test.php                                        \
   php/tests/valgrind.supp                                             \
   php/tests/WellKnownTest.php                                         \
   php/tests/WrapperTypeSettersTest.php
@@ -1008,7 +1038,6 @@ python_EXTRA_DIST=                                                           \
   python/google/protobuf/internal/packed_field_test.proto                    \
   python/google/protobuf/internal/proto_builder_test.py                      \
   python/google/protobuf/internal/python_message.py                          \
-  python/google/protobuf/internal/python_protobuf.cc                         \
   python/google/protobuf/internal/reflection_test.py                         \
   python/google/protobuf/internal/service_reflection_test.py                 \
   python/google/protobuf/internal/symbol_database_test.py                    \
@@ -1029,7 +1058,6 @@ python_EXTRA_DIST=                                                           \
   python/google/protobuf/json_format.py                                      \
   python/google/protobuf/message.py                                          \
   python/google/protobuf/message_factory.py                                  \
-  python/google/protobuf/python_protobuf.h                                   \
   python/google/protobuf/proto_api.h                                         \
   python/google/protobuf/proto_builder.py                                    \
   python/google/protobuf/pyext/README                                        \
@@ -1400,7 +1428,8 @@ EXTRA_DIST = $(@DIST_LANG@_EXTRA_DIST)   \
   third_party/zlib.BUILD                 \
   third_party/wyhash/LICENSE             \
   third_party/wyhash/wyhash.h            \
-  util/python/BUILD
+  util/python/BUILD                      \
+  internal.bzl
 
 
 # Deletes all the files generated by autogen.sh.

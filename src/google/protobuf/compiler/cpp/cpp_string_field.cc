@@ -162,14 +162,16 @@ void StringFieldGenerator::GenerateAccessorDeclarations(
       descriptor_);
   format(
       "$deprecated_attr$std::string* ${1$mutable_$name$$}$();\n"
-      "$deprecated_attr$std::string* ${1$$release_name$$}$();\n"
+      "PROTOBUF_MUST_USE_RESULT $deprecated_attr$std::string* "
+      "${1$$release_name$$}$();\n"
       "$deprecated_attr$void ${1$set_allocated_$name$$}$(std::string* "
       "$name$);\n",
       descriptor_);
   format(
       "private:\n"
       "const std::string& _internal_$name$() const;\n"
-      "void _internal_set_$name$(const std::string& value);\n"
+      "inline PROTOBUF_ALWAYS_INLINE void "
+      "_internal_set_$name$(const std::string& value);\n"
       "std::string* _internal_mutable_$name$();\n"
       "public:\n");
 
@@ -185,7 +187,7 @@ void StringFieldGenerator::GenerateInlineAccessorDefinitions(
   Formatter format(printer, variables_);
   format(
       "inline const std::string& $classname$::$name$() const {\n"
-      "$annotate_accessor$"
+      "$annotate_get$"
       "  // @@protoc_insertion_point(field_get:$full_name$)\n");
   if (!descriptor_->default_value_string().empty()) {
     format(
@@ -196,18 +198,19 @@ void StringFieldGenerator::GenerateInlineAccessorDefinitions(
       "  return _internal_$name$();\n"
       "}\n"
       "template <typename ArgT0, typename... ArgT>\n"
-      "PROTOBUF_ALWAYS_INLINE\n"
-      "inline void $classname$::set_$name$(ArgT0&& arg0, ArgT... args) {\n"
-      "$annotate_accessor$"
+      "inline PROTOBUF_ALWAYS_INLINE\n"
+      "void $classname$::set_$name$(ArgT0&& arg0, ArgT... args) {\n"
       " $set_hasbit$\n"
       " $name$_.$setter$($default_value_tag$, static_cast<ArgT0 &&>(arg0),"
-      " args..., GetArena());\n"
+      " args..., GetArenaForAllocation());\n"
+      "$annotate_set$"
       "  // @@protoc_insertion_point(field_set:$full_name$)\n"
       "}\n"
       "inline std::string* $classname$::mutable_$name$() {\n"
-      "$annotate_accessor$"
+      "  std::string* _s = _internal_mutable_$name$();\n"
+      "$annotate_mutable$"
       "  // @@protoc_insertion_point(field_mutable:$full_name$)\n"
-      "  return _internal_mutable_$name$();\n"
+      "  return _s;\n"
       "}\n"
       "inline const std::string& $classname$::_internal_$name$() const {\n"
       "  return $name$_.Get();\n"
@@ -215,15 +218,16 @@ void StringFieldGenerator::GenerateInlineAccessorDefinitions(
       "inline void $classname$::_internal_set_$name$(const std::string& "
       "value) {\n"
       "  $set_hasbit$\n"
-      "  $name$_.Set($default_value_tag$, value, GetArena());\n"
+      "  $name$_.Set($default_value_tag$, value, GetArenaForAllocation());\n"
       "}\n");
   format(
       "inline std::string* $classname$::_internal_mutable_$name$() {\n"
       "  $set_hasbit$\n"
-      "  return $name$_.Mutable($default_variable_or_tag$, GetArena());\n"
+      "  return $name$_.Mutable($default_variable_or_tag$, "
+      "GetArenaForAllocation());\n"
       "}\n"
       "inline std::string* $classname$::$release_name$() {\n"
-      "$annotate_accessor$"
+      "$annotate_release$"
       "  // @@protoc_insertion_point(field_release:$full_name$)\n");
 
   if (HasHasbit(descriptor_)) {
@@ -232,22 +236,24 @@ void StringFieldGenerator::GenerateInlineAccessorDefinitions(
         "    return nullptr;\n"
         "  }\n"
         "  $clear_hasbit$\n"
-        "  return $name$_.ReleaseNonDefault($init_value$, GetArena());\n");
+        "  return $name$_.ReleaseNonDefault($init_value$, "
+        "GetArenaForAllocation());\n");
   } else {
-    format("  return $name$_.Release($init_value$, GetArena());\n");
+    format(
+        "  return $name$_.Release($init_value$, GetArenaForAllocation());\n");
   }
 
   format(
       "}\n"
       "inline void $classname$::set_allocated_$name$(std::string* $name$) {\n"
-      "$annotate_accessor$"
       "  if ($name$ != nullptr) {\n"
       "    $set_hasbit$\n"
       "  } else {\n"
       "    $clear_hasbit$\n"
       "  }\n"
       "  $name$_.SetAllocated($init_value$, $name$,\n"
-      "      GetArena());\n"
+      "      GetArenaForAllocation());\n"
+      "$annotate_set$"
       "  // @@protoc_insertion_point(field_set_allocated:$full_name$)\n"
       "}\n");
 }
@@ -268,7 +274,8 @@ void StringFieldGenerator::GenerateClearingCode(io::Printer* printer) const {
   if (descriptor_->default_value_string().empty()) {
     format("$name$_.ClearToEmpty();\n");
   } else {
-    format("$name$_.ClearToDefault($lazy_variable$, GetArena());\n");
+    format(
+        "$name$_.ClearToDefault($lazy_variable$, GetArenaForAllocation());\n");
   }
 }
 
@@ -294,7 +301,8 @@ void StringFieldGenerator::GenerateMessageClearingCode(
   } else {
     // Clear to a non-empty default is more involved, as we try to use the
     // Arena if one is present and may need to reallocate the string.
-    format("$name$_.ClearToDefault($lazy_variable$, GetArena());\n ");
+    format(
+        "$name$_.ClearToDefault($lazy_variable$, GetArenaForAllocation());\n ");
   }
 }
 
@@ -306,7 +314,12 @@ void StringFieldGenerator::GenerateMergingCode(io::Printer* printer) const {
 
 void StringFieldGenerator::GenerateSwappingCode(io::Printer* printer) const {
   Formatter format(printer, variables_);
-  format("$name$_.Swap(&other->$name$_, $init_value$, GetArena());\n");
+  format(
+      "::$proto_ns$::internal::ArenaStringPtr::InternalSwap(\n"
+      "    $init_value$,\n"
+      "    &$name$_, GetArenaForAllocation(),\n"
+      "    &other->$name$_, other->GetArenaForAllocation()\n"
+      ");\n");
 }
 
 void StringFieldGenerator::GenerateConstructorCode(io::Printer* printer) const {
@@ -330,7 +343,7 @@ void StringFieldGenerator::GenerateCopyConstructorCode(
   // TODO(gpike): improve this
   format(
       "$name$_.Set($default_value_tag$, from._internal_$name$(), \n"
-      "  GetArena());\n");
+      "  GetArenaForAllocation());\n");
 
   format.Outdent();
   format("}\n");
@@ -392,26 +405,27 @@ void StringOneofFieldGenerator::GenerateInlineAccessorDefinitions(
   Formatter format(printer, variables_);
   format(
       "inline const std::string& $classname$::$name$() const {\n"
-      "$annotate_accessor$"
+      "$annotate_get$"
       "  // @@protoc_insertion_point(field_get:$full_name$)\n"
       "  return _internal_$name$();\n"
       "}\n"
       "template <typename ArgT0, typename... ArgT>\n"
       "inline void $classname$::set_$name$(ArgT0&& arg0, ArgT... args) {\n"
-      "$annotate_accessor$"
       "  if (!_internal_has_$name$()) {\n"
       "    clear_$oneof_name$();\n"
       "    set_has_$name$();\n"
       "    $field_member$.UnsafeSetDefault($init_value$);\n"
       "  }\n"
       "  $field_member$.$setter$($default_value_tag$,"
-      " static_cast<ArgT0 &&>(arg0), args..., GetArena());\n"
+      " static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());\n"
+      "$annotate_set$"
       "  // @@protoc_insertion_point(field_set:$full_name$)\n"
       "}\n"
       "inline std::string* $classname$::mutable_$name$() {\n"
-      "$annotate_accessor$"
+      "  std::string* _s = _internal_mutable_$name$();\n"
+      "$annotate_mutable$"
       "  // @@protoc_insertion_point(field_mutable:$full_name$)\n"
-      "  return _internal_mutable_$name$();\n"
+      "  return _s;\n"
       "}\n"
       "inline const std::string& $classname$::_internal_$name$() const {\n"
       "  if (_internal_has_$name$()) {\n"
@@ -426,7 +440,8 @@ void StringOneofFieldGenerator::GenerateInlineAccessorDefinitions(
       "    set_has_$name$();\n"
       "    $field_member$.UnsafeSetDefault($init_value$);\n"
       "  }\n"
-      "  $field_member$.Set($default_value_tag$, value, GetArena());\n"
+      "  $field_member$.Set($default_value_tag$, value, "
+      "GetArenaForAllocation());\n"
       "}\n");
   format(
       "inline std::string* $classname$::_internal_mutable_$name$() {\n"
@@ -436,31 +451,32 @@ void StringOneofFieldGenerator::GenerateInlineAccessorDefinitions(
       "    $field_member$.UnsafeSetDefault($init_value$);\n"
       "  }\n"
       "  return $field_member$.Mutable(\n"
-      "      $default_variable_or_tag$, GetArena());\n"
+      "      $default_variable_or_tag$, GetArenaForAllocation());\n"
       "}\n"
       "inline std::string* $classname$::$release_name$() {\n"
-      "$annotate_accessor$"
+      "$annotate_release$"
       "  // @@protoc_insertion_point(field_release:$full_name$)\n"
       "  if (_internal_has_$name$()) {\n"
       "    clear_has_$oneof_name$();\n"
-      "    return $field_member$.ReleaseNonDefault($init_value$, GetArena());\n"
+      "    return $field_member$.ReleaseNonDefault($init_value$, "
+      "GetArenaForAllocation());\n"
       "  } else {\n"
       "    return nullptr;\n"
       "  }\n"
       "}\n"
       "inline void $classname$::set_allocated_$name$(std::string* $name$) {\n"
-      "$annotate_accessor$"
       "  if (has_$oneof_name$()) {\n"
       "    clear_$oneof_name$();\n"
       "  }\n"
       "  if ($name$ != nullptr) {\n"
       "    set_has_$name$();\n"
       "    $field_member$.UnsafeSetDefault($name$);\n"
-      "    ::$proto_ns$::Arena* arena = GetArena();\n"
+      "    ::$proto_ns$::Arena* arena = GetArenaForAllocation();\n"
       "    if (arena != nullptr) {\n"
       "      arena->Own($name$);\n"
       "    }\n"
       "  }\n"
+      "$annotate_set$"
       "  // @@protoc_insertion_point(field_set_allocated:$full_name$)\n"
       "}\n");
 }
@@ -468,7 +484,9 @@ void StringOneofFieldGenerator::GenerateInlineAccessorDefinitions(
 void StringOneofFieldGenerator::GenerateClearingCode(
     io::Printer* printer) const {
   Formatter format(printer, variables_);
-  format("$field_member$.Destroy($default_value_tag$, GetArena());\n");
+  format(
+      "$field_member$.Destroy($default_value_tag$, "
+      "GetArenaForAllocation());\n");
 }
 
 void StringOneofFieldGenerator::GenerateMessageClearingCode(
@@ -574,9 +592,10 @@ void RepeatedStringFieldGenerator::GenerateInlineAccessorDefinitions(
   Formatter format(printer, variables_);
   format(
       "inline std::string* $classname$::add_$name$() {\n"
-      "$annotate_accessor$"
+      "  std::string* _s = _internal_add_$name$();\n"
+      "$annotate_add_mutable$"
       "  // @@protoc_insertion_point(field_add_mutable:$full_name$)\n"
-      "  return _internal_add_$name$();\n"
+      "  return _s;\n"
       "}\n");
   if (options_.safe_boundary_check) {
     format(
@@ -594,39 +613,39 @@ void RepeatedStringFieldGenerator::GenerateInlineAccessorDefinitions(
   }
   format(
       "inline const std::string& $classname$::$name$(int index) const {\n"
-      "$annotate_accessor$"
+      "$annotate_get$"
       "  // @@protoc_insertion_point(field_get:$full_name$)\n"
       "  return _internal_$name$(index);\n"
       "}\n"
       "inline std::string* $classname$::mutable_$name$(int index) {\n"
-      "$annotate_accessor$"
+      "$annotate_mutable$"
       "  // @@protoc_insertion_point(field_mutable:$full_name$)\n"
       "  return $name$_.Mutable(index);\n"
       "}\n"
       "inline void $classname$::set_$name$(int index, const std::string& "
       "value) "
       "{\n"
-      "$annotate_accessor$"
-      "  // @@protoc_insertion_point(field_set:$full_name$)\n"
       "  $name$_.Mutable(index)->assign(value);\n"
+      "$annotate_set$"
+      "  // @@protoc_insertion_point(field_set:$full_name$)\n"
       "}\n"
       "inline void $classname$::set_$name$(int index, std::string&& value) {\n"
-      "$annotate_accessor$"
-      "  // @@protoc_insertion_point(field_set:$full_name$)\n"
       "  $name$_.Mutable(index)->assign(std::move(value));\n"
+      "$annotate_set$"
+      "  // @@protoc_insertion_point(field_set:$full_name$)\n"
       "}\n"
       "inline void $classname$::set_$name$(int index, const char* value) {\n"
-      "$annotate_accessor$"
       "  $null_check$"
       "  $name$_.Mutable(index)->assign(value);\n"
+      "$annotate_set$"
       "  // @@protoc_insertion_point(field_set_char:$full_name$)\n"
       "}\n");
   if (!options_.opensource_runtime) {
     format(
         "inline void "
         "$classname$::set_$name$(int index, StringPiece value) {\n"
-        "$annotate_accessor$"
         "  $name$_.Mutable(index)->assign(value.data(), value.size());\n"
+        "$annotate_set$"
         "  // @@protoc_insertion_point(field_set_string_piece:$full_name$)\n"
         "}\n");
   }
@@ -634,54 +653,54 @@ void RepeatedStringFieldGenerator::GenerateInlineAccessorDefinitions(
       "inline void "
       "$classname$::set_$name$"
       "(int index, const $pointer_type$* value, size_t size) {\n"
-      "$annotate_accessor$"
       "  $name$_.Mutable(index)->assign(\n"
       "    reinterpret_cast<const char*>(value), size);\n"
+      "$annotate_set$"
       "  // @@protoc_insertion_point(field_set_pointer:$full_name$)\n"
       "}\n"
       "inline std::string* $classname$::_internal_add_$name$() {\n"
       "  return $name$_.Add();\n"
       "}\n"
       "inline void $classname$::add_$name$(const std::string& value) {\n"
-      "$annotate_accessor$"
       "  $name$_.Add()->assign(value);\n"
+      "$annotate_add$"
       "  // @@protoc_insertion_point(field_add:$full_name$)\n"
       "}\n"
       "inline void $classname$::add_$name$(std::string&& value) {\n"
-      "$annotate_accessor$"
       "  $name$_.Add(std::move(value));\n"
+      "$annotate_add$"
       "  // @@protoc_insertion_point(field_add:$full_name$)\n"
       "}\n"
       "inline void $classname$::add_$name$(const char* value) {\n"
-      "$annotate_accessor$"
       "  $null_check$"
       "  $name$_.Add()->assign(value);\n"
+      "$annotate_add$"
       "  // @@protoc_insertion_point(field_add_char:$full_name$)\n"
       "}\n");
   if (!options_.opensource_runtime) {
     format(
         "inline void $classname$::add_$name$(StringPiece value) {\n"
-        "$annotate_accessor$"
         "  $name$_.Add()->assign(value.data(), value.size());\n"
+        "$annotate_add$"
         "  // @@protoc_insertion_point(field_add_string_piece:$full_name$)\n"
         "}\n");
   }
   format(
       "inline void "
       "$classname$::add_$name$(const $pointer_type$* value, size_t size) {\n"
-      "$annotate_accessor$"
       "  $name$_.Add()->assign(reinterpret_cast<const char*>(value), size);\n"
+      "$annotate_add$"
       "  // @@protoc_insertion_point(field_add_pointer:$full_name$)\n"
       "}\n"
       "inline const ::$proto_ns$::RepeatedPtrField<std::string>&\n"
       "$classname$::$name$() const {\n"
-      "$annotate_accessor$"
+      "$annotate_list$"
       "  // @@protoc_insertion_point(field_list:$full_name$)\n"
       "  return $name$_;\n"
       "}\n"
       "inline ::$proto_ns$::RepeatedPtrField<std::string>*\n"
       "$classname$::mutable_$name$() {\n"
-      "$annotate_accessor$"
+      "$annotate_mutable_list$"
       "  // @@protoc_insertion_point(field_mutable_list:$full_name$)\n"
       "  return &$name$_;\n"
       "}\n");
