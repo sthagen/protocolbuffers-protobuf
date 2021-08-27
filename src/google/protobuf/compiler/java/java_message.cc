@@ -316,7 +316,6 @@ void ImmutableMessageGenerator::Generate(io::Printer* printer) {
   WriteMessageDocComment(printer, descriptor_);
   MaybePrintGeneratedAnnotation(context_, printer, descriptor_,
                                 /* immutable = */ true);
-
   // The builder_type stores the super type name of the nested Builder class.
   std::string builder_type;
   if (descriptor_->extension_range_count() > 0) {
@@ -1457,7 +1456,7 @@ void ImmutableMessageGenerator::GenerateKotlinMembers(
     io::Printer* printer) const {
   printer->Print(
       "@kotlin.jvm.JvmSynthetic\n"
-      "inline fun $camelcase_name$(block: $message_kt$.Dsl.() -> Unit): "
+      "inline fun $camelcase_name$(block: $message_kt$.Dsl.() -> kotlin.Unit): "
       "$message$ "
       "=\n"
       "  $message_kt$.Dsl._create($message$.newBuilder()).apply { block() "
@@ -1482,7 +1481,7 @@ void ImmutableMessageGenerator::GenerateTopLevelKotlinMembers(
     io::Printer* printer) const {
   printer->Print(
       "@kotlin.jvm.JvmSynthetic\n"
-      "inline fun $message$.copy(block: $message_kt$.Dsl.() -> Unit): "
+      "inline fun $message$.copy(block: $message_kt$.Dsl.() -> kotlin.Unit): "
       "$message$ =\n"
       "  $message_kt$.Dsl._create(this.toBuilder()).apply { block() "
       "}._build()\n",
@@ -1556,6 +1555,7 @@ void ImmutableMessageGenerator::GenerateKotlinExtensions(
 
   printer->Print(
       "@kotlin.jvm.JvmSynthetic\n"
+      "@Suppress(\"NOTHING_TO_INLINE\")\n"
       "inline operator fun <T : Comparable<T>> set(\n"
       "  extension: com.google.protobuf.ExtensionLite<$message$, T>,\n"
       "  value: T\n"
@@ -1566,6 +1566,7 @@ void ImmutableMessageGenerator::GenerateKotlinExtensions(
 
   printer->Print(
       "@kotlin.jvm.JvmSynthetic\n"
+      "@Suppress(\"NOTHING_TO_INLINE\")\n"
       "inline operator fun set(\n"
       "  extension: com.google.protobuf.ExtensionLite<$message$, "
       "com.google.protobuf.ByteString>,\n"
@@ -1577,6 +1578,7 @@ void ImmutableMessageGenerator::GenerateKotlinExtensions(
 
   printer->Print(
       "@kotlin.jvm.JvmSynthetic\n"
+      "@Suppress(\"NOTHING_TO_INLINE\")\n"
       "inline operator fun <T : com.google.protobuf.MessageLite> set(\n"
       "  extension: com.google.protobuf.ExtensionLite<$message$, T>,\n"
       "  value: T\n"
@@ -1595,6 +1597,7 @@ void ImmutableMessageGenerator::GenerateKotlinExtensions(
 
   printer->Print(
       "@kotlin.jvm.JvmSynthetic\n"
+      "@Suppress(\"NOTHING_TO_INLINE\")\n"
       "inline operator fun <E> com.google.protobuf.kotlin.ExtensionList<E, "
       "$message$>.plusAssign"
       "(value: E) {\n"
@@ -1614,6 +1617,7 @@ void ImmutableMessageGenerator::GenerateKotlinExtensions(
 
   printer->Print(
       "@kotlin.jvm.JvmSynthetic\n"
+      "@Suppress(\"NOTHING_TO_INLINE\")\n"
       "inline operator fun <E> com.google.protobuf.kotlin.ExtensionList<E, "
       "$message$>.plusAssign(values: "
       "Iterable<E>) {\n"
@@ -1632,6 +1636,7 @@ void ImmutableMessageGenerator::GenerateKotlinExtensions(
 
   printer->Print(
       "@kotlin.jvm.JvmSynthetic\n"
+      "@Suppress(\"NOTHING_TO_INLINE\")\n"
       "inline fun com.google.protobuf.kotlin.ExtensionList<*, "
       "$message$>.clear() {\n"
       "  clear(extension)\n"

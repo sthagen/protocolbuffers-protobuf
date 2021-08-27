@@ -569,9 +569,14 @@ void RepeatedImmutableEnumFieldLiteGenerator::GenerateMembers(
   WriteFieldAccessorDocComment(printer, descriptor_, LIST_INDEXED_GETTER);
   printer->Print(
       variables_,
+      // NB: Do not use the "$name$_converter_" field; the usage of generics
+      // (and requisite upcasts to Object) prevent optimizations.  Even
+      // without any optimizations, the below code is cheaper because it
+      // avoids boxing an int and a checkcast from the generics.
       "@java.lang.Override\n"
       "$deprecation$public $type$ ${$get$capitalized_name$$}$(int index) {\n"
-      "  return $name$_converter_.convert($name$_.getInt(index));\n"
+      "  $type$ result = $type$.forNumber($name$_.getInt(index));\n"
+      "  return result == null ? $unknown$ : result;\n"
       "}\n");
   printer->Annotate("{", "}", descriptor_);
   if (SupportUnknownEnumValue(descriptor_->file())) {
@@ -847,6 +852,7 @@ void RepeatedImmutableEnumFieldLiteGenerator::GenerateKotlinDslMembers(
   printer->Print(variables_,
                  "@kotlin.jvm.JvmSynthetic\n"
                  "@kotlin.jvm.JvmName(\"plusAssign$kt_capitalized_name$\")\n"
+                 "@Suppress(\"NOTHING_TO_INLINE\")\n"
                  "inline operator fun com.google.protobuf.kotlin.DslList"
                  "<$kt_type$, ${$$kt_capitalized_name$Proxy$}$>."
                  "plusAssign(value: $kt_type$) {\n"
@@ -870,6 +876,7 @@ void RepeatedImmutableEnumFieldLiteGenerator::GenerateKotlinDslMembers(
       variables_,
       "@kotlin.jvm.JvmSynthetic\n"
       "@kotlin.jvm.JvmName(\"plusAssignAll$kt_capitalized_name$\")\n"
+      "@Suppress(\"NOTHING_TO_INLINE\")\n"
       "inline operator fun com.google.protobuf.kotlin.DslList"
       "<$kt_type$, ${$$kt_capitalized_name$Proxy$}$>."
       "plusAssign(values: kotlin.collections.Iterable<$kt_type$>) {\n"

@@ -28,25 +28,23 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <google/protobuf/field_access_listener.h>
+package com.google.protobuf.kotlin
 
-#include <google/protobuf/stubs/once.h>
+import com.google.protobuf.ByteString
+import java.nio.ByteBuffer
 
-namespace google {
-namespace protobuf {
+/** Encodes this String into a sequence of UTF-8 bytes and returns the result as a [ByteString]. */
+fun String.toByteStringUtf8(): ByteString = ByteString.copyFromUtf8(this)
+// symmetric from ByteString.toStringUtf8()
 
-internal::once_flag FieldAccessListener::register_once_ = {};
-FieldAccessListener* FieldAccessListener::field_listener_ = nullptr;
+/** Concatenates the given [ByteString] to this one. */
+operator fun ByteString.plus(other: ByteString): ByteString = concat(other)
 
-FieldAccessListener* FieldAccessListener::GetListener() {
-  return field_listener_;
-}
+/** Gets the byte at [index]. */
+operator fun ByteString.get(index: Int): Byte = byteAt(index)
 
-void FieldAccessListener::RegisterListener(FieldAccessListener* listener) {
-  // TODO(danilak): Add a GOOGLE_DCHECK for message_injector_ to be nullptr and update
-  // tests.
-  internal::call_once(register_once_, [&] { field_listener_ = listener; });
-}
+/** Returns a copy of this [ByteArray] as an immutable [ByteString]. */
+fun ByteArray.toByteString(): ByteString = ByteString.copyFrom(this)
 
-}  // namespace protobuf
-}  // namespace google
+/** Copies the remaining bytes from this [ByteBuffer] to a [ByteString]. */
+fun ByteBuffer.toByteString(): ByteString = ByteString.copyFrom(this)

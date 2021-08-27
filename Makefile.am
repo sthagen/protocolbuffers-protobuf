@@ -536,6 +536,7 @@ java_EXTRA_DIST=                                                                
   java/kotlin/generate-sources-build.xml                                           \
   java/kotlin/generate-test-sources-build.xml                                      \
   java/kotlin/pom.xml                                                              \
+  java/kotlin/src/main/kotlin/com/google/protobuf/ByteStrings.kt                   \
   java/kotlin/src/main/kotlin/com/google/protobuf/DslList.kt                       \
   java/kotlin/src/main/kotlin/com/google/protobuf/DslMap.kt                        \
   java/kotlin/src/main/kotlin/com/google/protobuf/DslProxy.kt                      \
@@ -545,6 +546,7 @@ java_EXTRA_DIST=                                                                
   java/kotlin/src/main/kotlin/com/google/protobuf/OnlyForUseByGeneratedProtoCode.kt\
   java/kotlin/src/main/kotlin/com/google/protobuf/ProtoDslMarker.kt                \
   java/kotlin/src/main/kotlin/com/google/protobuf/UnmodifiableCollections.kt       \
+  java/kotlin/src/test/kotlin/com/google/protobuf/ByteStringsTest.kt               \
   java/kotlin/src/test/kotlin/com/google/protobuf/DslListTest.kt                   \
   java/kotlin/src/test/kotlin/com/google/protobuf/DslMapTest.kt                    \
   java/kotlin/src/test/kotlin/com/google/protobuf/ExtendableMessageExtensionsTest.kt\
@@ -827,7 +829,6 @@ php_EXTRA_DIST=                                                       \
   php/ext/google/protobuf/wkt.inc                                     \
   php/generate_descriptor_protos.sh                                   \
   php/generate_test_protos.sh                                         \
-  php/prepare_c_extension.sh                                          \
   php/release.sh                                                      \
   php/src/GPBMetadata/Google/Protobuf/Any.php                         \
   php/src/GPBMetadata/Google/Protobuf/Api.php                         \
@@ -1038,6 +1039,7 @@ python_EXTRA_DIST=                                                           \
   python/google/protobuf/internal/packed_field_test.proto                    \
   python/google/protobuf/internal/proto_builder_test.py                      \
   python/google/protobuf/internal/python_message.py                          \
+  python/google/protobuf/internal/python_protobuf.cc                         \
   python/google/protobuf/internal/reflection_test.py                         \
   python/google/protobuf/internal/service_reflection_test.py                 \
   python/google/protobuf/internal/symbol_database_test.py                    \
@@ -1092,6 +1094,7 @@ python_EXTRA_DIST=                                                           \
   python/google/protobuf/pyext/repeated_scalar_container.h                   \
   python/google/protobuf/pyext/safe_numerics.h                               \
   python/google/protobuf/pyext/scoped_pyobject_ptr.h                         \
+  python/google/protobuf/python_protobuf.h                                   \
   python/google/protobuf/reflection.py                                       \
   python/google/protobuf/service.py                                          \
   python/google/protobuf/service_reflection.py                               \
@@ -1138,6 +1141,7 @@ ruby_EXTRA_DIST=                                                             \
   ruby/ext/google/protobuf_c/ruby-upb.h                                      \
   ruby/ext/google/protobuf_c/wrap_memcpy.c                                   \
   ruby/google-protobuf.gemspec                                               \
+  ruby/lib/google/protobuf/descriptor_dsl.rb                                 \
   ruby/lib/google/protobuf/message_exts.rb                                   \
   ruby/lib/google/protobuf/repeated_field.rb                                 \
   ruby/lib/google/protobuf/well_known_types.rb                               \
@@ -1426,8 +1430,6 @@ EXTRA_DIST = $(@DIST_LANG@_EXTRA_DIST)   \
   protobuf_deps.bzl                      \
   third_party/six.BUILD                  \
   third_party/zlib.BUILD                 \
-  third_party/wyhash/LICENSE             \
-  third_party/wyhash/wyhash.h            \
   util/python/BUILD                      \
   internal.bzl
 
