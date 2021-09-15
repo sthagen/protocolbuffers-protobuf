@@ -1437,7 +1437,8 @@ void MessageGenerator::GenerateClassDefinition(io::Printer* printer) {
   if (EnableMessageOwnedArena(descriptor_)) {
     format(
         "inline $classname$() : $classname$("
-        "new ::$proto_ns$::Arena(), true) {}\n");
+        "::$proto_ns$::Arena::InternalHelper<$classname$>::\n"
+        "    CreateMessageOwnedArena(), true) {}\n");
   } else {
     format("inline $classname$() : $classname$(nullptr) {}\n");
   }
@@ -1530,10 +1531,8 @@ void MessageGenerator::GenerateClassDefinition(io::Printer* printer) {
     format("enum $1$Case {\n", UnderscoresToCamelCase(oneof->name(), true));
     format.Indent();
     for (auto field : FieldRange(oneof)) {
-      std::string oneof_enum_case_field_name =
-          UnderscoresToCamelCase(field->name(), true);
-      format("k$1$ = $2$,\n", oneof_enum_case_field_name,  // 1
-             field->number());                             // 2
+      format("$1$ = $2$,\n", OneofCaseConstantName(field),  // 1
+             field->number());                              // 2
     }
     format("$1$_NOT_SET = 0,\n", ToUpper(oneof->name()));
     format.Outdent();
@@ -1717,12 +1716,6 @@ void MessageGenerator::GenerateClassDefinition(io::Printer* printer) {
           "$uint8$* _InternalSerialize(\n"
           "    $uint8$* target, ::$proto_ns$::io::EpsCopyOutputStream* stream) "
           "const final;\n");
-
-      // DiscardUnknownFields() is implemented in message.cc using reflections.
-      // We need to implement this function in generated code for messages.
-      if (!UseUnknownFieldSet(descriptor_->file(), options_)) {
-        format("void DiscardUnknownFields()$ full_final$;\n");
-      }
     }
   }
 
