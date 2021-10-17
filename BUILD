@@ -26,7 +26,6 @@ ZLIB_DEPS = ["@zlib//:zlib"]
 ################################################################################
 
 MSVC_COPTS = [
-    "/DHAVE_PTHREAD",
     "/wd4018",  # -Wno-sign-compare
     "/wd4065",  # switch statement contains 'default' but no 'case' labels
     "/wd4146",  # unary minus operator applied to unsigned type, result still unsigned
@@ -46,7 +45,6 @@ MSVC_COPTS = [
 COPTS = select({
     ":msvc": MSVC_COPTS,
     "//conditions:default": [
-        "-DHAVE_PTHREAD",
         "-DHAVE_ZLIB",
         "-Wmissing-field-initializers",
         "-Woverloaded-virtual",
@@ -65,10 +63,28 @@ create_compiler_config_setting(
     ],
 )
 
+# Android NDK builds can specify different crosstool_top flags to choose which
+# STL they use for C++. We need these multiple variants to catch all of those
+# versions of crosstool_top and reliably detect Android.
+#
+# For more info on the various crosstool_tops used by NDK Bazel builds, see:
+# https://docs.bazel.build/versions/master/android-ndk.html#configuring-the-stl
+
 config_setting(
     name = "android",
     values = {
         "crosstool_top": "//external:android/crosstool",
+    },
+    visibility = [
+        # Public, but Protobuf only visibility.
+        "//:__subpackages__",
+    ],
+)
+
+config_setting(
+    name = "android-stlport",
+    values = {
+        "crosstool_top": "@androidndk//:toolchain-stlport",
     },
     visibility = [
         # Public, but Protobuf only visibility.
@@ -98,11 +114,24 @@ config_setting(
     ],
 )
 
+config_setting(
+    name = "android-default",
+    values = {
+        "crosstool_top": "@androidndk//:default_crosstool",
+    },
+    visibility = [
+        # Public, but Protobuf only visibility.
+        "//:__subpackages__",
+    ],
+)
+
 # Android and MSVC builds do not need to link in a separate pthread library.
 LINK_OPTS = select({
     ":android": [],
+    ":android-stlport": [],
     ":android-libcpp": [],
     ":android-gnu-libstdcpp": [],
+    ":android-default": [],
     ":msvc": [
         # Suppress linker warnings about files with no symbols defined.
         "-ignore:4221",
@@ -147,6 +176,7 @@ cc_library(
         "src/google/protobuf/message_lite.cc",
         "src/google/protobuf/parse_context.cc",
         "src/google/protobuf/repeated_field.cc",
+        "src/google/protobuf/repeated_ptr_field.cc",
         "src/google/protobuf/stubs/bytestream.cc",
         "src/google/protobuf/stubs/common.cc",
         "src/google/protobuf/stubs/int128.cc",
@@ -953,7 +983,6 @@ py_proto_library(
     protoc = ":protoc",
     py_libs = [
         ":python_srcs",
-        "@six//:six",
     ],
     srcs_version = "PY2AND3",
     visibility = ["//visibility:public"],
