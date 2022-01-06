@@ -54,6 +54,7 @@ csharp_EXTRA_DIST=                                                           \
   csharp/CHANGES.txt                                                         \
   csharp/Google.Protobuf.Tools.targets                                       \
   csharp/Google.Protobuf.Tools.nuspec                                        \
+  csharp/NuGet.Config                                                        \
   csharp/README.md                                                           \
   csharp/build_packages.bat                                                  \
   csharp/build_tools.sh                                                      \
@@ -181,10 +182,14 @@ csharp_EXTRA_DIST=                                                           \
   csharp/src/Google.Protobuf/Collections/ProtobufEqualityComparers.cs        \
   csharp/src/Google.Protobuf/Collections/ReadOnlyDictionary.cs               \
   csharp/src/Google.Protobuf/Collections/RepeatedField.cs                    \
+  csharp/src/Google.Protobuf/Compatibility/DynamicallyAccessedMembersAttribute.cs \
+  csharp/src/Google.Protobuf/Compatibility/DynamicallyAccessedMemberTypes.cs \
   csharp/src/Google.Protobuf/Compatibility/MethodInfoExtensions.cs           \
   csharp/src/Google.Protobuf/Compatibility/PropertyInfoExtensions.cs         \
+  csharp/src/Google.Protobuf/Compatibility/RequiresUnreferencedCodeAttribute.cs \
   csharp/src/Google.Protobuf/Compatibility/StreamExtensions.cs               \
   csharp/src/Google.Protobuf/Compatibility/TypeExtensions.cs                 \
+  csharp/src/Google.Protobuf/Compatibility/UnconditionalSuppressMessageAttribute.cs \
   csharp/src/Google.Protobuf/Extension.cs                                    \
   csharp/src/Google.Protobuf/ExtensionRegistry.cs                            \
   csharp/src/Google.Protobuf/ExtensionSet.cs                                 \
@@ -464,13 +469,11 @@ java_EXTRA_DIST=                                                                
   java/core/src/test/java/com/google/protobuf/Proto2ExtensionLookupSchemaTest.java \
   java/core/src/test/java/com/google/protobuf/Proto2LiteSchemaTest.java            \
   java/core/src/test/java/com/google/protobuf/Proto2MessageFactory.java            \
-  java/core/src/test/java/com/google/protobuf/Proto2MessageInfoFactory.java        \
   java/core/src/test/java/com/google/protobuf/Proto2MessageLiteFactory.java        \
   java/core/src/test/java/com/google/protobuf/Proto2SchemaTest.java                \
   java/core/src/test/java/com/google/protobuf/Proto2UnknownEnumValueTest.java      \
   java/core/src/test/java/com/google/protobuf/Proto3LiteSchemaTest.java            \
   java/core/src/test/java/com/google/protobuf/Proto3MessageFactory.java            \
-  java/core/src/test/java/com/google/protobuf/Proto3MessageInfoFactory.java        \
   java/core/src/test/java/com/google/protobuf/Proto3MessageLiteFactory.java        \
   java/core/src/test/java/com/google/protobuf/Proto3MessageLiteInfoFactory.java    \
   java/core/src/test/java/com/google/protobuf/Proto3SchemaTest.java                \
@@ -493,9 +496,9 @@ java_EXTRA_DIST=                                                                
   java/core/src/test/java/com/google/protobuf/TypeRegistryTest.java                \
   java/core/src/test/java/com/google/protobuf/UnknownEnumValueTest.java            \
   java/core/src/test/java/com/google/protobuf/UnknownFieldSetTest.java             \
+  java/core/src/test/java/com/google/protobuf/UnknownFieldSetPerformanceTest.java             \
   java/core/src/test/java/com/google/protobuf/UnmodifiableLazyStringListTest.java  \
   java/core/src/test/java/com/google/protobuf/Utf8Test.java                        \
-  java/core/src/test/java/com/google/protobuf/Utf8Utils.java                       \
   java/core/src/test/java/com/google/protobuf/WellKnownTypesTest.java              \
   java/core/src/test/java/com/google/protobuf/WireFormatLiteTest.java              \
   java/core/src/test/java/com/google/protobuf/WireFormatTest.java                  \
@@ -512,7 +515,6 @@ java_EXTRA_DIST=                                                                
   java/core/src/test/proto/com/google/protobuf/map_initialization_order_test.proto \
   java/core/src/test/proto/com/google/protobuf/map_lite_test.proto                 \
   java/core/src/test/proto/com/google/protobuf/map_test.proto                      \
-  java/core/src/test/proto/com/google/protobuf/message_lite_extension_util_test.proto\
   java/core/src/test/proto/com/google/protobuf/multiple_files_test.proto           \
   java/core/src/test/proto/com/google/protobuf/nested_builders_test.proto          \
   java/core/src/test/proto/com/google/protobuf/nested_extension.proto              \
@@ -1429,6 +1431,7 @@ EXTRA_DIST = $(@DIST_LANG@_EXTRA_DIST)              \
   maven_install.json                                \
   protobuf.bzl                                      \
   protobuf_deps.bzl                                 \
+  protobuf_release.bzl                              \
   protobuf_version.bzl                              \
   third_party/zlib.BUILD                            \
   util/python/BUILD                                 \
