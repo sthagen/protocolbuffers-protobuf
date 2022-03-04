@@ -28,15 +28,18 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-syntax = "proto3";
+package com.google.protobuf.kotlin
 
-package protobuf.kotlin.generator;
+import com.google.protobuf.Any as ProtoAny
+import com.google.protobuf.Message
 
-option java_package = "com.google.protobuf.kotlin.generator";
-option java_multiple_files = true;
+/** Returns `true` if this [com.google.protobuf.Any] contains a message of type `T`. */
+inline fun <reified T : Message> ProtoAny.isA(): Boolean = this.`is`(T::class.java)
 
-enum NestedEnum { FOO = 0; }
-
-message MultipleFilesMessageA {}
-
-message MultipleFilesMessageB {}
+/**
+ * Returns the message of type `T` encoded in this [com.google.protobuf.Any].
+ *
+ * @throws InvalidProtocolBufferException if this [com.google.protobuf.Any] does not contain a `T`
+ * message.
+ */
+inline fun <reified T : Message> ProtoAny.unpack(): T = unpack(T::class.java)

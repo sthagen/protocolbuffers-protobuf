@@ -28,66 +28,22 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// LINT: LEGACY_NAMES
-syntax = "proto2";
+package com.google.protobuf;
 
-package protobuf.kotlin.generator;
+import static com.google.common.truth.Truth.assertThat;
 
-option java_package = "com.google.protobuf.kotlin.generator";
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-message EvilNamesProto2 {
-  optional bool initialized = 1;
-  optional bool has_foo = 2;
-  optional string Bar = 3;
-  optional bool is_initialized = 4;
+@RunWith(JUnit4.class)
+public class InvalidProtocolBufferExceptionTest {
 
-  oneof camelCase {
-    string fooBar = 5;
+  @Test
+  public void testWrapRuntimeException() {
+    ArrayIndexOutOfBoundsException root = new ArrayIndexOutOfBoundsException();
+    InvalidProtocolBufferException wrapper = new InvalidProtocolBufferException(root);
+    assertThat(wrapper).hasCauseThat().isEqualTo(root);
   }
 
-  repeated string ALL_CAPS = 7;
-  map<int32, bool> ALL_CAPS_MAP = 8;
-
-  optional bool has_underbar_preceding_numeric_1foo = 9;
-  optional bool has_underbar_preceding_numeric_42bar = 13;
-  optional bool has_underbar_preceding_numeric_123foo42bar_baz = 14;
-
-  extensions 100 to max;
-
-  repeated string extension = 12;
-  repeated int32 class = 15;
-  optional double int = 16;
-  optional bool long = 17;
-  optional int64 boolean = 18;
-  optional string sealed = 19;
-  optional float interface = 20;
-  optional int32 in = 21;
-  optional string object = 22;
-  optional string cached_size = 23;
-  optional bool serialized_size = 24;
-  optional string by = 25;
 }
-
-message HardKeywordsAllTypesProto2 {
-  message NestedMessage {
-    optional int32 while = 1;
-  }
-
-  enum NestedEnum {
-    FOO = 1;
-    BAR = 2;
-  }
-
-  optional int32 as = 1;
-  optional string in = 2;
-  optional NestedEnum break = 3;
-  map<int32, int32> continue = 4;
-  optional NestedMessage do = 5;
-
-  repeated int32 else = 6;
-  repeated string for = 7;
-  repeated NestedEnum fun = 8;
-  repeated NestedMessage if = 9;
-}
-
-message Interface {}

@@ -28,80 +28,43 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// LINT: LEGACY_NAMES
-syntax = "proto3";
+package com.google.protobuf.kotlin
 
-package protobuf.kotlin.generator;
+import com.google.common.truth.Truth.assertThat
+import com.google.protobuf.Any as ProtoAny
+import com.google.protobuf.InvalidProtocolBufferException
+import protobuf_unittest.UnittestProto.BoolMessage
+import protobuf_unittest.UnittestProto.Int32Message
+import protobuf_unittest.int32Message
+import kotlin.test.assertFailsWith
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
 
-option java_package = "com.google.protobuf.kotlin.generator";
-
-message EvilNamesProto3 {
-  bool initialized = 1;
-  bool has_foo = 2;
-  string Bar = 3;
-  bool is_initialized = 4;
-
-  oneof camelCase {
-    string fooBar = 5;
+/** Tests for extension methods on [ProtoAny]. */
+@RunWith(JUnit4::class)
+class AniesTest {
+  companion object {
+    val anAny = ProtoAny.pack(int32Message { data = 5 })
   }
 
-  repeated string ALL_CAPS = 7;
-  map<int32, bool> ALL_CAPS_MAP = 8;
+  @Test
+  fun isA_Positive() {
+    assertThat(anAny.isA<Int32Message>()).isTrue()
+  }
 
-  bool has_underbar_preceding_numeric_1foo = 9;
-  bool has_underbar_preceding_numeric_42bar = 10;
-  bool has_underbar_preceding_numeric_123foo42bar_baz = 11;
+  @Test
+  fun isA_Negative() {
+    assertThat(anAny.isA<BoolMessage>()).isFalse()
+  }
 
-  repeated string extension = 12;
+  @Test
+  fun unpackValid() {
+    assertThat(anAny.unpack<Int32Message>().data).isEqualTo(5)
+  }
 
-  string class = 13;
-  double int = 14;
-  bool long = 15;
-  int64 boolean = 16;
-  string sealed = 17;
-  float interface = 18;
-  int32 in = 19;
-  string object = 20;
-  string cached_size = 21;
-  bool serialized_size = 22;
-  string value = 23;
-  int64 index = 24;
-  repeated string values = 25;
-  repeated string new_values = 26;
-  bool builder = 27;
-  map<int32, int32> k = 28;
-  map<string, string> v = 29;
-  map<string, int32> key = 30;
-  map<int32, string> map = 31;
-  map<string, int32> pairs = 32;
-
-  string _leading_underscore = 33;
-  oneof _leading_underscore_oneof {
-    int32 option = 34;
+  @Test
+  fun unpackInvalid() {
+    assertFailsWith<InvalidProtocolBufferException> { anAny.unpack<BoolMessage>() }
   }
 }
-
-message HardKeywordsAllTypesProto3 {
-  message NestedMessage {
-    optional int32 while = 1;
-  }
-
-  enum NestedEnum {
-    ZERO = 0;
-    FOO = 1;
-    BAR = 2;
-  }
-
-  optional int32 as = 1;
-  optional string in = 2;
-  optional NestedEnum break = 3;
-  map<int32, int32> continue = 4;
-  optional NestedMessage do = 5;
-
-  repeated int32 else = 6;
-  repeated string for = 7;
-  repeated NestedEnum fun = 8;
-  repeated NestedMessage if = 9;
-}
-
-message Class {}

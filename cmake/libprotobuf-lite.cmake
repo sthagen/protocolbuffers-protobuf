@@ -2,9 +2,9 @@ set(libprotobuf_lite_files
   ${protobuf_source_dir}/src/google/protobuf/any_lite.cc
   ${protobuf_source_dir}/src/google/protobuf/arena.cc
   ${protobuf_source_dir}/src/google/protobuf/arenastring.cc
+  ${protobuf_source_dir}/src/google/protobuf/arenaz_sampler.cc
   ${protobuf_source_dir}/src/google/protobuf/extension_set.cc
   ${protobuf_source_dir}/src/google/protobuf/generated_enum_util.cc
-  ${protobuf_source_dir}/src/google/protobuf/generated_message_table_driven_lite.cc
   ${protobuf_source_dir}/src/google/protobuf/generated_message_tctable_lite.cc
   ${protobuf_source_dir}/src/google/protobuf/generated_message_util.cc
   ${protobuf_source_dir}/src/google/protobuf/implicit_weak_message.cc
@@ -38,15 +38,13 @@ set(libprotobuf_lite_includes
   ${protobuf_source_dir}/src/google/protobuf/arena.h
   ${protobuf_source_dir}/src/google/protobuf/arena_impl.h
   ${protobuf_source_dir}/src/google/protobuf/arenastring.h
+  ${protobuf_source_dir}/src/google/protobuf/arenaz_sampler.h
   ${protobuf_source_dir}/src/google/protobuf/explicitly_constructed.h
   ${protobuf_source_dir}/src/google/protobuf/extension_set.h
   ${protobuf_source_dir}/src/google/protobuf/extension_set_inl.h
   ${protobuf_source_dir}/src/google/protobuf/generated_enum_util.h
-  ${protobuf_source_dir}/src/google/protobuf/generated_message_table_driven.h
-  ${protobuf_source_dir}/src/google/protobuf/generated_message_table_driven_lite.h
   ${protobuf_source_dir}/src/google/protobuf/generated_message_tctable_decl.h
   ${protobuf_source_dir}/src/google/protobuf/generated_message_tctable_impl.h
-  ${protobuf_source_dir}/src/google/protobuf/generated_message_tctable_impl.inc
   ${protobuf_source_dir}/src/google/protobuf/generated_message_util.h
   ${protobuf_source_dir}/src/google/protobuf/has_bits.h
   ${protobuf_source_dir}/src/google/protobuf/implicit_weak_message.h
@@ -95,6 +93,11 @@ endif()
 
 add_library(libprotobuf-lite ${protobuf_SHARED_OR_STATIC}
   ${libprotobuf_lite_files} ${libprotobuf_lite_includes} ${libprotobuf_lite_rc_files})
+if(protobuf_HAVE_LD_VERSION_SCRIPT)
+  target_link_options(libprotobuf-lite PRIVATE -Wl,--version-script=${protobuf_source_dir}/src/libprotobuf-lite.map)
+  set_target_properties(libprotobuf-lite PROPERTIES
+    LINK_DEPENDS ${protobuf_source_dir}/src/libprotobuf-lite.map)
+endif()
 target_link_libraries(libprotobuf-lite ${CMAKE_THREAD_LIBS_INIT})
 if(protobuf_LINK_LIBATOMIC)
   target_link_libraries(libprotobuf-lite atomic)
@@ -103,13 +106,14 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
 	target_link_libraries(libprotobuf-lite log)
 endif()
 target_include_directories(libprotobuf-lite PUBLIC ${protobuf_source_dir}/src)
-if(MSVC AND protobuf_BUILD_SHARED_LIBS)
+if(protobuf_BUILD_SHARED_LIBS)
   target_compile_definitions(libprotobuf-lite
     PUBLIC  PROTOBUF_USE_DLLS
     PRIVATE LIBPROTOBUF_EXPORTS)
 endif()
 set_target_properties(libprotobuf-lite PROPERTIES
     VERSION ${protobuf_VERSION}
+    SOVERSION 30
     OUTPUT_NAME ${LIB_PREFIX}protobuf-lite
     DEBUG_POSTFIX "${protobuf_DEBUG_POSTFIX}")
 add_library(protobuf::libprotobuf-lite ALIAS libprotobuf-lite)
