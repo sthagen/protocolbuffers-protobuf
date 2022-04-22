@@ -364,21 +364,10 @@ inline bool IsExplicitLazy(const FieldDescriptor* field) {
   return field->options().lazy() || field->options().unverified_lazy();
 }
 
-inline bool IsLazilyVerifiedLazy(const FieldDescriptor* field,
-                                 const Options& options) {
-  // TODO(b/211906113): Make lazy() imply eagerly verified lazy.
-  return IsExplicitLazy(field) && !field->is_repeated() &&
-         field->type() == FieldDescriptor::TYPE_MESSAGE &&
-         GetOptimizeFor(field->file(), options) != FileOptions::LITE_RUNTIME &&
-         !options.opensource_runtime;
-}
+bool IsEagerlyVerifiedLazy(const FieldDescriptor* field, const Options& options,
+                           MessageSCCAnalyzer* scc_analyzer);
 
-inline bool IsEagerlyVerifiedLazy(const FieldDescriptor* field,
-                                  const Options& options,
-                                  MessageSCCAnalyzer* scc_analyzer) {
-  // TODO(b/211906113): Make lazy() imply eagerly verified lazy.
-  return IsLazy(field, options, scc_analyzer) && !IsExplicitLazy(field);
-}
+bool IsLazilyVerifiedLazy(const FieldDescriptor* field, const Options& options);
 
 inline bool IsFieldUsed(const FieldDescriptor* /* field */,
                         const Options& /* options */) {

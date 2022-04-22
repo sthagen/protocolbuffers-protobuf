@@ -40,6 +40,7 @@ import textwrap
 import unittest
 
 from google.protobuf import any_pb2
+from google.protobuf import struct_pb2
 from google.protobuf import any_test_pb2
 from google.protobuf import map_unittest_pb2
 from google.protobuf import unittest_custom_options_pb2
@@ -584,7 +585,7 @@ class TextFormatMessageToStringTests(TextFormatBase):
     self.assertEqual(message_proto, parsed_proto)
 
   @unittest.skipIf(
-      api_implementation._Version() == 3,
+      api_implementation.Type() == 'upb',
       "upb API doesn't support old UnknownField API. The TextFormat library "
       "needs to convert to the new API.")
   def testPrintUnknownFieldsEmbeddedMessageInBytes(self, message_module):
@@ -1938,6 +1939,16 @@ class Proto3Tests(unittest.TestCase):
     with self.assertRaises(text_format.ParseError) as e:
       text_format.Merge(text, message)
     self.assertEqual(str(e.exception), '3:11 : Expected "}".')
+
+  def testParseExpandedAnyListValue(self):
+    any_msg = any_pb2.Any()
+    any_msg.Pack(struct_pb2.ListValue())
+    msg = any_test_pb2.TestAny(any_value=any_msg)
+    text = ('any_value {\n'
+            '  [type.googleapis.com/google.protobuf.ListValue] {}\n'
+            '}\n')
+    parsed_msg = text_format.Parse(text, any_test_pb2.TestAny())
+    self.assertEqual(msg, parsed_msg)
 
   def testProto3Optional(self):
     msg = test_proto3_optional_pb2.TestProto3Optional()
