@@ -87,8 +87,8 @@ set(libprotoc_files
 set(libprotoc_headers
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/code_generator.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/command_line_interface.h
-  ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/cpp/file.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/cpp/cpp_generator.h
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/cpp/file.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/cpp/generator.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/cpp/helpers.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/cpp/names.h
@@ -123,7 +123,7 @@ if(protobuf_HAVE_LD_VERSION_SCRIPT)
 endif()
 target_link_libraries(libprotoc PRIVATE libprotobuf)
 target_include_directories(libprotoc
- PRIVATE ${ABSL_ROOT_DIR}
+  PRIVATE ${ABSL_ROOT_DIR}
 )
 if(protobuf_BUILD_SHARED_LIBS)
   target_compile_definitions(libprotoc

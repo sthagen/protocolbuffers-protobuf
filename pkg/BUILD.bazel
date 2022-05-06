@@ -6,6 +6,7 @@ load(
     "pkg_files",
 )
 load("//:protobuf_release.bzl", "package_naming")
+load(":build_systems.bzl", "gen_automake_file_lists", "gen_file_lists")
 load(":cc_dist_library.bzl", "cc_dist_library")
 
 package_naming(
@@ -104,6 +105,7 @@ pkg_filegroup(
         "//:conformance_dist_files",
         "//:cpp_dist_files",  # to build protoc
         "//benchmarks:all_dist_files",
+        "//build_defs:dist_files",
         "@com_google_protobuf_examples//:dist_files",
     ],
 )
@@ -210,7 +212,6 @@ pkg_filegroup(
     name = "php_srcs",
     srcs = [
         ":dist_common",
-        "//:php_dist_files",
         "//php:dist_files",
     ],
 )
@@ -309,13 +310,49 @@ pkg_zip(
 )
 
 ################################################################################
+# Generated file lists for build systems
+################################################################################
+
+gen_file_lists(
+    name = "gen_src_file_lists",
+    testonly = 1,
+    out_stem = "src_file_lists",
+    src_libs = {
+        # source rule: name in generated file
+        "//:protobuf": "libprotobuf",
+        "//:protoc_lib": "libprotoc",
+        "//:protobuf_lite": "libprotobuf_lite",
+    },
+)
+
+gen_automake_file_lists(
+    name = "gen_automake_extra_dist_lists",
+    testonly = 1,
+    out = "extra_dist_file_lists.am",
+    src_libs = {
+        # source rule: name in generated file
+        "//:common_dist_files": "dist_common",
+        "//:conformance_dist_files": "dist_conformance",
+        "//benchmarks:all_dist_files": "dist_benchmark",
+        "@com_google_protobuf_examples//:dist_files": "dist_example",
+        "//:csharp_dist_files": "dist_csharp",
+        "//csharp:dist_files": "dist_csharp2",
+        "//:objectivec_dist_files": "dist_objectivec",
+        "//objectivec:dist_files": "dist_objectivec2",
+        "//php:dist_files": "dist_php",
+        "//:python_dist_files": "dist_python",
+        "//ruby:dist_files": "dist_ruby",
+    },
+)
+
+################################################################################
 # Protobuf runtime libraries.
 ################################################################################
 
 cc_dist_library(
     name = "protobuf_lite",
     linkopts = select({
-        "//:msvc": [],
+        "//build_defs:config_msvc": [],
         "//conditions:default": ["-lpthread"],
     }),
     deps = [
@@ -326,7 +363,7 @@ cc_dist_library(
 cc_dist_library(
     name = "protobuf",
     linkopts = select({
-        "//:msvc": [],
+        "//build_defs:config_msvc": [],
         "//conditions:default": [
             "-lz",
             "-lpthread",

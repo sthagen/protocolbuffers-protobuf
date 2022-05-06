@@ -119,6 +119,9 @@ class MessageGenerator {
   // default instance.
   void GenerateConstexprConstructor(io::Printer* printer);
 
+  void GenerateCreateSplitMessage(io::Printer* printer);
+  void GenerateInitDefaultSplitInstance(io::Printer* printer);
+
   // Generate standard Message methods.
   void GenerateClear(io::Printer* printer);
   void GenerateOneofClear(io::Printer* printer);
@@ -129,7 +132,7 @@ class MessageGenerator {
   void GenerateSerializeWithCachedSizesBodyShuffled(io::Printer* printer);
   void GenerateByteSize(io::Printer* printer);
   void GenerateMergeFrom(io::Printer* printer);
-  void GenerateClassSpecificMergeFrom(io::Printer* printer);
+  void GenerateClassSpecificMergeImpl(io::Printer* printer);
   void GenerateCopyFrom(io::Printer* printer);
   void GenerateSwap(io::Printer* printer);
   void GenerateIsInitialized(io::Printer* printer);

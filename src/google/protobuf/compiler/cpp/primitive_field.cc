@@ -105,8 +105,9 @@ void SetPrimitiveVariables(const FieldDescriptor* descriptor,
   (*variables)["type"] = PrimitiveTypeName(options, descriptor->cpp_type());
   (*variables)["default"] = DefaultValue(options, descriptor);
   (*variables)["cached_byte_size_name"] = MakeVarintCachedSizeName(descriptor);
+  bool cold = ShouldSplit(descriptor, options);
   (*variables)["cached_byte_size_field"] =
-      MakeVarintCachedSizeFieldName(descriptor);
+      MakeVarintCachedSizeFieldName(descriptor, cold);
   (*variables)["tag"] = StrCat(internal::WireFormat::MakeTag(descriptor));
   int fixed_size = FixedSize(descriptor->type());
   if (fixed_size != -1) {
@@ -165,6 +166,7 @@ void PrimitiveFieldGenerator::GenerateInlineAccessorDefinitions(
       "  $field$ = value;\n"
       "}\n"
       "inline void $classname$::set_$name$($type$ value) {\n"
+      "$maybe_prepare_split_message$"
       "  _internal_set_$name$(value);\n"
       "$annotate_set$"
       "  // @@protoc_insertion_point(field_set:$full_name$)\n"
@@ -178,7 +180,7 @@ void PrimitiveFieldGenerator::GenerateClearingCode(io::Printer* printer) const {
 
 void PrimitiveFieldGenerator::GenerateMergingCode(io::Printer* printer) const {
   Formatter format(printer, variables_);
-  format("_internal_set_$name$(from._internal_$name$());\n");
+  format("_this->_internal_set_$name$(from._internal_$name$());\n");
 }
 
 void PrimitiveFieldGenerator::GenerateSwappingCode(io::Printer* printer) const {
@@ -189,7 +191,7 @@ void PrimitiveFieldGenerator::GenerateSwappingCode(io::Printer* printer) const {
 void PrimitiveFieldGenerator::GenerateCopyConstructorCode(
     io::Printer* printer) const {
   Formatter format(printer, variables_);
-  format("$field$ = from.$field$;\n");
+  format("_this->$field$ = from.$field$;\n");
 }
 
 void PrimitiveFieldGenerator::GenerateSerializeWithCachedSizesToArray(
@@ -233,6 +235,10 @@ void PrimitiveFieldGenerator::GenerateConstexprAggregateInitializer(
 void PrimitiveFieldGenerator::GenerateAggregateInitializer(
     io::Printer* printer) const {
   Formatter format(printer, variables_);
+  if (ShouldSplit(descriptor_, options_)) {
+    format("decltype(Impl_::Split::$name$_){$default$}");
+    return;
+  }
   format("decltype($field$){$default$}");
 }
 
@@ -404,7 +410,7 @@ void RepeatedPrimitiveFieldGenerator::GenerateClearingCode(
 void RepeatedPrimitiveFieldGenerator::GenerateMergingCode(
     io::Printer* printer) const {
   Formatter format(printer, variables_);
-  format("$field$.MergeFrom(from.$field$);\n");
+  format("_this->$field$.MergeFrom(from.$field$);\n");
 }
 
 void RepeatedPrimitiveFieldGenerator::GenerateSwappingCode(

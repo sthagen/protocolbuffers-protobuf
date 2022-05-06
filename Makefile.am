@@ -714,33 +714,6 @@ objectivec_EXTRA_DIST=                                                       \
   objectivec/ProtocolBuffers_tvOS.xcodeproj/xcshareddata/xcschemes/PerformanceTests.xcscheme \
   objectivec/ProtocolBuffers_tvOS.xcodeproj/xcshareddata/xcschemes/ProtocolBuffers.xcscheme \
   objectivec/README.md                                                       \
-  objectivec/Tests/CocoaPods/OSXCocoaPodsTester/OSXCocoaPodsTester.xcodeproj/project.pbxproj \
-  objectivec/Tests/CocoaPods/OSXCocoaPodsTester/OSXCocoaPodsTester.xcodeproj/project.xcworkspace/contents.xcworkspacedata \
-  objectivec/Tests/CocoaPods/OSXCocoaPodsTester/OSXCocoaPodsTester.xcodeproj/xcshareddata/xcschemes/OSXCocoaPodsTester.xcscheme \
-  objectivec/Tests/CocoaPods/OSXCocoaPodsTester/OSXCocoaPodsTester/AppDelegate.h \
-  objectivec/Tests/CocoaPods/OSXCocoaPodsTester/OSXCocoaPodsTester/AppDelegate.m \
-  objectivec/Tests/CocoaPods/OSXCocoaPodsTester/OSXCocoaPodsTester/Assets.xcassets/AppIcon.appiconset/Contents.json \
-  objectivec/Tests/CocoaPods/OSXCocoaPodsTester/OSXCocoaPodsTester/Base.lproj/MainMenu.xib \
-  objectivec/Tests/CocoaPods/OSXCocoaPodsTester/OSXCocoaPodsTester/Info.plist \
-  objectivec/Tests/CocoaPods/OSXCocoaPodsTester/OSXCocoaPodsTester/main.m    \
-  objectivec/Tests/CocoaPods/OSXCocoaPodsTester/Podfile-framework            \
-  objectivec/Tests/CocoaPods/OSXCocoaPodsTester/Podfile-static               \
-  objectivec/Tests/CocoaPods/README.md                                       \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/Podfile-framework            \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/Podfile-static               \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/iOSCocoaPodsTester.xcodeproj/project.pbxproj \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/iOSCocoaPodsTester.xcodeproj/project.xcworkspace/contents.xcworkspacedata \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/iOSCocoaPodsTester.xcodeproj/xcshareddata/xcschemes/iOSCocoaPodsTester.xcscheme \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/iOSCocoaPodsTester/AppDelegate.h \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/iOSCocoaPodsTester/AppDelegate.m \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/iOSCocoaPodsTester/Assets.xcassets/AppIcon.appiconset/Contents.json \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/iOSCocoaPodsTester/Base.lproj/LaunchScreen.storyboard \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/iOSCocoaPodsTester/Base.lproj/Main.storyboard \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/iOSCocoaPodsTester/Info.plist \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/iOSCocoaPodsTester/ViewController.h \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/iOSCocoaPodsTester/ViewController.m \
-  objectivec/Tests/CocoaPods/iOSCocoaPodsTester/iOSCocoaPodsTester/main.m    \
-  objectivec/Tests/CocoaPods/run_tests.sh                                    \
   objectivec/Tests/golden_message                                            \
   objectivec/Tests/golden_packed_fields_message                              \
   objectivec/Tests/GPBARCUnittestProtos.m                                    \
@@ -1232,15 +1205,20 @@ EXTRA_DIST = $(@DIST_LANG@_EXTRA_DIST)              \
   BUILD.bazel                                       \
   WORKSPACE                                         \
   CMakeLists.txt                                    \
-  cmake/abseil-cpp.cmake                            \
+  build_defs/BUILD.bazel                            \
+  build_defs/cc_proto_blacklist_test.bzl            \
+  build_defs/compiler_config_setting.bzl            \
+  build_defs/cpp_opts.bzl                           \
+  build_files_updated_unittest.sh                   \
   cmake/CMakeLists.txt                              \
   cmake/README.md                                   \
+  cmake/abseil-cpp.cmake                            \
   cmake/conformance.cmake                           \
   cmake/examples.cmake                              \
   cmake/extract_includes.bat.in                     \
   cmake/install.cmake                               \
-  cmake/libprotobuf.cmake                           \
   cmake/libprotobuf-lite.cmake                      \
+  cmake/libprotobuf.cmake                           \
   cmake/libprotoc.cmake                             \
   cmake/protobuf-config-version.cmake.in            \
   cmake/protobuf-config.cmake.in                    \
@@ -1251,9 +1229,6 @@ EXTRA_DIST = $(@DIST_LANG@_EXTRA_DIST)              \
   cmake/protoc.cmake                                \
   cmake/tests.cmake                                 \
   cmake/version.rc.in                               \
-  compiler_config_setting.bzl                       \
-  build_files_updated_unittest.sh                   \
-  cc_proto_blacklist_test.bzl                       \
   csharp/BUILD.bazel                                \
   editors/README.txt                                \
   editors/proto.vim                                 \
@@ -1279,7 +1254,8 @@ EXTRA_DIST = $(@DIST_LANG@_EXTRA_DIST)              \
   examples/list_people.dart                         \
   examples/list_people.py                           \
   examples/pubspec.yaml                             \
-  internal.bzl                                      \
+  conformance/BUILD.bazel                           \
+  conformance/defs.bzl                              \
   maven_install.json                                \
   php/BUILD.bazel                                   \
   protobuf.bzl                                      \

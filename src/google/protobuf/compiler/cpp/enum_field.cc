@@ -37,6 +37,7 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/wire_format.h>
 #include <google/protobuf/stubs/strutil.h>
+#include <google/protobuf/compiler/cpp/field.h>
 #include <google/protobuf/compiler/cpp/helpers.h>
 
 namespace google {
@@ -55,8 +56,9 @@ void SetEnumVariables(const FieldDescriptor* descriptor,
   (*variables)["default"] = Int32ToString(default_value->number());
   (*variables)["full_name"] = descriptor->full_name();
   (*variables)["cached_byte_size_name"] = MakeVarintCachedSizeName(descriptor);
+  bool cold = ShouldSplit(descriptor, options);
   (*variables)["cached_byte_size_field"] =
-      MakeVarintCachedSizeFieldName(descriptor);
+      MakeVarintCachedSizeFieldName(descriptor, cold);
 }
 
 }  // namespace
@@ -110,6 +112,7 @@ void EnumFieldGenerator::GenerateInlineAccessorDefinitions(
       "  $field$ = value;\n"
       "}\n"
       "inline void $classname$::set_$name$($type$ value) {\n"
+      "$maybe_prepare_split_message$"
       "  _internal_set_$name$(value);\n"
       "$annotate_set$"
       "  // @@protoc_insertion_point(field_set:$full_name$)\n"
@@ -123,7 +126,7 @@ void EnumFieldGenerator::GenerateClearingCode(io::Printer* printer) const {
 
 void EnumFieldGenerator::GenerateMergingCode(io::Printer* printer) const {
   Formatter format(printer, variables_);
-  format("_internal_set_$name$(from._internal_$name$());\n");
+  format("_this->_internal_set_$name$(from._internal_$name$());\n");
 }
 
 void EnumFieldGenerator::GenerateSwappingCode(io::Printer* printer) const {
@@ -134,7 +137,7 @@ void EnumFieldGenerator::GenerateSwappingCode(io::Printer* printer) const {
 void EnumFieldGenerator::GenerateCopyConstructorCode(
     io::Printer* printer) const {
   Formatter format(printer, variables_);
-  format("$field$ = from.$field$;\n");
+  format("_this->$field$ = from.$field$;\n");
 }
 
 void EnumFieldGenerator::GenerateSerializeWithCachedSizesToArray(
@@ -162,6 +165,10 @@ void EnumFieldGenerator::GenerateConstexprAggregateInitializer(
 void EnumFieldGenerator::GenerateAggregateInitializer(
     io::Printer* printer) const {
   Formatter format(printer, variables_);
+  if (ShouldSplit(descriptor_, options_)) {
+    format("decltype(Impl_::Split::$name$_){$default$}");
+    return;
+  }
   format("decltype($field$){$default$}");
 }
 
@@ -329,7 +336,7 @@ void RepeatedEnumFieldGenerator::GenerateClearingCode(
 void RepeatedEnumFieldGenerator::GenerateMergingCode(
     io::Printer* printer) const {
   Formatter format(printer, variables_);
-  format("$field$.MergeFrom(from.$field$);\n");
+  format("_this->$field$.MergeFrom(from.$field$);\n");
 }
 
 void RepeatedEnumFieldGenerator::GenerateSwappingCode(
