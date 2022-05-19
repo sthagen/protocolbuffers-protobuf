@@ -19,8 +19,8 @@ TEST_TARGETS=(
   //conformance:all
   //java:tests
   //python:all
-  //:protobuf_test
-  @com_google_protobuf_examples//...
+  //src/...
+   @com_google_protobuf_examples//...
 )
 
 CONTAINER_NAME=gcr.io/protobuf-build/bazel/linux
