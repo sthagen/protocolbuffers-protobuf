@@ -131,6 +131,7 @@ csharp_EXTRA_DIST=                                                           \
   csharp/src/Google.Protobuf.Test/GeneratedMessageTest.Proto2.cs             \
   csharp/src/Google.Protobuf.Test/Google.Protobuf.Test.csproj                \
   csharp/src/Google.Protobuf.Test/IssuesTest.cs                              \
+  csharp/src/Google.Protobuf.Test/JsonFormatterSettingsTest.cs               \
   csharp/src/Google.Protobuf.Test/JsonFormatterTest.cs                       \
   csharp/src/Google.Protobuf.Test/JsonParserTest.cs                          \
   csharp/src/Google.Protobuf.Test/JsonTokenizerTest.cs                       \
@@ -1220,7 +1221,6 @@ EXTRA_DIST = $(@DIST_LANG@_EXTRA_DIST)              \
   cmake/README.md                                   \
   cmake/conformance.cmake                           \
   cmake/examples.cmake                              \
-  cmake/extract_includes.bat.in                     \
   cmake/install.cmake                               \
   cmake/libprotobuf-lite.cmake                      \
   cmake/libprotobuf.cmake                           \
