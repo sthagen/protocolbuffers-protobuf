@@ -51,6 +51,7 @@
 #include "absl/strings/ascii.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/io/tokenizer.h"
@@ -405,11 +406,14 @@ void Parser::AddError(const std::string& error) {
   AddError(input_->current().line, input_->current().column, error);
 }
 
-void Parser::AddWarning(const std::string& warning) {
+void Parser::AddWarning(int line, int column, const std::string& warning) {
   if (error_collector_ != nullptr) {
-    error_collector_->AddWarning(input_->current().line,
-                                 input_->current().column, warning);
+    error_collector_->AddWarning(line, column, warning);
   }
+}
+
+void Parser::AddWarning(const std::string& warning) {
+  AddWarning(input_->current().line, input_->current().column, warning);
 }
 
 // -------------------------------------------------------------------
@@ -424,11 +428,6 @@ Parser::LocationRecorder::LocationRecorder(Parser* parser)
 
 Parser::LocationRecorder::LocationRecorder(const LocationRecorder& parent) {
   Init(parent, parent.source_code_info_);
-}
-
-Parser::LocationRecorder::LocationRecorder(const LocationRecorder& parent,
-                                           SourceCodeInfo* source_code_info) {
-  Init(parent, source_code_info);
 }
 
 Parser::LocationRecorder::LocationRecorder(const LocationRecorder& parent,
@@ -1260,22 +1259,13 @@ bool Parser::ParseDefaultAssignment(
     field->clear_default_value();
   }
 
-  LocationRecorder location(field_location,
-                            FieldDescriptorProto::kDefaultValueFieldNumber);
-
   DO(Consume("default"));
   DO(Consume("="));
 
-  // We don't need to create separate spans in source code info for name and value,
-  // since there's no way to represent them distinctly in a location path. But we will
-  // want a separate recorder for the value, just to have more precise location info
-  // in error messages. So we let it create a location in no_op, so it doesn't add a
-  // span to the file descriptor.
-  SourceCodeInfo no_op;
-  LocationRecorder value_location(location, &no_op);
-  value_location.RecordLegacyLocation(
-      field, DescriptorPool::ErrorCollector::DEFAULT_VALUE);
-
+  LocationRecorder location(field_location,
+                            FieldDescriptorProto::kDefaultValueFieldNumber);
+  location.RecordLegacyLocation(field,
+                                DescriptorPool::ErrorCollector::DEFAULT_VALUE);
   std::string* default_value = field->mutable_default_value();
 
   if (!field->has_type()) {
@@ -1409,23 +1399,13 @@ bool Parser::ParseJsonName(FieldDescriptorProto* field,
 
   LocationRecorder location(field_location,
                             FieldDescriptorProto::kJsonNameFieldNumber);
+  location.RecordLegacyLocation(field,
+                                DescriptorPool::ErrorCollector::OPTION_NAME);
 
-  // We don't need to create separate spans in source code info for name and value,
-  // since there's no way to represent them distinctly in a location path. But we will
-  // want a separate recorder for them, just to have more precise location info
-  // in error messages. So we let them create a location in no_op, so they don't
-  // add a span to the file descriptor.
-  SourceCodeInfo no_op;
-  {
-    LocationRecorder name_location(location, &no_op);
-    name_location.RecordLegacyLocation(
-        field, DescriptorPool::ErrorCollector::OPTION_NAME);
-
-    DO(Consume("json_name"));
-  }
+  DO(Consume("json_name"));
   DO(Consume("="));
 
-  LocationRecorder value_location(location, &no_op);
+  LocationRecorder value_location(location);
   value_location.RecordLegacyLocation(
       field, DescriptorPool::ErrorCollector::OPTION_VALUE);
 
@@ -1770,11 +1750,23 @@ bool Parser::ParseReserved(DescriptorProto* message,
   }
 }
 
+bool Parser::ParseReservedName(std::string* name, const char* error_message) {
+  // Capture the position of the token, in case we have to report an
+  // error after it is consumed.
+  int line = input_->current().line;
+  int col = input_->current().column;
+  DO(ConsumeString(name, error_message));
+  if (!io::Tokenizer::IsIdentifier(*name)) {
+    AddWarning(line, col, absl::StrFormat("Reserved name \"%s\" is not a valid identifier.", *name));
+  }
+  return true;
+}
+
 bool Parser::ParseReservedNames(DescriptorProto* message,
                                 const LocationRecorder& parent_location) {
   do {
     LocationRecorder location(parent_location, message->reserved_name_size());
-    DO(ConsumeString(message->add_reserved_name(), "Expected field name."));
+    DO(ParseReservedName(message->add_reserved_name(), "Expected field name."));
   } while (TryConsume(","));
   DO(ConsumeEndOfDeclaration(";", &parent_location));
   return true;
@@ -1829,42 +1821,42 @@ bool Parser::ParseReservedNumbers(DescriptorProto* message,
   return true;
 }
 
-bool Parser::ParseReserved(EnumDescriptorProto* message,
-                           const LocationRecorder& message_location) {
+bool Parser::ParseReserved(EnumDescriptorProto* proto,
+                           const LocationRecorder& enum_location) {
   io::Tokenizer::Token start_token = input_->current();
   // Parse the declaration.
   DO(Consume("reserved"));
   if (LookingAtType(io::Tokenizer::TYPE_STRING)) {
-    LocationRecorder location(message_location,
+    LocationRecorder location(enum_location,
                               EnumDescriptorProto::kReservedNameFieldNumber);
     location.StartAt(start_token);
-    return ParseReservedNames(message, location);
+    return ParseReservedNames(proto, location);
   } else {
-    LocationRecorder location(message_location,
+    LocationRecorder location(enum_location,
                               EnumDescriptorProto::kReservedRangeFieldNumber);
     location.StartAt(start_token);
-    return ParseReservedNumbers(message, location);
+    return ParseReservedNumbers(proto, location);
   }
 }
 
-bool Parser::ParseReservedNames(EnumDescriptorProto* message,
+bool Parser::ParseReservedNames(EnumDescriptorProto* proto,
                                 const LocationRecorder& parent_location) {
   do {
-    LocationRecorder location(parent_location, message->reserved_name_size());
-    DO(ConsumeString(message->add_reserved_name(), "Expected enum value."));
+    LocationRecorder location(parent_location, proto->reserved_name_size());
+    DO(ParseReservedName(proto->add_reserved_name(), "Expected enum value."));
   } while (TryConsume(","));
   DO(ConsumeEndOfDeclaration(";", &parent_location));
   return true;
 }
 
-bool Parser::ParseReservedNumbers(EnumDescriptorProto* message,
+bool Parser::ParseReservedNumbers(EnumDescriptorProto* proto,
                                   const LocationRecorder& parent_location) {
   bool first = true;
   do {
-    LocationRecorder location(parent_location, message->reserved_range_size());
+    LocationRecorder location(parent_location, proto->reserved_range_size());
 
     EnumDescriptorProto::EnumReservedRange* range =
-        message->add_reserved_range();
+        proto->add_reserved_range();
     int start, end;
     io::Tokenizer::Token start_token;
     {

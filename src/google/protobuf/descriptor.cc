@@ -59,7 +59,6 @@
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "google/protobuf/stubs/stringprintf.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/substitute.h"
@@ -1634,7 +1633,7 @@ FileDescriptorTables::FindEnumValueByNumberCreatingIfUnknown(
     // EnumDescriptor (it's not a part of the enum as originally defined), but
     // we do insert it into the table so that we can return the same pointer
     // later.
-    std::string enum_value_name = StringPrintf(
+    std::string enum_value_name = absl::StrFormat(
         "UNKNOWN_ENUM_VALUE_%s_%d", parent->name().c_str(), number);
     auto* pool = DescriptorPool::generated_pool();
     auto* tables = const_cast<DescriptorPool::Tables*>(pool->tables_.get());
@@ -2506,12 +2505,7 @@ std::string FieldDescriptor::DefaultValueAsString(
 // CopyTo methods ====================================================
 
 void FileDescriptor::CopyTo(FileDescriptorProto* proto) const {
-  proto->set_name(name());
-  if (!package().empty()) proto->set_package(package());
-  // TODO(liujisi): Also populate when syntax="proto2".
-  if (syntax() == SYNTAX_PROTO3
-  ) proto->set_syntax(SyntaxName(syntax()));
-
+  CopyHeadingTo(proto);
 
   for (int i = 0; i < dependency_count(); i++) {
     proto->add_dependency(dependency(i)->name());
@@ -2540,6 +2534,19 @@ void FileDescriptor::CopyTo(FileDescriptorProto* proto) const {
 
   if (&options() != &FileOptions::default_instance()) {
     proto->mutable_options()->CopyFrom(options());
+  }
+}
+
+void FileDescriptor::CopyHeadingTo(FileDescriptorProto* proto) const {
+  proto->set_name(name());
+  if (!package().empty()) {
+    proto->set_package(package());
+  }
+
+  // TODO(liujisi): Also populate when syntax="proto2".
+  if (syntax() == SYNTAX_PROTO3
+  ) {
+    proto->set_syntax(SyntaxName(syntax()));
   }
 }
 
@@ -2901,7 +2908,7 @@ class SourceLocationCommentPrinter {
   // the DebugString() output.
   std::string FormatComment(const std::string& comment_text) {
     std::string stripped_comment = comment_text;
-    StripWhitespace(&stripped_comment);
+    absl::StripAsciiWhitespace(&stripped_comment);
     std::vector<std::string> lines = absl::StrSplit(stripped_comment, "\n");
     std::string output;
     for (const std::string& line : lines) {
@@ -4206,7 +4213,7 @@ void DescriptorBuilder::AddWarning(
 
 bool DescriptorBuilder::IsInPackage(const FileDescriptor* file,
                                     const std::string& package_name) {
-  return HasPrefixString(file->package(), package_name) &&
+  return absl::StartsWith(file->package(), package_name) &&
          (file->package().size() == package_name.size() ||
           file->package()[package_name.size()] == '.');
 }

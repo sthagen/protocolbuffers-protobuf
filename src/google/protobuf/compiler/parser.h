@@ -216,6 +216,9 @@ class PROTOBUF_EXPORT Parser {
   // of the current token.
   void AddError(const std::string& error);
 
+  // Invokes error_collector_->AddWarning(), if error_collector_ is not NULL.
+  void AddWarning(int line, int column, const std::string& warning);
+
   // Invokes error_collector_->AddWarning() with the line and column number
   // of the current token.
   void AddWarning(const std::string& warning);
@@ -242,10 +245,6 @@ class PROTOBUF_EXPORT Parser {
     LocationRecorder(const LocationRecorder& parent, int path1, int path2);
 
     // Creates a recorder that generates locations into given source code info.
-    LocationRecorder(const LocationRecorder& parent,
-                     SourceCodeInfo* source_code_info);
-    // Creates a recorder that generates locations into given source code info
-    // and calls AddPath() one time.
     LocationRecorder(const LocationRecorder& parent, int path1,
                      SourceCodeInfo* source_code_info);
 
@@ -401,6 +400,7 @@ class PROTOBUF_EXPORT Parser {
                      const LocationRecorder& message_location);
   bool ParseReservedNames(DescriptorProto* message,
                           const LocationRecorder& parent_location);
+  bool ParseReservedName(std::string* name, const char* error_message);
   bool ParseReservedNumbers(DescriptorProto* message,
                             const LocationRecorder& parent_location);
   bool ParseReserved(EnumDescriptorProto* message,
