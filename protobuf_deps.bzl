@@ -55,11 +55,20 @@ def protobuf_deps():
         )
 
     if not native.existing_rule("jsoncpp"):
-        _github_archive(
+        http_archive(
             name = "jsoncpp",
-            repo = "https://github.com/open-source-parsers/jsoncpp",
-            commit = "5defb4ed1a4293b8e2bf641e16b156fb9de498cc",
-            sha256 = "a03d3136ff6dd092143bba8d3ded641e87b44e6c0b1f632b368f6cc8587524b5",
+            build_file = "@com_google_protobuf//:third_party/jsoncpp.BUILD",
+            sha256 = "e34a628a8142643b976c7233ef381457efad79468c67cb1ae0b83a33d7493999",
+            strip_prefix = "jsoncpp-1.9.4",
+            urls = ["https://github.com/open-source-parsers/jsoncpp/archive/refs/tags/1.9.4.tar.gz"],
+        )
+
+    if not native.existing_rule("utf8_range"):
+        _github_archive(
+            name = "utf8_range",
+            repo = "https://github.com/protocolbuffers/utf8_range",
+            commit = "45fbf543fec00020a08650791a37575319a3ea1d",
+            sha256 = "dd93db062025f563068abaa224549e9d341434b5851e959c7853dfa263c96416",
         )
 
     if not native.existing_rule("rules_cc"):
@@ -123,6 +132,6 @@ def protobuf_deps():
         _github_archive(
             name = "upb",
             repo = "https://github.com/protocolbuffers/upb",
-            commit = "32c6e9baab03d584b85390fdba789118f20613fc",
-            #sha256 = "4c82bff4f790dbb5a11ec40b1fac44e7c95d9a63fd215a13aaf44cb27b10ac27",
+            commit = "9e2d7f02da5440bfb0dfb069f61baa278aa2fbf6",
+            sha256 = "9eb13368a136af314855e1497838cf3124846b6a73a7e7c882455a52b8c04662",
         )
