@@ -1770,13 +1770,7 @@ class StringBaseTextGenerator : public TextFormat::BaseTextGenerator {
     output_.append(text, size);
   }
 
-// Some compilers do not support ref-qualifiers even in C++11 mode.
-// Disable the optimization for now and revisit it later.
-#if 0  // LANG_CXX11
   std::string Consume() && { return std::move(output_); }
-#else  // !LANG_CXX11
-  const std::string& Get() { return output_; }
-#endif  // LANG_CXX11
 
  private:
   std::string output_;
@@ -1790,17 +1784,10 @@ class StringBaseTextGenerator : public TextFormat::BaseTextGenerator {
 TextFormat::FieldValuePrinter::FieldValuePrinter() {}
 TextFormat::FieldValuePrinter::~FieldValuePrinter() {}
 
-#if 0  // LANG_CXX11
 #define FORWARD_IMPL(fn, ...)            \
   StringBaseTextGenerator generator;     \
   delegate_.fn(__VA_ARGS__, &generator); \
   return std::move(generator).Consume()
-#else  // !LANG_CXX11
-#define FORWARD_IMPL(fn, ...)            \
-  StringBaseTextGenerator generator;     \
-  delegate_.fn(__VA_ARGS__, &generator); \
-  return generator.Get()
-#endif  // LANG_CXX11
 
 std::string TextFormat::FieldValuePrinter::PrintBool(bool val) const {
   FORWARD_IMPL(PrintBool, val);
@@ -2584,6 +2571,15 @@ void TextFormat::Printer::PrintFieldValue(const Message& message,
       << "Index must be -1 for non-repeated fields";
 
   const FastFieldValuePrinter* printer = GetFieldPrinter(field);
+#ifndef PROTO2_OPENSOURCE
+#ifdef SUPPORT_EXPLICIT_DEBUG_STRING
+  if (redact_debug_string_ && internal::ShouldRedactField(field)) {
+    std::string redacted_value = "go/redact-debug-string";
+    generator->PrintString(redacted_value);
+    return;
+  }
+#endif
+#endif
 
   switch (field->cpp_type()) {
 #define OUTPUT_FIELD(CPPTYPE, METHOD)                                \
