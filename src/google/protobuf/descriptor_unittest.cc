@@ -46,7 +46,6 @@
 #include "google/protobuf/unittest.pb.h"
 #include "google/protobuf/unittest_custom_options.pb.h"
 #include "google/protobuf/stubs/common.h"
-#include "google/protobuf/stubs/logging.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
@@ -55,6 +54,7 @@
 #include <gmock/gmock.h>
 #include "google/protobuf/testing/googletest.h"
 #include <gtest/gtest.h>
+#include "google/protobuf/stubs/logging.h"
 #include "google/protobuf/stubs/logging.h"
 #include "google/protobuf/unittest_lazy_dependencies.pb.h"
 #include "google/protobuf/unittest_lazy_dependencies_custom_option.pb.h"
@@ -2991,7 +2991,7 @@ class AllowUnknownDependenciesTest
         return pool_->FindFileByName(proto.name());
       }
     }
-    GOOGLE_LOG(FATAL) << "Can't get here.";
+    GOOGLE_ABSL_LOG(FATAL) << "Can't get here.";
     return nullptr;
   }
 
@@ -3216,7 +3216,7 @@ TEST_P(AllowUnknownDependenciesTest,
 
   const FileDescriptor* file = BuildFile(test_proto);
   ASSERT_TRUE(file != nullptr);
-  GOOGLE_LOG(INFO) << file->DebugString();
+  GOOGLE_ABSL_LOG(INFO) << file->DebugString();
 
   EXPECT_EQ(0, file->dependency_count());
   ASSERT_EQ(1, file->message_type_count());
@@ -4601,6 +4601,7 @@ TEST_F(ValidationErrorTest, ReservedFieldNumber) {
       "reserved for the protocol buffer library implementation.\n"
       "foo.proto: Foo: NUMBER: Suggested field numbers for Foo: 1, 2\n");
 }
+
 
 TEST_F(ValidationErrorTest, ExtensionMissingExtendee) {
   BuildFileWithErrors(
@@ -6067,7 +6068,7 @@ TEST_F(ValidationErrorTest, RollbackAfterError) {
 }
 
 TEST_F(ValidationErrorTest, ErrorsReportedToLogError) {
-  // Test that errors are reported to GOOGLE_LOG(ERROR) if no error collector is
+  // Test that errors are reported to GOOGLE_ABSL_LOG(ERROR) if no error collector is
   // provided.
 
   FileDescriptorProto file_proto;
@@ -6473,7 +6474,7 @@ TEST_F(ValidationErrorTest, MapEntryConflictsWithEnum) {
       "with an existing enum type.\n");
 }
 
-TEST_F(ValidationErrorTest, EnumValuesConflictWithDifferentCasing) {
+TEST_F(ValidationErrorTest, Proto3EnumValuesConflictWithDifferentCasing) {
   BuildFileWithErrors(
       "syntax: 'proto3'"
       "name: 'foo.proto' "
@@ -6484,9 +6485,21 @@ TEST_F(ValidationErrorTest, EnumValuesConflictWithDifferentCasing) {
       "}",
       "foo.proto: bar: NAME: Enum name bar has the same name as BAR "
       "if you ignore case and strip out the enum name prefix (if any). "
-      "This is error-prone and can lead to undefined behavior. "
-      "Please avoid doing this. If you are using allow_alias, please assign "
-      "the same numeric value to both enums.\n");
+      "(If you are using allow_alias, please assign the same numeric "
+      "value to both enums.)\n");
+
+  BuildFileWithErrors(
+      "syntax: 'proto2'"
+      "name: 'foo.proto' "
+      "enum_type {"
+      "  name: 'FooEnum' "
+      "  value { name: 'BAR' number: 0 }"
+      "  value { name: 'bar' number: 1 }"
+      "}",
+      "foo.proto: bar: NAME: Enum name bar has the same name as BAR "
+      "if you ignore case and strip out the enum name prefix (if any). "
+      "(If you are using allow_alias, please assign the same numeric "
+      "value to both enums.)\n");
 
   // Not an error because both enums are mapped to the same value.
   BuildFile(
@@ -6512,9 +6525,8 @@ TEST_F(ValidationErrorTest, EnumValuesConflictWhenPrefixesStripped) {
       "}",
       "foo.proto: BAZ: NAME: Enum name BAZ has the same name as FOO_ENUM_BAZ "
       "if you ignore case and strip out the enum name prefix (if any). "
-      "This is error-prone and can lead to undefined behavior. "
-      "Please avoid doing this. If you are using allow_alias, please assign "
-      "the same numeric value to both enums.\n");
+      "(If you are using allow_alias, please assign the same numeric value "
+      "to both enums.)\n");
 
   BuildFileWithErrors(
       "syntax: 'proto3'"
@@ -6526,9 +6538,8 @@ TEST_F(ValidationErrorTest, EnumValuesConflictWhenPrefixesStripped) {
       "}",
       "foo.proto: BAZ: NAME: Enum name BAZ has the same name as FOOENUM_BAZ "
       "if you ignore case and strip out the enum name prefix (if any). "
-      "This is error-prone and can lead to undefined behavior. "
-      "Please avoid doing this. If you are using allow_alias, please assign "
-      "the same numeric value to both enums.\n");
+      "(If you are using allow_alias, please assign the same numeric value "
+      "to both enums.)\n");
 
   BuildFileWithErrors(
       "syntax: 'proto3'"
@@ -6540,9 +6551,8 @@ TEST_F(ValidationErrorTest, EnumValuesConflictWhenPrefixesStripped) {
       "}",
       "foo.proto: BAR__BAZ: NAME: Enum name BAR__BAZ has the same name as "
       "FOO_ENUM_BAR_BAZ if you ignore case and strip out the enum name prefix "
-      "(if any). This is error-prone and can lead to undefined behavior. "
-      "Please avoid doing this. If you are using allow_alias, please assign "
-      "the same numeric value to both enums.\n");
+      "(if any). (If you are using allow_alias, please assign the same numeric "
+      "value to both enums.)\n");
 
   BuildFileWithErrors(
       "syntax: 'proto3'"
@@ -6554,9 +6564,21 @@ TEST_F(ValidationErrorTest, EnumValuesConflictWhenPrefixesStripped) {
       "}",
       "foo.proto: BAR_BAZ: NAME: Enum name BAR_BAZ has the same name as "
       "FOO_ENUM__BAR_BAZ if you ignore case and strip out the enum name prefix "
-      "(if any). This is error-prone and can lead to undefined behavior. "
-      "Please avoid doing this. If you are using allow_alias, please assign "
-      "the same numeric value to both enums.\n");
+      "(if any). (If you are using allow_alias, please assign the same numeric "
+      "value to both enums.)\n");
+
+  BuildFileWithErrors(
+      "syntax: 'proto2'"
+      "name: 'foo.proto' "
+      "enum_type {"
+      "  name: 'FooEnum' "
+      "  value { name: 'FOO_ENUM__BAR_BAZ' number: 0 }"
+      "  value { name: 'BAR_BAZ' number: 1 }"
+      "}",
+      "foo.proto: BAR_BAZ: NAME: Enum name BAR_BAZ has the same name as "
+      "FOO_ENUM__BAR_BAZ if you ignore case and strip out the enum name prefix "
+      "(if any). (If you are using allow_alias, please assign the same numeric "
+      "value to both enums.)\n");
 
   // This isn't an error because the underscore will cause the PascalCase to
   // differ by case (BarBaz vs. Barbaz).
@@ -6568,6 +6590,52 @@ TEST_F(ValidationErrorTest, EnumValuesConflictWhenPrefixesStripped) {
       "  value { name: 'BAR_BAZ' number: 0 }"
       "  value { name: 'BARBAZ' number: 1 }"
       "}");
+}
+
+TEST_F(ValidationErrorTest, EnumValuesConflictLegacyBehavior) {
+  BuildFileWithErrors(
+      "syntax: 'proto3'"
+      "name: 'foo.proto' "
+      "enum_type {"
+      "  name: 'FooEnum' "
+      "  options { deprecated_legacy_json_field_conflicts: true }"
+      "  value { name: 'BAR' number: 0 }"
+      "  value { name: 'bar' number: 1 }"
+      "}",
+      "foo.proto: bar: NAME: Enum name bar has the same name as BAR "
+      "if you ignore case and strip out the enum name prefix (if any). "
+      "(If you are using allow_alias, please assign the same numeric "
+      "value to both enums.)\n");
+
+  BuildFileWithErrors(
+      "syntax: 'proto3'"
+      "name: 'foo.proto' "
+      "enum_type {"
+      "  name: 'FooEnum' "
+      "  options { deprecated_legacy_json_field_conflicts: true }"
+      "  value { name: 'FOO_ENUM__BAR_BAZ' number: 0 }"
+      "  value { name: 'BAR_BAZ' number: 1 }"
+      "}",
+      "foo.proto: BAR_BAZ: NAME: Enum name BAR_BAZ has the same name as "
+      "FOO_ENUM__BAR_BAZ if you ignore case and strip out the enum name "
+      "prefix "
+      "(if any). (If you are using allow_alias, please assign the same "
+      "numeric "
+      "value to both enums.)\n");
+
+  BuildFileWithWarnings(
+      "syntax: 'proto2'"
+      "name: 'foo.proto' "
+      "enum_type {"
+      "  name: 'FooEnum' "
+      "  options { deprecated_legacy_json_field_conflicts: true }"
+      "  value { name: 'BAR' number: 0 }"
+      "  value { name: 'bar' number: 1 }"
+      "}",
+      "foo.proto: bar: NAME: Enum name bar has the same name as BAR "
+      "if you ignore case and strip out the enum name prefix (if any). "
+      "(If you are using allow_alias, please assign the same numeric "
+      "value to both enums.)\n");
 }
 
 TEST_F(ValidationErrorTest, MapEntryConflictsWithOneof) {
@@ -6891,29 +6959,74 @@ TEST_F(ValidationErrorTest, ValidateProto3Extension) {
 }
 
 // Test that field names that may conflict in JSON is not allowed by protoc.
-TEST_F(ValidationErrorTest, ValidateProto3JsonName) {
+TEST_F(ValidationErrorTest, ValidateJsonNameConflictProto3) {
   // The comparison is case-insensitive.
   BuildFileWithErrors(
       "name: 'foo.proto' "
       "syntax: 'proto3' "
       "message_type {"
       "  name: 'Foo'"
-      "  field { name:'name' number:1 label:LABEL_OPTIONAL type:TYPE_INT32 }"
+      "  field { name:'_name' number:1 label:LABEL_OPTIONAL type:TYPE_INT32 }"
       "  field { name:'Name' number:2 label:LABEL_OPTIONAL type:TYPE_INT32 }"
       "}",
-      "foo.proto: Foo: NAME: The JSON camel-case name of field \"Name\" "
-      "conflicts with field \"name\". This is not allowed in proto3.\n");
+      "foo.proto: Foo: NAME: The default JSON name of field \"Name\" "
+      "(\"Name\") "
+      "conflicts with the default JSON name of field \"_name\".\n");
+
   // Underscores are ignored.
   BuildFileWithErrors(
       "name: 'foo.proto' "
       "syntax: 'proto3' "
       "message_type {"
       "  name: 'Foo'"
-      "  field { name:'ab' number:1 label:LABEL_OPTIONAL type:TYPE_INT32 }"
+      "  field { name:'AB' number:1 label:LABEL_OPTIONAL type:TYPE_INT32 }"
       "  field { name:'_a__b_' number:2 label:LABEL_OPTIONAL type:TYPE_INT32 }"
       "}",
-      "foo.proto: Foo: NAME: The JSON camel-case name of field \"_a__b_\" "
-      "conflicts with field \"ab\". This is not allowed in proto3.\n");
+      "foo.proto: Foo: NAME: The default JSON name of field \"_a__b_\" "
+      "(\"AB\") "
+      "conflicts with the default JSON name of field \"AB\".\n");
+}
+
+TEST_F(ValidationErrorTest, ValidateJsonNameConflictProto2) {
+  BuildFileWithWarnings(
+      "name: 'foo.proto' "
+      "syntax: 'proto2' "
+      "message_type {"
+      "  name: 'Foo'"
+      "  field { name:'AB' number:1 label:LABEL_OPTIONAL type:TYPE_INT32 }"
+      "  field { name:'_a__b_' number:2 label:LABEL_OPTIONAL type:TYPE_INT32 }"
+      "}",
+      "foo.proto: Foo: NAME: The default JSON name of field \"_a__b_\" "
+      "(\"AB\") "
+      "conflicts with the default JSON name of field \"AB\".\n");
+}
+
+// Test that field names that may conflict in JSON is not allowed by protoc.
+TEST_F(ValidationErrorTest, ValidateJsonNameConflictProto3Legacy) {
+  BuildFileWithErrors(
+      "name: 'foo.proto' "
+      "syntax: 'proto3' "
+      "message_type {"
+      "  name: 'Foo'"
+      "  options { deprecated_legacy_json_field_conflicts: true }"
+      "  field { name:'AB' number:1 label:LABEL_OPTIONAL type:TYPE_INT32 }"
+      "  field { name:'_a__b_' number:2 label:LABEL_OPTIONAL type:TYPE_INT32 }"
+      "}",
+      "foo.proto: Foo: NAME: The default JSON name of field \"_a__b_\" "
+      "(\"AB\") "
+      "conflicts with the default JSON name of field \"AB\".\n");
+}
+
+TEST_F(ValidationErrorTest, ValidateJsonNameConflictProto2Legacy) {
+  BuildFile(
+      "name: 'foo.proto' "
+      "syntax: 'proto2' "
+      "message_type {"
+      "  name: 'Foo'"
+      "  options { deprecated_legacy_json_field_conflicts: true }"
+      "  field { name:'AB' number:1 label:LABEL_OPTIONAL type:TYPE_INT32 }"
+      "  field { name:'_a__b_' number:2 label:LABEL_OPTIONAL type:TYPE_INT32 }"
+      "}");
 }
 
 
@@ -7402,11 +7515,11 @@ class ExponentialErrorDatabase : public DescriptorDatabase {
                  absl::string_view end_with, int32_t* file_num) {
     if (!absl::ConsumePrefix(&name, begin_with)) return;
     if (!absl::ConsumeSuffix(&name, end_with)) return;
-    GOOGLE_CHECK(absl::SimpleAtoi(name, file_num));
+    GOOGLE_ABSL_CHECK(absl::SimpleAtoi(name, file_num));
   }
 
   bool PopulateFile(int file_num, FileDescriptorProto* output) {
-    GOOGLE_CHECK_GE(file_num, 0);
+    GOOGLE_ABSL_CHECK_GE(file_num, 0);
     output->Clear();
     output->set_name(absl::Substitute("file$0.proto", file_num));
     // file0.proto doesn't define Message0
@@ -7431,7 +7544,7 @@ TEST_F(DatabaseBackedPoolTest, DoesntReloadKnownBadFiles) {
   ExponentialErrorDatabase error_database;
   DescriptorPool pool(&error_database);
 
-  GOOGLE_LOG(INFO) << "A timeout in this test probably indicates a real bug.";
+  GOOGLE_ABSL_LOG(INFO) << "A timeout in this test probably indicates a real bug.";
 
   EXPECT_TRUE(pool.FindFileByName("file40.proto") == nullptr);
   EXPECT_TRUE(pool.FindMessageTypeByName("Message40") == nullptr);
@@ -7476,8 +7589,8 @@ class AbortingErrorCollector : public DescriptorPool::ErrorCollector {
   void AddError(const std::string& filename, const std::string& element_name,
                 const Message* message, ErrorLocation location,
                 const std::string& error_message) override {
-    GOOGLE_LOG(FATAL) << "AddError() called unexpectedly: " << filename << " ["
-               << element_name << "]: " << error_message;
+    GOOGLE_ABSL_LOG(FATAL) << "AddError() called unexpectedly: " << filename << " ["
+                    << element_name << "]: " << error_message;
   }
 };
 
