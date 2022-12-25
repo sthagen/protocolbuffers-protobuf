@@ -67,6 +67,7 @@
 #include "google/protobuf/compiler/cpp/names.h"
 #include "google/protobuf/compiler/cpp/padding_optimizer.h"
 #include "google/protobuf/compiler/cpp/parse_function_generator.h"
+#include "google/protobuf/compiler/cpp/tracker.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/io/printer.h"
 #include "google/protobuf/wire_format.h"
@@ -493,18 +494,6 @@ bool ColdChunkSkipper::OnEndChunk(int chunk, io::Printer* p) {
   return true;
 }
 
-void AnnotationVar(const Descriptor* desc, const Options& options,
-                   absl::flat_hash_map<absl::string_view, std::string>& vars,
-                   absl::string_view name, absl::string_view val) {
-  if (!HasTracker(desc, options) ||
-      options.field_listener_options.forbidden_field_listener_events.contains(
-          absl::StripPrefix(name, "annotate_"))) {
-    val = "";
-  }
-
-  vars.emplace(name, absl::StrCat(absl::StripAsciiWhitespace(val), "\n"));
-}
-
 absl::flat_hash_map<absl::string_view, std::string> ClassVars(
     const Descriptor* desc, Options opts) {
   absl::flat_hash_map<absl::string_view, std::string> vars = MessageVars(desc);
@@ -522,107 +511,6 @@ absl::flat_hash_map<absl::string_view, std::string> ClassVars(
 
   for (auto& pair : UnknownFieldsVars(desc, opts)) {
     vars.emplace(pair);
-  }
-
-  AnnotationVar(desc, opts, vars, "annotate_serialize", R"cc(
-    Impl_::_tracker_.OnSerialize(this);
-  )cc");
-  AnnotationVar(desc, opts, vars, "annotate_deserialize", R"cc(
-    Impl_::_tracker_.OnDeserialize(this);
-  )cc");
-  // TODO(danilak): Ideally annotate_reflection should not exist and we need
-  // to annotate all reflective calls on our own, however, as this is a cause
-  // for side effects, i.e. reading values dynamically, we want the users know
-  // that dynamic access can happen.
-  AnnotationVar(desc, opts, vars, "annotate_reflection", R"cc(
-    Impl_::_tracker_.OnGetMetadata();
-  )cc");
-  AnnotationVar(desc, opts, vars, "annotate_bytesize", R"cc(
-    Impl_::_tracker_.OnByteSize(this);
-  )cc");
-  AnnotationVar(desc, opts, vars, "annotate_mergefrom", R"cc(
-    Impl_::_tracker_.OnMergeFrom(_this, &from);
-  )cc");
-
-  static constexpr std::array<std::pair<absl::string_view, absl::string_view>,
-                              14>
-      kVarToHook = {{
-          {"annotate_extension_has", "OnHasExtension"},
-          {"annotate_extension_clear", "OnClearExtension"},
-          {"annotate_extension_repeated_size", "OnExtensionSize"},
-          {"annotate_extension_get", "OnGetExtension"},
-          {"annotate_extension_mutable", "OnMutableExtension"},
-          {"annotate_extension_set", "OnSetExtension"},
-          {"annotate_extension_release", "OnReleaseExtension"},
-          {"annotate_repeated_extension_get", "OnGetExtension"},
-          {"annotate_repeated_extension_mutable", "OnMutableExtension"},
-          {"annotate_repeated_extension_set", "OnSetExtension"},
-          {"annotate_repeated_extension_add", "OnAddExtension"},
-          {"annotate_repeated_extension_add_mutable", "OnAddMutableExtension"},
-          {"annotate_repeated_extension_list", "OnListExtension"},
-          {"annotate_repeated_extension_list_mutable",
-           "OnMutableListExtension"},
-      }};
-
-  for (const auto& annotation : kVarToHook) {
-    vars[annotation.first] = "";
-  }
-  if (!HasTracker(desc, opts)) {
-    return vars;
-  }
-
-  absl::string_view extensions = vars["extensions"];
-  for (const auto& annotation : kVarToHook) {
-    absl::string_view name = annotation.first;
-    absl::string_view call = annotation.second;
-
-    if (!absl::StrContains(name, "repeated") &&
-        !absl::StrContains(name, "size") && !absl::StrContains(name, "clear")) {
-      // Primitive fields accessors.
-      // "Has" is here as users calling "has" on a repeated field is a mistake.
-      vars[name] = std::string(absl::StripAsciiWhitespace(absl::Substitute(
-          R"cc(
-            Impl_::_tracker_.$0(this, id.number(),
-                                _proto_TypeTraits::GetPtr(
-                                    id.number(), $1, id.default_value_ref()));
-          )cc",
-          call, extensions)));
-      continue;
-    }
-
-    if (absl::StrContains(name, "repeated") &&
-        !absl::StrContains(name, "list") && !absl::StrContains(name, "size")) {
-      // Repeated index accessors.
-      std::string str_index = "index";
-      if (absl::StrContains(name, "add")) {
-        str_index = absl::StrCat(extensions, ".ExtensionSize(id.number()) - 1");
-      }
-      vars[name] = std::string(absl::StripAsciiWhitespace(absl::Substitute(
-          R"cc(
-            Impl_::_tracker_.$0(this, id.number(),
-                                _proto_TypeTraits::GetPtr(id.number(), $1, $2));
-          )cc",
-          call, extensions, str_index)));
-      continue;
-    }
-
-    if (absl::StrContains(name, "list") || absl::StrContains(name, "size")) {
-      // Repeated full accessors.
-      vars[name] = std::string(absl::StripAsciiWhitespace(absl::Substitute(
-          R"cc(
-            Impl_::_tracker_.$0(this, id.number(),
-                                _proto_TypeTraits::GetRepeatedPtr(id.number(),
-                                                                  $1));
-          )cc",
-          call, extensions)));
-      continue;
-    }
-
-    // Generic accessors such as "clear".
-    // TODO(b/190614678): Generalize clear from both repeated and non repeated
-    // calls, currently their underlying memory interfaces are very different.
-    // Or think of removing clear callback as no usages are needed and no
-    // memory exist after calling clear().
   }
 
   return vars;
@@ -650,7 +538,7 @@ MessageGenerator::MessageGenerator(
     : descriptor_(descriptor),
       index_in_file_messages_(index_in_file_messages),
       options_(options),
-      field_generators_(descriptor, options, scc_analyzer),
+      field_generators_(descriptor),
       scc_analyzer_(scc_analyzer) {
 
   if (!message_layout_helper_) {
@@ -696,14 +584,8 @@ MessageGenerator::MessageGenerator(
       inlined_string_indices_[field->index()] = max_inlined_string_index_++;
     }
   }
-
-  if (!has_bit_indices_.empty()) {
-    field_generators_.SetHasBitIndices(has_bit_indices_);
-  }
-
-  if (!inlined_string_indices_.empty()) {
-    field_generators_.SetInlinedStringIndices(inlined_string_indices_);
-  }
+  field_generators_.Build(options_, scc_analyzer_, has_bit_indices_,
+                          inlined_string_indices_);
 
   for (int i = 0; i < descriptor->field_count(); i++) {
     if (descriptor->field(i)->is_required()) {
@@ -803,6 +685,7 @@ void MessageGenerator::GenerateFieldAccessorDeclarations(io::Printer* p) {
     auto name = FieldName(field);
 
     auto v = p->WithVars(FieldVars(field, options_));
+    auto t = p->WithVars(MakeTrackerCalls(field, options_));
     p->Emit(
         {{"field_comment", FieldComment(field)},
          Sub("const_impl", !stripped ? "const;" : "const { __builtin_trap(); }")
@@ -1084,6 +967,7 @@ void MessageGenerator::GenerateFieldAccessorDeclarations(io::Printer* p) {
 
 void MessageGenerator::GenerateSingularFieldHasBits(
     const FieldDescriptor* field, io::Printer* p) {
+  auto t = p->WithVars(MakeTrackerCalls(field, options_));
   Formatter format(p);
   if (IsFieldStripped(field, options_)) {
     format(
@@ -1163,6 +1047,7 @@ void MessageGenerator::GenerateOneofHasBits(io::Printer* p) {
 void MessageGenerator::GenerateOneofMemberHasBits(const FieldDescriptor* field,
                                                   io::Printer* p) {
   auto v = p->WithVars(OneofFieldVars(field));
+  auto t = p->WithVars(MakeTrackerCalls(field, options_));
   Formatter format(p);
   if (IsFieldStripped(field, options_)) {
     if (HasHasMethod(field)) {
@@ -1202,6 +1087,7 @@ void MessageGenerator::GenerateOneofMemberHasBits(const FieldDescriptor* field,
 
 void MessageGenerator::GenerateFieldClear(const FieldDescriptor* field,
                                           bool is_inline, io::Printer* p) {
+  auto t = p->WithVars(MakeTrackerCalls(field, options_));
   Formatter format(p);
   if (IsFieldStripped(field, options_)) {
     format("void $classname$::clear_$name$() { __builtin_trap(); }\n");
@@ -1220,6 +1106,7 @@ void MessageGenerator::GenerateFieldClear(const FieldDescriptor* field,
     // Clear this field only if it is the active field in this oneof,
     // otherwise ignore
     auto v = p->WithVars(OneofFieldVars(field));
+    auto t = p->WithVars(MakeTrackerCalls(field, options_));
     format("if ($has_field$) {\n");
     format.Indent();
     field_generators_.get(field).GenerateClearingCode(p);
@@ -1254,6 +1141,7 @@ void MessageGenerator::GenerateFieldAccessorDefinitions(io::Printer* p) {
     }
 
     auto v = p->WithVars(FieldVars(field, options_));
+    auto t = p->WithVars(MakeTrackerCalls(field, options_));
     // Generate has_$name$() or $name$_size().
     if (field->is_repeated()) {
       if (IsFieldStripped(field, options_)) {
@@ -1298,6 +1186,7 @@ void MessageGenerator::GenerateFieldAccessorDefinitions(io::Printer* p) {
 
 void MessageGenerator::GenerateClassDefinition(io::Printer* p) {
   auto v = p->WithVars(ClassVars(descriptor_, options_));
+  auto t = p->WithVars(MakeTrackerCalls(descriptor_, options_));
   Formatter format(p);
 
   if (IsMapEntryMessage(descriptor_)) {
@@ -1904,10 +1793,9 @@ void MessageGenerator::GenerateClassDefinition(io::Printer* p) {
 
   // Emit some private and static members
   for (auto field : optimized_order_) {
-    const FieldGenerator& generator = field_generators_.get(field);
-    generator.GenerateStaticMembers(p);
+    field_generators_.get(field).GenerateStaticMembers(p);
     if (!ShouldSplit(field, options_)) {
-      generator.GeneratePrivateMembers(p);
+      field_generators_.get(field).GeneratePrivateMembers(p);
     }
   }
   if (ShouldSplit(descriptor_, options_)) {
@@ -1915,8 +1803,7 @@ void MessageGenerator::GenerateClassDefinition(io::Printer* p) {
     format.Indent();
     for (auto field : optimized_order_) {
       if (!ShouldSplit(field, options_)) continue;
-      const FieldGenerator& generator = field_generators_.get(field);
-      generator.GeneratePrivateMembers(p);
+      field_generators_.get(field).GeneratePrivateMembers(p);
     }
     format.Outdent();
     format(
@@ -2000,6 +1887,7 @@ void MessageGenerator::GenerateClassDefinition(io::Printer* p) {
 
 void MessageGenerator::GenerateInlineMethods(io::Printer* p) {
   auto v = p->WithVars(ClassVars(descriptor_, options_));
+  auto t = p->WithVars(MakeTrackerCalls(descriptor_, options_));
   if (IsMapEntryMessage(descriptor_)) return;
   GenerateFieldAccessorDefinitions(p);
 
@@ -2024,6 +1912,7 @@ void MessageGenerator::GenerateInlineMethods(io::Printer* p) {
 void MessageGenerator::GenerateSchema(io::Printer* p, int offset,
                                       int has_offset) {
   auto v = p->WithVars(ClassVars(descriptor_, options_));
+  auto t = p->WithVars(MakeTrackerCalls(descriptor_, options_));
   Formatter format(p);
   has_offset = !has_bit_indices_.empty() || IsMapEntryMessage(descriptor_)
                    ? offset + has_offset
@@ -2042,6 +1931,7 @@ void MessageGenerator::GenerateSchema(io::Printer* p, int offset,
 
 void MessageGenerator::GenerateClassMethods(io::Printer* p) {
   auto v = p->WithVars(ClassVars(descriptor_, options_));
+  auto t = p->WithVars(MakeTrackerCalls(descriptor_, options_));
   Formatter format(p);
   if (IsMapEntryMessage(descriptor_)) {
     format(
@@ -2111,6 +2001,7 @@ void MessageGenerator::GenerateClassMethods(io::Printer* p) {
         "  PROTOBUF_FIELD_OFFSET($classtype$, $oneof_case$);\n");
   }
   for (auto field : FieldRange(descriptor_)) {
+    auto t = p->WithVars(MakeTrackerCalls(field, options_));
     field_generators_.get(field).GenerateInternalAccessorDeclarations(p);
     if (IsFieldStripped(field, options_)) {
       continue;
@@ -2148,10 +2039,12 @@ void MessageGenerator::GenerateClassMethods(io::Printer* p) {
     if (IsFieldStripped(field, options_)) {
       continue;
     }
+
+    auto v = p->WithVars(FieldVars(field, options_));
+    auto t = p->WithVars(MakeTrackerCalls(field, options_));
     field_generators_.get(field).GenerateNonInlineAccessorDefinitions(p);
     if (IsCrossFileMaybeMap(field)) {
-      auto v1 = p->WithVars(FieldVars(field, options_));
-      auto v2 = p->WithVars(OneofFieldVars(field));
+      auto v = p->WithVars(OneofFieldVars(field));
       GenerateFieldClear(field, false, p);
     }
   }
@@ -2250,6 +2143,7 @@ void MessageGenerator::GenerateClassMethods(io::Printer* p) {
 
 std::pair<size_t, size_t> MessageGenerator::GenerateOffsets(io::Printer* p) {
   auto v = p->WithVars(ClassVars(descriptor_, options_));
+  auto t = p->WithVars(MakeTrackerCalls(descriptor_, options_));
   Formatter format(p);
 
   if (!has_bit_indices_.empty() || IsMapEntryMessage(descriptor_)) {
@@ -2498,6 +2392,7 @@ void MessageGenerator::GenerateInitDefaultSplitInstance(io::Printer* p) {
   if (!ShouldSplit(descriptor_, options_)) return;
 
   auto v = p->WithVars(ClassVars(descriptor_, options_));
+  auto t = p->WithVars(MakeTrackerCalls(descriptor_, options_));
   Formatter format(p);
   const char* field_sep = " ";
   const auto put_sep = [&] {
@@ -2600,8 +2495,7 @@ void MessageGenerator::GenerateArenaDestructorCode(io::Printer* p) {
   for (auto field : optimized_order_) {
     if (IsFieldStripped(field, options_) || ShouldSplit(field, options_))
       continue;
-    const FieldGenerator& fg = field_generators_.get(field);
-    fg.GenerateArenaDestructorCode(p);
+    field_generators_.get(field).GenerateArenaDestructorCode(p);
   }
   if (ShouldSplit(descriptor_, options_)) {
     format("if (!_this->IsSplitMessageDefault()) {\n");
@@ -2609,8 +2503,7 @@ void MessageGenerator::GenerateArenaDestructorCode(io::Printer* p) {
     for (auto field : optimized_order_) {
       if (IsFieldStripped(field, options_) || !ShouldSplit(field, options_))
         continue;
-      const FieldGenerator& fg = field_generators_.get(field);
-      fg.GenerateArenaDestructorCode(p);
+      field_generators_.get(field).GenerateArenaDestructorCode(p);
     }
     format.Outdent();
     format("}\n");
@@ -2630,6 +2523,7 @@ void MessageGenerator::GenerateArenaDestructorCode(io::Printer* p) {
 
 void MessageGenerator::GenerateConstexprConstructor(io::Printer* p) {
   auto v = p->WithVars(ClassVars(descriptor_, options_));
+  auto t = p->WithVars(MakeTrackerCalls(descriptor_, options_));
   Formatter format(p);
 
   if (IsMapEntryMessage(descriptor_) || !HasImplData(descriptor_, options_)) {
@@ -3019,6 +2913,7 @@ void MessageGenerator::GenerateStructors(io::Printer* p) {
 
 void MessageGenerator::GenerateSourceInProto2Namespace(io::Printer* p) {
   auto v = p->WithVars(ClassVars(descriptor_, options_));
+  auto t = p->WithVars(MakeTrackerCalls(descriptor_, options_));
   Formatter format(p);
   format(
       "template<> "
@@ -3500,7 +3395,7 @@ void MessageGenerator::GenerateClassSpecificMergeImpl(io::Printer* p) {
     // Go back and emit merging code for each of the fields we processed.
     bool deferred_has_bit_changes = false;
     for (const auto field : chunk) {
-      const FieldGenerator& generator = field_generators_.get(field);
+      const auto& generator = field_generators_.get(field);
 
       if (field->is_repeated()) {
         generator.GenerateMergingCode(p);
@@ -3706,13 +3601,12 @@ void MessageGenerator::GenerateSerializeOneofFields(
 void MessageGenerator::GenerateSerializeOneField(io::Printer* p,
                                                  const FieldDescriptor* field,
                                                  int cached_has_bits_index) {
+  auto v = p->WithVars(FieldVars(field, options_));
   Formatter format(p);
   if (!field->options().weak()) {
     // For weakfields, PrintFieldComment is called during iteration.
     PrintFieldComment(format, field);
   }
-
-  const FieldGenerator& field_gen = field_generators_.get(field);
 
   bool have_enclosing_if = false;
   if (field->options().weak()) {
@@ -3723,7 +3617,7 @@ void MessageGenerator::GenerateSerializeOneField(io::Printer* p,
     if (cached_has_bits_index == has_bit_index / 32) {
       format("if (cached_has_bits & $has_mask$) {\n");
     } else {
-      field_gen.GenerateIfHasField(p);
+      field_generators_.get(field).GenerateIfHasField(p);
     }
 
     format.Indent();
@@ -3732,7 +3626,7 @@ void MessageGenerator::GenerateSerializeOneField(io::Printer* p,
     have_enclosing_if = EmitFieldNonDefaultCondition(p, "this->", field);
   }
 
-  field_gen.GenerateSerializeWithCachedSizesToArray(p);
+  field_generators_.get(field).GenerateSerializeWithCachedSizesToArray(p);
 
   if (have_enclosing_if) {
     format.Outdent();
@@ -4158,12 +4052,11 @@ void MessageGenerator::GenerateByteSize(io::Printer* p) {
     format("::size_t total_size = 0;\n");
     for (auto field : optimized_order_) {
       if (field->is_required()) {
-        const FieldGenerator& field_gen = field_generators_.get(field);
         format("\n");
-        field_gen.GenerateIfHasField(p);
+        field_generators_.get(field).GenerateIfHasField(p);
         format.Indent();
         PrintFieldComment(format, field);
-        field_gen.GenerateByteSize(p);
+        field_generators_.get(field).GenerateByteSize(p);
         format.Outdent();
         format("}\n");
       }
@@ -4217,10 +4110,9 @@ void MessageGenerator::GenerateByteSize(io::Printer* p) {
     for (auto field : optimized_order_) {
       if (!field->is_required()) continue;
       PrintFieldComment(format, field);
-      const FieldGenerator& field_gen = field_generators_.get(field);
-      field_gen.GenerateIfHasField(p);
+      field_generators_.get(field).GenerateIfHasField(p);
       format.Indent();
-      field_gen.GenerateByteSize(p);
+      field_generators_.get(field).GenerateByteSize(p);
       format.Outdent();
       format("}\n");
     }
@@ -4275,7 +4167,6 @@ void MessageGenerator::GenerateByteSize(io::Printer* p) {
     // Go back and emit checks for each of the fields we processed.
     for (int j = 0; j < chunk.size(); j++) {
       const FieldDescriptor* field = chunk[j];
-      const FieldGenerator& generator = field_generators_.get(field);
       bool have_enclosing_if = false;
       bool need_extra_newline = false;
 
@@ -4293,7 +4184,7 @@ void MessageGenerator::GenerateByteSize(io::Printer* p) {
         have_enclosing_if = EmitFieldNonDefaultCondition(p, "this->", field);
       }
 
-      generator.GenerateByteSize(p);
+      field_generators_.get(field).GenerateByteSize(p);
 
       if (have_enclosing_if) {
         format.Outdent();

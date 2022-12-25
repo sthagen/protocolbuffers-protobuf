@@ -48,7 +48,7 @@ def protobuf_deps():
     if not native.existing_rule("zlib"):
         http_archive(
             name = "zlib",
-            build_file = "@com_google_protobuf//:third_party/zlib.BUILD",
+            build_file = "//:third_party/zlib.BUILD",
             sha256 = "d14c38e313afc35a9a8760dadf26042f51ea0f5d154b0630a31da0540107fb98",
             strip_prefix = "zlib-1.2.13",
             urls = [
@@ -60,7 +60,7 @@ def protobuf_deps():
     if not native.existing_rule("jsoncpp"):
         http_archive(
             name = "jsoncpp",
-            build_file = "@com_google_protobuf//:third_party/jsoncpp.BUILD",
+            build_file = "//:third_party/jsoncpp.BUILD",
             sha256 = "e34a628a8142643b976c7233ef381457efad79468c67cb1ae0b83a33d7493999",
             strip_prefix = "jsoncpp-1.9.4",
             urls = ["https://github.com/open-source-parsers/jsoncpp/archive/refs/tags/1.9.4.tar.gz"],
@@ -135,6 +135,6 @@ def protobuf_deps():
         _github_archive(
             name = "upb",
             repo = "https://github.com/protocolbuffers/upb",
-            commit = "ea1996f40d258c469ddef691de85b7c780db1999",
-            sha256 = "1c06a558012fef70b916e755e606e0143d9a02ee33aaf1ed784a093e726b0341",
+            commit = "3f173c4b810dd36c1ed24f4ffc82c1b2fb3eb60c",
+            sha256 = "ffbcf2e5fe4eaa6826fca1bc5c074c58d74e64bb794033173a39fdba30aa193b",
         )

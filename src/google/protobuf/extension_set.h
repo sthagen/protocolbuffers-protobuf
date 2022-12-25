@@ -38,7 +38,6 @@
 #ifndef GOOGLE_PROTOBUF_EXTENSION_SET_H__
 #define GOOGLE_PROTOBUF_EXTENSION_SET_H__
 
-
 #include <algorithm>
 #include <cassert>
 #include <map>
@@ -211,7 +210,8 @@ class PROTOBUF_EXPORT ExtensionSet {
   // =================================================================
 
   // Add all fields which are currently present to the given vector.  This
-  // is useful to implement Reflection::ListFields().
+  // is useful to implement Reflection::ListFields(). Descriptors are appended
+  // in increasing tag order.
   void AppendToList(const Descriptor* extendee, const DescriptorPool* pool,
                     std::vector<const FieldDescriptor*>* output) const;
 

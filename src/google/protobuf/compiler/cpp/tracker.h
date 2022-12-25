@@ -1,5 +1,5 @@
 // Protocol Buffers - Google's data interchange format
-// Copyright 2008 Google Inc.  All rights reserved.
+// Copyright 2022 Google Inc.  All rights reserved.
 // https://developers.google.com/protocol-buffers/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,57 +28,31 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GOOGLE_PROTOBUF_GENERATED_ENUM_UTIL_H__
-#define GOOGLE_PROTOBUF_GENERATED_ENUM_UTIL_H__
+#ifndef GOOGLE_PROTOBUF_COMPILER_CPP_TRACKER_H__
+#define GOOGLE_PROTOBUF_COMPILER_CPP_TRACKER_H__
 
-#include <type_traits>
+#include <vector>
 
-#include "absl/strings/string_view.h"
-#include "google/protobuf/message_lite.h"
-
-// Must be included last.
-#include "google/protobuf/port_def.inc"
-
-#ifdef SWIG
-#error "You cannot SWIG proto headers"
-#endif
+#include "google/protobuf/descriptor.h"
+#include "google/protobuf/compiler/cpp/options.h"
+#include "google/protobuf/io/printer.h"
 
 namespace google {
 namespace protobuf {
+namespace compiler {
+namespace cpp {
 
-// This type trait can be used to cause templates to only match proto2 enum
-// types.
-template <typename T>
-struct is_proto_enum : ::std::false_type {};
+// Generates printer substitutions for message-level tracker callbacks.
+std::vector<google::protobuf::io::Printer::Sub> MakeTrackerCalls(
+    const google::protobuf::Descriptor* message, const Options& opts);
 
-namespace internal {
+// Generates printer substitutions for field-specific tracker callbacks.
+std::vector<google::protobuf::io::Printer::Sub> MakeTrackerCalls(
+    const google::protobuf::FieldDescriptor* field, const Options& opts);
 
-// The table entry format for storing enum name-to-value mapping used with lite
-// protos. This struct and the following related functions should only be used
-// by protobuf generated code.
-struct EnumEntry {
-  absl::string_view name;
-  int value;
-};
-
-// Looks up a numeric enum value given the string name.
-PROTOBUF_EXPORT bool LookUpEnumValue(const EnumEntry* enums, size_t size,
-                                     absl::string_view name, int* value);
-
-// Looks up an enum name given the numeric value.
-PROTOBUF_EXPORT int LookUpEnumName(const EnumEntry* enums,
-                                   const int* sorted_indices, size_t size,
-                                   int value);
-
-// Initializes the list of enum names in std::string form.
-PROTOBUF_EXPORT bool InitializeEnumStrings(
-    const EnumEntry* enums, const int* sorted_indices, size_t size,
-    internal::ExplicitlyConstructed<std::string>* enum_strings);
-
-}  // namespace internal
+}  // namespace cpp
+}  // namespace compiler
 }  // namespace protobuf
 }  // namespace google
 
-#include "google/protobuf/port_undef.inc"
-
-#endif  // GOOGLE_PROTOBUF_GENERATED_ENUM_UTIL_H__
+#endif  // GOOGLE_PROTOBUF_COMPILER_CPP_TRACKER_H__

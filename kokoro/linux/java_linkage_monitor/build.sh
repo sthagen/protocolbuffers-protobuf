@@ -13,6 +13,7 @@ use_bazel.sh 4.2.2
 # Change to repo root
 cd $(dirname $0)/../../..
 
+sudo ./kokoro/common/setup_kokoro_environment.sh
 bazel build //:protoc
 
 # The java build setup expects protoc in the root directory.
