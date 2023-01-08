@@ -69,9 +69,7 @@ std::vector<const FieldDescriptor*> GetOrderedFields(
     const Descriptor* descriptor, const Options& options) {
   std::vector<const FieldDescriptor*> ordered_fields;
   for (auto field : FieldRange(descriptor)) {
-    if (!IsFieldStripped(field, options)) {
-      ordered_fields.push_back(field);
-    }
+    ordered_fields.push_back(field);
   }
   std::sort(ordered_fields.begin(), ordered_fields.end(),
             [](const FieldDescriptor* a, const FieldDescriptor* b) {
@@ -708,7 +706,9 @@ static void FormatFieldKind(Formatter& format,
   const int rep_index = (type_card & fl::kRepMask) >> fl::kRepShift;
   const int tv_index = (type_card & fl::kTvMask) >> fl::kTvShift;
 
-  format("(");
+  // Use `0|` prefix to eagerly convert the enums to int to avoid enum-enum
+  // operations. They are deprecated in C++20.
+  format("(0 | ");
   static constexpr const char* kFieldCardNames[] = {"Singular", "Optional",
                                                     "Repeated", "Oneof"};
   static_assert((fl::kFcSingular >> fl::kFcShift) == 0, "");
