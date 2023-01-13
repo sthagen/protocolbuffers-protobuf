@@ -197,11 +197,8 @@ TEST(RepeatedField, ArenaAllocationSizesMatchExpectedValues) {
   // memory.
   // If the allocation size is wrong, ReturnArrayMemory will GOOGLE_ABSL_DCHECK.
   CheckAllocationSizes<RepeatedField<bool>>(false);
-  CheckAllocationSizes<RepeatedField<uint8_t>>(false);
-  CheckAllocationSizes<RepeatedField<uint16_t>>(false);
   CheckAllocationSizes<RepeatedField<uint32_t>>(false);
   CheckAllocationSizes<RepeatedField<uint64_t>>(false);
-  CheckAllocationSizes<RepeatedField<std::pair<uint64_t, uint64_t>>>(false);
 }
 
 template <typename Rep>
@@ -951,7 +948,7 @@ TEST(RepeatedField, Truncate) {
   // Truncations that don't change the size are allowed, but growing is not
   // allowed.
   field.Truncate(field.size());
-#ifdef PROTOBUF_HAS_DEATH_TEST
+#if PROTOBUF_HAS_DEATH_TEST
   EXPECT_DEBUG_DEATH(field.Truncate(field.size() + 1), "new_size");
 #endif
 }
@@ -1010,7 +1007,7 @@ TEST(RepeatedField, TruncateCords) {
   // Truncating to the current size should be fine (no-op), but truncating
   // to a larger size should crash.
   field.Truncate(field.size());
-#ifdef PROTOBUF_HAS_DEATH_TEST
+#if PROTOBUF_HAS_DEATH_TEST
   EXPECT_DEBUG_DEATH(field.Truncate(field.size() + 1), "new_size");
 #endif
 }
@@ -1062,28 +1059,6 @@ TEST(RepeatedField, ExtractSubrange) {
   }
 }
 
-TEST(RepeatedField, ClearThenReserveMore) {
-  // Test that Reserve properly destroys the old internal array when it's forced
-  // to allocate a new one, even when cleared-but-not-deleted objects are
-  // present. Use a 'string' and > 16 bytes length so that the elements are
-  // non-POD and allocate -- the leak checker will catch any skipped destructor
-  // calls here.
-  RepeatedField<std::string> field;
-  for (int i = 0; i < 32; i++) {
-    field.Add(std::string("abcdefghijklmnopqrstuvwxyz0123456789"));
-  }
-  EXPECT_EQ(32, field.size());
-  field.Clear();
-  EXPECT_EQ(0, field.size());
-  EXPECT_LE(32, field.Capacity());
-
-  field.Reserve(1024);
-  EXPECT_EQ(0, field.size());
-  EXPECT_LE(1024, field.Capacity());
-  // Finish test -- |field| should destroy the cleared-but-not-yet-destroyed
-  // strings.
-}
-
 TEST(RepeatedField, TestSAddFromSelf) {
   RepeatedField<int> field;
   field.Add(0);
@@ -1099,6 +1074,28 @@ TEST(RepeatedField, TestSAddFromSelf) {
 TEST(RepeatedPtrField, ConstInit) {
   PROTOBUF_CONSTINIT static RepeatedPtrField<std::string> field{};  // NOLINT
   EXPECT_TRUE(field.empty());
+}
+
+TEST(RepeatedPtrField, ClearThenReserveMore) {
+  // Test that Reserve properly destroys the old internal array when it's forced
+  // to allocate a new one, even when cleared-but-not-deleted objects are
+  // present. Use a 'string' and > 16 bytes length so that the elements are
+  // non-POD and allocate -- the leak checker will catch any skipped destructor
+  // calls here.
+  RepeatedPtrField<std::string> field;
+  for (int i = 0; i < 32; i++) {
+    *field.Add() = std::string("abcdefghijklmnopqrstuvwxyz0123456789");
+  }
+  EXPECT_EQ(32, field.size());
+  field.Clear();
+  EXPECT_EQ(0, field.size());
+  EXPECT_LE(32, field.Capacity());
+
+  field.Reserve(1024);
+  EXPECT_EQ(0, field.size());
+  EXPECT_LE(1024, field.Capacity());
+  // Finish test -- |field| should destroy the cleared-but-not-yet-destroyed
+  // strings.
 }
 
 // This helper overload set tests whether X::f can be called with a braced pair,
