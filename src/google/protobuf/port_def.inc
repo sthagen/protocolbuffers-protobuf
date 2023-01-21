@@ -204,29 +204,14 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 
 #ifdef PROTOBUF_FUTURE_BREAKING_CHANGES
 
-// Include static asserts to lock down assumptions about our containers.
-// Owner: mkruskal@
-#define PROTOBUF_FUTURE_CONTAINER_STATIC_ASSERTS 1
-
 // Used to upgrade google::protobuf::MapPair<K, V> to std::pair<const K, V>.
 // Owner: mordberg@
 #define PROTOBUF_FUTURE_MAP_PAIR_UPGRADE 1
-
-// Used on classes that are historically not marked as final, but that may be
-// marked final in future (breaking) releases.
-// Owner: kfm@
-#define PROTOBUF_FUTURE_FINAL final
-
-// Used to remove the RTTI checks for `DefaultFieldComparator`.
-// Owner: kfm@
-#define PROTOBUF_FUTURE_REMOVE_DEFAULT_FIELD_COMPARATOR 1
 
 // Used to remove the manipulation of cleared elements in RepeatedPtrField.
 // Owner: mkruskal@
 #define PROTOBUF_FUTURE_REMOVE_CLEARED_API 1
 
-#else
-#define PROTOBUF_FUTURE_FINAL
 #endif
 
 #ifdef PROTOBUF_VERSION
@@ -408,6 +393,23 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 # define PROTOBUF_DEPRECATED_ENUM __attribute__((deprecated))
 #else
 # define PROTOBUF_DEPRECATED_ENUM
+#endif
+
+#if defined(__clang__)
+#define PROTOBUF_IGNORE_DEPRECATION_START                     \
+  _Pragma("clang diagnostic push")                                  \
+  _Pragma("clang diagnostic ignored \"-Wdeprecated-declarations\"")
+#define PROTOBUF_IGNORE_DEPRECATION_STOP                     \
+  _Pragma("clang diagnostic pop")
+#elif defined(__GNUC__)
+#define PROTOBUF_IGNORE_DEPRECATION_START                     \
+  _Pragma("GCC diagnostic push")                                  \
+  _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+#define PROTOBUF_IGNORE_DEPRECATION_STOP                     \
+  _Pragma("GCC diagnostic pop")
+#else
+#define PROTOBUF_IGNORE_DEPRECATION_START
+#define PROTOBUF_IGNORE_DEPRECATION_STOP
 #endif
 
 #ifdef PROTOBUF_RETURNS_NONNULL

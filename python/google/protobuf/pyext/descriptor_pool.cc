@@ -48,6 +48,9 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/str_replace.h"
 
+// Must be included last.
+#include "google/protobuf/port_def.inc"
+
 #define PyString_AsStringAndSize(ob, charpp, sizep)              \
   (PyUnicode_Check(ob)                                           \
        ? ((*(charpp) = const_cast<char*>(                        \
@@ -155,20 +158,28 @@ static PyDescriptorPool* PyDescriptorPool_NewWithUnderlay(
 }
 
 static PyDescriptorPool* PyDescriptorPool_NewWithDatabase(
-    DescriptorDatabase* database) {
+    DescriptorDatabase* database,
+    bool use_deprecated_legacy_json_field_conflicts) {
   PyDescriptorPool* cpool = _CreateDescriptorPool();
   if (cpool == nullptr) {
     return nullptr;
   }
+  DescriptorPool* pool;
   if (database != nullptr) {
     cpool->error_collector = new BuildFileErrorCollector();
-    cpool->pool = new DescriptorPool(database, cpool->error_collector);
+    pool = new DescriptorPool(database, cpool->error_collector);
     cpool->is_mutable = false;
     cpool->database = database;
   } else {
-    cpool->pool = new DescriptorPool();
+    pool = new DescriptorPool();
     cpool->is_mutable = true;
   }
+  if (use_deprecated_legacy_json_field_conflicts) {
+    PROTOBUF_IGNORE_DEPRECATION_START
+    pool->UseDeprecatedLegacyJsonFieldConflicts();
+    PROTOBUF_IGNORE_DEPRECATION_STOP
+  }
+  cpool->pool = pool;
   cpool->is_owned = true;
 
   if (!descriptor_pool_map->insert(std::make_pair(cpool->pool, cpool)).second) {
@@ -183,6 +194,7 @@ static PyDescriptorPool* PyDescriptorPool_NewWithDatabase(
 // The public DescriptorPool constructor.
 static PyObject* New(PyTypeObject* type,
                      PyObject* args, PyObject* kwargs) {
+  int use_deprecated_legacy_json_field_conflicts = 0;
   static const char* kwlist[] = {"descriptor_db", nullptr};
   PyObject* py_database = nullptr;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O",
@@ -193,8 +205,8 @@ static PyObject* New(PyTypeObject* type,
   if (py_database && py_database != Py_None) {
     database = new PyDescriptorDatabase(py_database);
   }
-  return reinterpret_cast<PyObject*>(
-      PyDescriptorPool_NewWithDatabase(database));
+  return reinterpret_cast<PyObject*>(PyDescriptorPool_NewWithDatabase(
+      database, use_deprecated_legacy_json_field_conflicts));
 }
 
 static void Dealloc(PyObject* pself) {
@@ -819,3 +831,5 @@ PyObject* PyDescriptorPool_FromPool(const DescriptorPool* pool) {
 }  // namespace python
 }  // namespace protobuf
 }  // namespace google
+
+#include "google/protobuf/port_undef.inc"

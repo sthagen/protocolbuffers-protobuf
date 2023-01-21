@@ -902,7 +902,6 @@ class StringTypeHandler {
 // Messages.
 template <typename Element>
 class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
-#ifndef PROTOBUF_FUTURE_CONTAINER_STATIC_ASSERTS
   static_assert(!std::is_const<Element>::value,
                 "We do not support const value types.");
   static_assert(!std::is_volatile<Element>::value,
@@ -911,15 +910,12 @@ class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
                 "We do not support pointer value types.");
   static_assert(!std::is_reference<Element>::value,
                 "We do not support reference value types.");
-#endif  // !PROTOBUF_FUTURE_CONTAINER_STATIC_ASSERTS
   static constexpr PROTOBUF_ALWAYS_INLINE void StaticValidityCheck() {
-#ifdef PROTOBUF_FUTURE_CONTAINER_STATIC_ASSERTS
     static_assert(
         absl::disjunction<
             internal::is_supported_string_type<Element>,
             internal::is_supported_message_type<Element>>::value,
         "We only support string and Message types in RepeatedPtrField.");
-#endif  // PROTOBUF_FUTURE_CONTAINER_STATIC_ASSERTS
   }
 
  public:
@@ -1156,6 +1152,7 @@ class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
   //
   // This method cannot be called when either the repeated field or |value| is
   // on an arena; both cases will trigger a GOOGLE_ABSL_DCHECK-failure.
+  ABSL_DEPRECATED("This will be removed in a future release")
   void AddCleared(Element* value);
   // Removes and returns a single element from the cleared pool, passing
   // ownership to the caller.  The element is guaranteed to be cleared.
@@ -1163,7 +1160,9 @@ class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
   //
   // This method cannot be called when the repeated field is on an arena; doing
   // so will trigger a GOOGLE_ABSL_DCHECK-failure.
-  PROTOBUF_NODISCARD Element* ReleaseCleared();
+  PROTOBUF_NODISCARD
+  ABSL_DEPRECATED("This will be removed in a future release")
+  Element* ReleaseCleared();
 #endif  // !PROTOBUF_FUTURE_REMOVE_CLEARED_API
 
   // Removes the element referenced by position.

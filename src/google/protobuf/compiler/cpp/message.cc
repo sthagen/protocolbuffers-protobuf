@@ -288,10 +288,10 @@ void CollectMapInfo(
     default:
       vars["val_cpp"] = PrimitiveTypeName(options, val->cpp_type());
   }
-  vars["key_wire_type"] =
-      "TYPE_" + absl::AsciiStrToUpper(DeclaredTypeMethodName(key->type()));
-  vars["val_wire_type"] =
-      "TYPE_" + absl::AsciiStrToUpper(DeclaredTypeMethodName(val->type()));
+  vars["key_wire_type"] = absl::StrCat(
+      "TYPE_", absl::AsciiStrToUpper(DeclaredTypeMethodName(key->type())));
+  vars["val_wire_type"] = absl::StrCat(
+      "TYPE_", absl::AsciiStrToUpper(DeclaredTypeMethodName(val->type())));
 }
 
 
@@ -498,6 +498,7 @@ absl::flat_hash_map<absl::string_view, std::string> ClassVars(
     const Descriptor* desc, Options opts) {
   absl::flat_hash_map<absl::string_view, std::string> vars = MessageVars(desc);
 
+  vars.emplace("pkg", Namespace(desc, opts));
   vars.emplace("Msg", ClassName(desc, false));
   vars.emplace("pkg::Msg", QualifiedClassName(desc, opts));
   vars.emplace("pkg.Msg", desc->full_name());
@@ -2142,7 +2143,7 @@ std::pair<size_t, size_t> MessageGenerator::GenerateOffsets(io::Printer* p) {
       format("PROTOBUF_FIELD_OFFSET($classtype$$1$, $2$)",
              ShouldSplit(field, options_) ? "::Impl_::Split" : "",
              ShouldSplit(field, options_)
-                 ? FieldName(field) + "_"
+                 ? absl::StrCat(FieldName(field), "_")
                  : FieldMemberName(field, /*cold=*/false));
     }
 

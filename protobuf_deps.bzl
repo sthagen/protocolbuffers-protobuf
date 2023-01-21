@@ -41,8 +41,8 @@ def protobuf_deps():
         _github_archive(
             name = "com_google_absl",
             repo = "https://github.com/abseil/abseil-cpp",
-            commit = "273292d1cfc0a94a65082ee350509af1d113344d",
-            sha256 = "6764f226bd6e2d8ab9fe2f3cab5f45fb1a4a15c04b58b87ba7fa87456054f98b",
+            commit = "10b627fbe944110d1672bdf3f8e23b5909721399",
+            sha256 = "138ec814b4b72a79a41b2ae6526150467ff7749d8a792a63742207a5d8578ed1",
         )
 
     if not native.existing_rule("zlib"):
@@ -110,8 +110,8 @@ def protobuf_deps():
         _github_archive(
             name = "rules_ruby",
             repo = "https://github.com/protocolbuffers/rules_ruby",
-            commit = "59732544ce3a4bc4e8e4d4e8c8f318c931c17eae",
-            sha256 = "4fc45adf1056c824afde9a52b743b915eeada3633539eb1dbd641a66dc9f4c4f",
+            commit = "5cf6ff74161d7f985b9bf86bb3c5fb16cef6337b",
+            sha256 = "c88dd69eb50fcfd7fbc5d7db79adc6631ef0e1d80b3c94efe33ac5ee3ccc37f7",
         )
 
     if not native.existing_rule("rules_jvm_external"):
@@ -150,7 +150,7 @@ def protobuf_deps():
         _github_archive(
             name = "upb",
             repo = "https://github.com/protocolbuffers/upb",
-            commit = "0c6b72dbf891eafc91050ad60733ea3022fac2b3",
-            sha256 = "9c8cdfa013450548c9f03fac8e1390aeb21a75413f443790815b71d475c9af49",
+            commit = "5d4d54d387a6cccc7cbebec797cc253d58b42c69",
+            sha256 = "81acf80e2b452c051ae6239f2ead4f1b56056d7256daea1292d3a423151518e8",
             patches = ["@com_google_protobuf//build_defs:upb.patch"],
         )
