@@ -52,8 +52,8 @@ namespace internal {
 bool EpsCopyInputStream::ParseEndsInSlopRegion(const char* begin, int overrun,
                                                int depth) {
   constexpr int kSlopBytes = EpsCopyInputStream::kSlopBytes;
-  GOOGLE_ABSL_DCHECK_GE(overrun, 0);
-  GOOGLE_ABSL_DCHECK_LE(overrun, kSlopBytes);
+  ABSL_DCHECK_GE(overrun, 0);
+  ABSL_DCHECK_LE(overrun, kSlopBytes);
   auto ptr = begin + overrun;
   auto end = begin + kSlopBytes;
   while (ptr < end) {
@@ -102,7 +102,7 @@ bool EpsCopyInputStream::ParseEndsInSlopRegion(const char* begin, int overrun,
 const char* EpsCopyInputStream::NextBuffer(int overrun, int depth) {
   if (next_chunk_ == nullptr) return nullptr;  // We've reached end of stream.
   if (next_chunk_ != patch_buffer_) {
-    GOOGLE_ABSL_DCHECK(size_ > kSlopBytes);
+    ABSL_DCHECK(size_ > kSlopBytes);
     // The chunk is large enough to be used directly
     buffer_end_ = next_chunk_ + size_ - kSlopBytes;
     auto res = next_chunk_;
@@ -134,7 +134,7 @@ const char* EpsCopyInputStream::NextBuffer(int overrun, int depth) {
         if (aliasing_ >= kNoDelta) aliasing_ = kOnPatch;
         return patch_buffer_;
       }
-      GOOGLE_ABSL_DCHECK(size_ == 0) << size_;
+      ABSL_DCHECK(size_ == 0) << size_;
     }
     overall_limit_ = 0;  // Next failed, no more needs for next
   }
@@ -155,7 +155,7 @@ const char* EpsCopyInputStream::NextBuffer(int overrun, int depth) {
 }
 
 const char* EpsCopyInputStream::Next() {
-  GOOGLE_ABSL_DCHECK(limit_ > kSlopBytes);
+  ABSL_DCHECK(limit_ > kSlopBytes);
   auto p = NextBuffer(0 /* immaterial */, -1);
   if (p == nullptr) {
     limit_end_ = buffer_end_;
@@ -172,25 +172,25 @@ std::pair<const char*, bool> EpsCopyInputStream::DoneFallback(int overrun,
                                                               int depth) {
   // Did we exceeded the limit (parse error).
   if (PROTOBUF_PREDICT_FALSE(overrun > limit_)) return {nullptr, true};
-  GOOGLE_ABSL_DCHECK(overrun != limit_);  // Guaranteed by caller.
-  GOOGLE_ABSL_DCHECK(overrun < limit_);   // Follows from above
+  ABSL_DCHECK(overrun != limit_);  // Guaranteed by caller.
+  ABSL_DCHECK(overrun < limit_);   // Follows from above
   // TODO(gerbens) Instead of this dcheck we could just assign, and remove
   // updating the limit_end from PopLimit, ie.
   // limit_end_ = buffer_end_ + (std::min)(0, limit_);
   // if (ptr < limit_end_) return {ptr, false};
-  GOOGLE_ABSL_DCHECK(limit_end_ == buffer_end_ + (std::min)(0, limit_));
+  ABSL_DCHECK(limit_end_ == buffer_end_ + (std::min)(0, limit_));
   // At this point we know the following assertion holds.
-  GOOGLE_ABSL_DCHECK_GT(limit_, 0);
-  GOOGLE_ABSL_DCHECK(limit_end_ == buffer_end_);  // because limit_ > 0
+  ABSL_DCHECK_GT(limit_, 0);
+  ABSL_DCHECK(limit_end_ == buffer_end_);  // because limit_ > 0
   const char* p;
   do {
     // We are past the end of buffer_end_, in the slop region.
-    GOOGLE_ABSL_DCHECK_GE(overrun, 0);
+    ABSL_DCHECK_GE(overrun, 0);
     p = NextBuffer(overrun, depth);
     if (p == nullptr) {
       // We are at the end of the stream
       if (PROTOBUF_PREDICT_FALSE(overrun != 0)) return {nullptr, true};
-      GOOGLE_ABSL_DCHECK_GT(limit_, 0);
+      ABSL_DCHECK_GT(limit_, 0);
       limit_end_ = buffer_end_;
       // Distinguish ending on a pushed limit or ending on end-of-stream.
       SetEndOfStream();
@@ -264,7 +264,7 @@ const char* EpsCopyInputStream::ReadCordFallback(const char* ptr, int size,
     StreamBackUp(size_);
   } else {
     size -= bytes_from_buffer;
-    GOOGLE_ABSL_DCHECK_GT(size, 0);
+    ABSL_DCHECK_GT(size, 0);
     *cord = absl::string_view(ptr, bytes_from_buffer);
     if (next_chunk_ == patch_buffer_) {
       // We have read to end of the last buffer returned by
@@ -275,7 +275,7 @@ const char* EpsCopyInputStream::ReadCordFallback(const char* ptr, int size,
       return nullptr;
     } else {
       // Next chunk is already loaded
-      GOOGLE_ABSL_DCHECK(size_ > kSlopBytes);
+      ABSL_DCHECK(size_ > kSlopBytes);
       StreamBackUp(size_ - kSlopBytes);
     }
   }
@@ -336,7 +336,7 @@ const char* ParseContext::ParseMessage(MessageLite* msg, const char* ptr) {
   if (ptr == nullptr) return ptr;
   auto old_depth = depth_;
   ptr = msg->_InternalParse(ptr, this);
-  if (ptr != nullptr) GOOGLE_ABSL_DCHECK_EQ(old_depth, depth_);
+  if (ptr != nullptr) ABSL_DCHECK_EQ(old_depth, depth_);
   depth_++;
   if (!PopLimit(old)) return nullptr;
   return ptr;
@@ -674,30 +674,15 @@ const char* UnknownFieldParse(uint32_t tag, std::string* unknown,
 // result = <multiple operations to calculate result>
 // num_bits = ValueBarrier(num_bits, result);
 // if (num_bits == 63) {
-//   GOOGLE_ABSL_LOG(FATAL) << "Invalid num_bits value";
+//   ABSL_LOG(FATAL) << "Invalid num_bits value";
 // }
 // ```
-template <typename V1Type, typename V2Type>
-PROTOBUF_ALWAYS_INLINE inline V1Type ValueBarrier(V1Type value1,
-                                                  V2Type value2) {
-  asm("" : "+r"(value1) : "r"(value2));
-  return value1;
-}
-
-// Falsely indicate that the specific value is modified at this location.  This
-// prevents code which depends on this value from being scheduled earlier.
-template <typename V1Type>
-PROTOBUF_ALWAYS_INLINE inline V1Type ValueBarrier(V1Type value1) {
-  asm("" : "+r"(value1));
-  return value1;
-}
-
 PROTOBUF_ALWAYS_INLINE inline uint64_t ExtractAndMergeTwoChunks(
     uint64_t data, uint64_t first_byte) {
-  GOOGLE_ABSL_DCHECK_LE(first_byte, 6);
+  ABSL_DCHECK_LE(first_byte, 6);
   uint64_t first = Ubfx7(data, first_byte * 8);
   uint64_t second = Ubfx7(data, (first_byte + 1) * 8);
-  return ForceToRegister(first | (second << 7));
+  return ValueBarrier(first | (second << 7));
 }
 
 struct SlowPathEncodedInfo {
@@ -716,9 +701,9 @@ PROTOBUF_ALWAYS_INLINE inline SlowPathEncodedInfo ComputeLengthAndUpdateP(
   SlowPathEncodedInfo result;
   // Load the last two bytes of the encoded Varint.
   std::memcpy(&result.last8, p + 2, sizeof(result.last8));
-  uint64_t mask = ForceToRegister(0x8080808080808080);
+  uint64_t mask = ValueBarrier(0x8080808080808080);
   // Only set continuation bits remain
-  result.masked_cont_bits = ForceToRegister(mask & (~result.last8));
+  result.masked_cont_bits = ValueBarrier(mask & (~result.last8));
   // The first cleared continuation bit is the most significant 1 in the
   // reversed value.  Result is undefined for an input of 0 and we handle that
   // case below.
@@ -758,9 +743,11 @@ PROTOBUF_NOINLINE const char* VarintParseSlowArm64(const char* p, uint64_t* out,
                     merged_45 << kFirstResultBitChunk4;
   // This immediate ends in 14 zeroes since valid_chunk_bits is too low by 14.
   uint64_t result_mask = kResultMaskUnshifted << info.valid_chunk_bits;
-  // masked_cont_bits is 0 iff the Varint is invalid.  In that case
-  info.valid_bits =
-      info.masked_cont_bits ? info.valid_bits : kValidBitsForInvalidVarint;
+  // masked_cont_bits is 0 iff the Varint is invalid.
+  if (PROTOBUF_PREDICT_FALSE(!info.masked_cont_bits)) {
+    *out = 0;
+    return nullptr;
+  }
   // Test for early exit if Varint does not exceed 6 chunks.  Branching on one
   // bit is faster on ARM than via a compare and branch.
   if (PROTOBUF_PREDICT_FALSE((info.valid_bits & 0x20) != 0)) {
@@ -772,11 +759,6 @@ PROTOBUF_NOINLINE const char* VarintParseSlowArm64(const char* p, uint64_t* out,
     result |= merged_67 << kFirstResultBitChunk6;
     result |= merged_89 << kFirstResultBitChunk8;
     // Handle an invalid Varint with all 10 continuation bits set.
-    info.masked_cont_bits = ValueBarrier(info.masked_cont_bits);
-    if (PROTOBUF_PREDICT_FALSE(info.masked_cont_bits == 0)) {
-      *out = 0;
-      return nullptr;
-    }
   }
   // Mask off invalid data bytes.
   result &= ~result_mask;
@@ -795,8 +777,8 @@ PROTOBUF_NOINLINE const char* VarintParseSlowArm32(const char* p, uint32_t* out,
   uint64_t merged_34 = ExtractAndMergeTwoChunks(first8, /*first_chunk=*/3);
   first8 = ValueBarrier(first8, p);
   uint64_t result = Ubfx7(first8, /*start=*/0);
-  result = ForceToRegister(result | merged_12 << kFirstResultBitChunk1);
-  result = ForceToRegister(result | merged_34 << kFirstResultBitChunk3);
+  result = ValueBarrier(result | merged_12 << kFirstResultBitChunk1);
+  result = ValueBarrier(result | merged_34 << kFirstResultBitChunk3);
   uint64_t result_mask = kResultMaskUnshifted << info.valid_chunk_bits;
   result &= ~result_mask;
   // It is extremely unlikely that a Varint is invalid so checking that

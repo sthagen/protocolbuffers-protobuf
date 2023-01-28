@@ -350,6 +350,71 @@ inline bool FieldOptions_JSType_Parse(absl::string_view name, FieldOptions_JSTyp
   return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<FieldOptions_JSType>(
       FieldOptions_JSType_descriptor(), name, value);
 }
+enum FieldOptions_OptionRetention : int {
+  FieldOptions_OptionRetention_RETENTION_UNKNOWN = 0,
+  FieldOptions_OptionRetention_RETENTION_RUNTIME = 1,
+  FieldOptions_OptionRetention_RETENTION_SOURCE = 2,
+};
+
+PROTOBUF_EXPORT bool FieldOptions_OptionRetention_IsValid(int value);
+constexpr FieldOptions_OptionRetention FieldOptions_OptionRetention_OptionRetention_MIN = static_cast<FieldOptions_OptionRetention>(0);
+constexpr FieldOptions_OptionRetention FieldOptions_OptionRetention_OptionRetention_MAX = static_cast<FieldOptions_OptionRetention>(2);
+constexpr int FieldOptions_OptionRetention_OptionRetention_ARRAYSIZE = 2 + 1;
+PROTOBUF_EXPORT const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor*
+FieldOptions_OptionRetention_descriptor();
+template <typename T>
+const std::string& FieldOptions_OptionRetention_Name(T value) {
+  static_assert(std::is_same<T, FieldOptions_OptionRetention>::value ||
+                    std::is_integral<T>::value,
+                "Incorrect type passed to OptionRetention_Name().");
+  return FieldOptions_OptionRetention_Name(static_cast<FieldOptions_OptionRetention>(value));
+}
+template <>
+inline const std::string& FieldOptions_OptionRetention_Name(FieldOptions_OptionRetention value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfDenseEnum<FieldOptions_OptionRetention_descriptor,
+                                                 0, 2>(
+      static_cast<int>(value));
+}
+inline bool FieldOptions_OptionRetention_Parse(absl::string_view name, FieldOptions_OptionRetention* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<FieldOptions_OptionRetention>(
+      FieldOptions_OptionRetention_descriptor(), name, value);
+}
+enum FieldOptions_OptionTargetType : int {
+  FieldOptions_OptionTargetType_TARGET_TYPE_UNKNOWN = 0,
+  FieldOptions_OptionTargetType_TARGET_TYPE_FILE = 1,
+  FieldOptions_OptionTargetType_TARGET_TYPE_EXTENSION_RANGE = 2,
+  FieldOptions_OptionTargetType_TARGET_TYPE_MESSAGE = 3,
+  FieldOptions_OptionTargetType_TARGET_TYPE_FIELD = 4,
+  FieldOptions_OptionTargetType_TARGET_TYPE_ONEOF = 5,
+  FieldOptions_OptionTargetType_TARGET_TYPE_ENUM = 6,
+  FieldOptions_OptionTargetType_TARGET_TYPE_ENUM_ENTRY = 7,
+  FieldOptions_OptionTargetType_TARGET_TYPE_SERVICE = 8,
+  FieldOptions_OptionTargetType_TARGET_TYPE_METHOD = 9,
+};
+
+PROTOBUF_EXPORT bool FieldOptions_OptionTargetType_IsValid(int value);
+constexpr FieldOptions_OptionTargetType FieldOptions_OptionTargetType_OptionTargetType_MIN = static_cast<FieldOptions_OptionTargetType>(0);
+constexpr FieldOptions_OptionTargetType FieldOptions_OptionTargetType_OptionTargetType_MAX = static_cast<FieldOptions_OptionTargetType>(9);
+constexpr int FieldOptions_OptionTargetType_OptionTargetType_ARRAYSIZE = 9 + 1;
+PROTOBUF_EXPORT const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor*
+FieldOptions_OptionTargetType_descriptor();
+template <typename T>
+const std::string& FieldOptions_OptionTargetType_Name(T value) {
+  static_assert(std::is_same<T, FieldOptions_OptionTargetType>::value ||
+                    std::is_integral<T>::value,
+                "Incorrect type passed to OptionTargetType_Name().");
+  return FieldOptions_OptionTargetType_Name(static_cast<FieldOptions_OptionTargetType>(value));
+}
+template <>
+inline const std::string& FieldOptions_OptionTargetType_Name(FieldOptions_OptionTargetType value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfDenseEnum<FieldOptions_OptionTargetType_descriptor,
+                                                 0, 9>(
+      static_cast<int>(value));
+}
+inline bool FieldOptions_OptionTargetType_Parse(absl::string_view name, FieldOptions_OptionTargetType* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<FieldOptions_OptionTargetType>(
+      FieldOptions_OptionTargetType_descriptor(), name, value);
+}
 enum MethodOptions_IdempotencyLevel : int {
   MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN = 0,
   MethodOptions_IdempotencyLevel_NO_SIDE_EFFECTS = 1,
@@ -489,7 +554,7 @@ class PROTOBUF_EXPORT FileDescriptorSet final :
   }
   void UnsafeArenaSwap(FileDescriptorSet* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -651,7 +716,7 @@ class PROTOBUF_EXPORT FileDescriptorProto final :
   }
   void UnsafeArenaSwap(FileDescriptorProto* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -1042,7 +1107,7 @@ class PROTOBUF_EXPORT DescriptorProto_ExtensionRange final :
   }
   void UnsafeArenaSwap(DescriptorProto_ExtensionRange* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -1227,7 +1292,7 @@ class PROTOBUF_EXPORT DescriptorProto_ReservedRange final :
   }
   void UnsafeArenaSwap(DescriptorProto_ReservedRange* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -1396,7 +1461,7 @@ class PROTOBUF_EXPORT DescriptorProto final :
   }
   void UnsafeArenaSwap(DescriptorProto* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -1742,7 +1807,7 @@ class PROTOBUF_EXPORT ExtensionRangeOptions final :
   }
   void UnsafeArenaSwap(ExtensionRangeOptions* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -2057,7 +2122,7 @@ class PROTOBUF_EXPORT FieldDescriptorProto final :
   }
   void UnsafeArenaSwap(FieldDescriptorProto* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -2414,7 +2479,7 @@ class PROTOBUF_EXPORT OneofDescriptorProto final :
   }
   void UnsafeArenaSwap(OneofDescriptorProto* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -2589,7 +2654,7 @@ class PROTOBUF_EXPORT EnumDescriptorProto_EnumReservedRange final :
   }
   void UnsafeArenaSwap(EnumDescriptorProto_EnumReservedRange* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -2758,7 +2823,7 @@ class PROTOBUF_EXPORT EnumDescriptorProto final :
   }
   void UnsafeArenaSwap(EnumDescriptorProto* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -3003,7 +3068,7 @@ class PROTOBUF_EXPORT EnumValueDescriptorProto final :
   }
   void UnsafeArenaSwap(EnumValueDescriptorProto* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -3191,7 +3256,7 @@ class PROTOBUF_EXPORT ServiceDescriptorProto final :
   }
   void UnsafeArenaSwap(ServiceDescriptorProto* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -3386,7 +3451,7 @@ class PROTOBUF_EXPORT MethodDescriptorProto final :
   }
   void UnsafeArenaSwap(MethodDescriptorProto* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -3619,7 +3684,7 @@ class PROTOBUF_EXPORT FileOptions final :
   }
   void UnsafeArenaSwap(FileOptions* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -4244,7 +4309,7 @@ class PROTOBUF_EXPORT MessageOptions final :
   }
   void UnsafeArenaSwap(MessageOptions* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -4625,7 +4690,7 @@ class PROTOBUF_EXPORT FieldOptions final :
   }
   void UnsafeArenaSwap(FieldOptions* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -4716,6 +4781,55 @@ class PROTOBUF_EXPORT FieldOptions final :
     return FieldOptions_JSType_Parse(name, value);
   }
 
+  using OptionRetention = FieldOptions_OptionRetention;
+  static constexpr OptionRetention RETENTION_UNKNOWN = FieldOptions_OptionRetention_RETENTION_UNKNOWN;
+  static constexpr OptionRetention RETENTION_RUNTIME = FieldOptions_OptionRetention_RETENTION_RUNTIME;
+  static constexpr OptionRetention RETENTION_SOURCE = FieldOptions_OptionRetention_RETENTION_SOURCE;
+  static inline bool OptionRetention_IsValid(int value) {
+    return FieldOptions_OptionRetention_IsValid(value);
+  }
+  static constexpr OptionRetention OptionRetention_MIN = FieldOptions_OptionRetention_OptionRetention_MIN;
+  static constexpr OptionRetention OptionRetention_MAX = FieldOptions_OptionRetention_OptionRetention_MAX;
+  static constexpr int OptionRetention_ARRAYSIZE = FieldOptions_OptionRetention_OptionRetention_ARRAYSIZE;
+  static inline const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* OptionRetention_descriptor() {
+    return FieldOptions_OptionRetention_descriptor();
+  }
+  template <typename T>
+  static inline const std::string& OptionRetention_Name(T value) {
+    return FieldOptions_OptionRetention_Name(value);
+  }
+  static inline bool OptionRetention_Parse(absl::string_view name, OptionRetention* value) {
+    return FieldOptions_OptionRetention_Parse(name, value);
+  }
+
+  using OptionTargetType = FieldOptions_OptionTargetType;
+  static constexpr OptionTargetType TARGET_TYPE_UNKNOWN = FieldOptions_OptionTargetType_TARGET_TYPE_UNKNOWN;
+  static constexpr OptionTargetType TARGET_TYPE_FILE = FieldOptions_OptionTargetType_TARGET_TYPE_FILE;
+  static constexpr OptionTargetType TARGET_TYPE_EXTENSION_RANGE = FieldOptions_OptionTargetType_TARGET_TYPE_EXTENSION_RANGE;
+  static constexpr OptionTargetType TARGET_TYPE_MESSAGE = FieldOptions_OptionTargetType_TARGET_TYPE_MESSAGE;
+  static constexpr OptionTargetType TARGET_TYPE_FIELD = FieldOptions_OptionTargetType_TARGET_TYPE_FIELD;
+  static constexpr OptionTargetType TARGET_TYPE_ONEOF = FieldOptions_OptionTargetType_TARGET_TYPE_ONEOF;
+  static constexpr OptionTargetType TARGET_TYPE_ENUM = FieldOptions_OptionTargetType_TARGET_TYPE_ENUM;
+  static constexpr OptionTargetType TARGET_TYPE_ENUM_ENTRY = FieldOptions_OptionTargetType_TARGET_TYPE_ENUM_ENTRY;
+  static constexpr OptionTargetType TARGET_TYPE_SERVICE = FieldOptions_OptionTargetType_TARGET_TYPE_SERVICE;
+  static constexpr OptionTargetType TARGET_TYPE_METHOD = FieldOptions_OptionTargetType_TARGET_TYPE_METHOD;
+  static inline bool OptionTargetType_IsValid(int value) {
+    return FieldOptions_OptionTargetType_IsValid(value);
+  }
+  static constexpr OptionTargetType OptionTargetType_MIN = FieldOptions_OptionTargetType_OptionTargetType_MIN;
+  static constexpr OptionTargetType OptionTargetType_MAX = FieldOptions_OptionTargetType_OptionTargetType_MAX;
+  static constexpr int OptionTargetType_ARRAYSIZE = FieldOptions_OptionTargetType_OptionTargetType_ARRAYSIZE;
+  static inline const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* OptionTargetType_descriptor() {
+    return FieldOptions_OptionTargetType_descriptor();
+  }
+  template <typename T>
+  static inline const std::string& OptionTargetType_Name(T value) {
+    return FieldOptions_OptionTargetType_Name(value);
+  }
+  static inline bool OptionTargetType_Parse(absl::string_view name, OptionTargetType* value) {
+    return FieldOptions_OptionTargetType_Parse(name, value);
+  }
+
   // accessors -------------------------------------------------------
 
   enum : int {
@@ -4728,6 +4842,8 @@ class PROTOBUF_EXPORT FieldOptions final :
     kDeprecatedFieldNumber = 3,
     kWeakFieldNumber = 10,
     kDebugRedactFieldNumber = 16,
+    kRetentionFieldNumber = 17,
+    kTargetFieldNumber = 18,
   };
   // repeated .google.protobuf.UninterpretedOption uninterpreted_option = 999;
   int uninterpreted_option_size() const;
@@ -4830,6 +4946,24 @@ class PROTOBUF_EXPORT FieldOptions final :
   bool _internal_debug_redact() const;
   void _internal_set_debug_redact(bool value);
 
+  public:
+  // optional .google.protobuf.FieldOptions.OptionRetention retention = 17;
+  bool has_retention() const;
+  void clear_retention() ;
+  ::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention retention() const;
+  void set_retention(::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention _internal_retention() const;
+  void _internal_set_retention(::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention value);
+  public:
+  // optional .google.protobuf.FieldOptions.OptionTargetType target = 18;
+  bool has_target() const;
+  void clear_target() ;
+  ::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType target() const;
+  void set_target(::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType _internal_target() const;
+  void _internal_set_target(::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType value);
   public:
   template <typename _proto_TypeTraits, ::PROTOBUF_NAMESPACE_ID::internal::FieldType _field_type,
             bool _is_packed>
@@ -5003,6 +5137,8 @@ class PROTOBUF_EXPORT FieldOptions final :
     bool deprecated_;
     bool weak_;
     bool debug_redact_;
+    int retention_;
+    int target_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_google_2fprotobuf_2fdescriptor_2eproto;
@@ -5083,7 +5219,7 @@ class PROTOBUF_EXPORT OneofOptions final :
   }
   void UnsafeArenaSwap(OneofOptions* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -5398,7 +5534,7 @@ class PROTOBUF_EXPORT EnumOptions final :
   }
   void UnsafeArenaSwap(EnumOptions* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -5753,7 +5889,7 @@ class PROTOBUF_EXPORT EnumValueOptions final :
   }
   void UnsafeArenaSwap(EnumValueOptions* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -6082,7 +6218,7 @@ class PROTOBUF_EXPORT ServiceOptions final :
   }
   void UnsafeArenaSwap(ServiceOptions* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -6411,7 +6547,7 @@ class PROTOBUF_EXPORT MethodOptions final :
   }
   void UnsafeArenaSwap(MethodOptions* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -6772,7 +6908,7 @@ class PROTOBUF_EXPORT UninterpretedOption_NamePart final :
   }
   void UnsafeArenaSwap(UninterpretedOption_NamePart* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -6947,7 +7083,7 @@ class PROTOBUF_EXPORT UninterpretedOption final :
   }
   void UnsafeArenaSwap(UninterpretedOption* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -7199,7 +7335,7 @@ class PROTOBUF_EXPORT SourceCodeInfo_Location final :
   }
   void UnsafeArenaSwap(SourceCodeInfo_Location* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -7448,7 +7584,7 @@ class PROTOBUF_EXPORT SourceCodeInfo final :
   }
   void UnsafeArenaSwap(SourceCodeInfo* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -7612,7 +7748,7 @@ class PROTOBUF_EXPORT GeneratedCodeInfo_Annotation final :
   }
   void UnsafeArenaSwap(GeneratedCodeInfo_Annotation* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -7852,7 +7988,7 @@ class PROTOBUF_EXPORT GeneratedCodeInfo final :
   }
   void UnsafeArenaSwap(GeneratedCodeInfo* other) {
     if (other == this) return;
-    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
   }
 
@@ -8162,7 +8298,7 @@ inline void FileDescriptorProto::set_dependency(int index, std::string&& value) 
   // @@protoc_insertion_point(field_set:google.protobuf.FileDescriptorProto.dependency)
 }
 inline void FileDescriptorProto::set_dependency(int index, const char* value) {
-  GOOGLE_ABSL_DCHECK(value != nullptr);  _impl_.dependency_.Mutable(index)->assign(value);
+  ABSL_DCHECK(value != nullptr);  _impl_.dependency_.Mutable(index)->assign(value);
   // @@protoc_insertion_point(field_set_char:google.protobuf.FileDescriptorProto.dependency)
 }
 inline void FileDescriptorProto::set_dependency(int index, absl::string_view value) {
@@ -8186,7 +8322,7 @@ inline void FileDescriptorProto::add_dependency(std::string&& value) {
   // @@protoc_insertion_point(field_add:google.protobuf.FileDescriptorProto.dependency)
 }
 inline void FileDescriptorProto::add_dependency(const char* value) {
-  GOOGLE_ABSL_DCHECK(value != nullptr);  _impl_.dependency_.Add()->assign(value);
+  ABSL_DCHECK(value != nullptr);  _impl_.dependency_.Add()->assign(value);
   // @@protoc_insertion_point(field_add_char:google.protobuf.FileDescriptorProto.dependency)
 }
 inline void FileDescriptorProto::add_dependency(absl::string_view value) {
@@ -9420,7 +9556,7 @@ inline void DescriptorProto::set_reserved_name(int index, std::string&& value) {
   // @@protoc_insertion_point(field_set:google.protobuf.DescriptorProto.reserved_name)
 }
 inline void DescriptorProto::set_reserved_name(int index, const char* value) {
-  GOOGLE_ABSL_DCHECK(value != nullptr);  _impl_.reserved_name_.Mutable(index)->assign(value);
+  ABSL_DCHECK(value != nullptr);  _impl_.reserved_name_.Mutable(index)->assign(value);
   // @@protoc_insertion_point(field_set_char:google.protobuf.DescriptorProto.reserved_name)
 }
 inline void DescriptorProto::set_reserved_name(int index, absl::string_view value) {
@@ -9444,7 +9580,7 @@ inline void DescriptorProto::add_reserved_name(std::string&& value) {
   // @@protoc_insertion_point(field_add:google.protobuf.DescriptorProto.reserved_name)
 }
 inline void DescriptorProto::add_reserved_name(const char* value) {
-  GOOGLE_ABSL_DCHECK(value != nullptr);  _impl_.reserved_name_.Add()->assign(value);
+  ABSL_DCHECK(value != nullptr);  _impl_.reserved_name_.Add()->assign(value);
   // @@protoc_insertion_point(field_add_char:google.protobuf.DescriptorProto.reserved_name)
 }
 inline void DescriptorProto::add_reserved_name(absl::string_view value) {
@@ -10525,7 +10661,7 @@ inline void EnumDescriptorProto::set_reserved_name(int index, std::string&& valu
   // @@protoc_insertion_point(field_set:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline void EnumDescriptorProto::set_reserved_name(int index, const char* value) {
-  GOOGLE_ABSL_DCHECK(value != nullptr);  _impl_.reserved_name_.Mutable(index)->assign(value);
+  ABSL_DCHECK(value != nullptr);  _impl_.reserved_name_.Mutable(index)->assign(value);
   // @@protoc_insertion_point(field_set_char:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline void EnumDescriptorProto::set_reserved_name(int index, absl::string_view value) {
@@ -10549,7 +10685,7 @@ inline void EnumDescriptorProto::add_reserved_name(std::string&& value) {
   // @@protoc_insertion_point(field_add:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline void EnumDescriptorProto::add_reserved_name(const char* value) {
-  GOOGLE_ABSL_DCHECK(value != nullptr);  _impl_.reserved_name_.Add()->assign(value);
+  ABSL_DCHECK(value != nullptr);  _impl_.reserved_name_.Add()->assign(value);
   // @@protoc_insertion_point(field_add_char:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline void EnumDescriptorProto::add_reserved_name(absl::string_view value) {
@@ -12597,6 +12733,58 @@ inline void FieldOptions::_internal_set_debug_redact(bool value) {
   _impl_.debug_redact_ = value;
 }
 
+// optional .google.protobuf.FieldOptions.OptionRetention retention = 17;
+inline bool FieldOptions::has_retention() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000100u) != 0;
+  return value;
+}
+inline void FieldOptions::clear_retention() {
+  _impl_.retention_ = 0;
+  _impl_._has_bits_[0] &= ~0x00000100u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention FieldOptions::_internal_retention() const {
+  return static_cast< ::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention >(_impl_.retention_);
+}
+inline ::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention FieldOptions::retention() const {
+  // @@protoc_insertion_point(field_get:google.protobuf.FieldOptions.retention)
+  return _internal_retention();
+}
+inline void FieldOptions::_internal_set_retention(::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention value) {
+  assert(::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention_IsValid(value));
+  _impl_._has_bits_[0] |= 0x00000100u;
+  _impl_.retention_ = value;
+}
+inline void FieldOptions::set_retention(::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention value) {
+  _internal_set_retention(value);
+  // @@protoc_insertion_point(field_set:google.protobuf.FieldOptions.retention)
+}
+
+// optional .google.protobuf.FieldOptions.OptionTargetType target = 18;
+inline bool FieldOptions::has_target() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000200u) != 0;
+  return value;
+}
+inline void FieldOptions::clear_target() {
+  _impl_.target_ = 0;
+  _impl_._has_bits_[0] &= ~0x00000200u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType FieldOptions::_internal_target() const {
+  return static_cast< ::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType >(_impl_.target_);
+}
+inline ::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType FieldOptions::target() const {
+  // @@protoc_insertion_point(field_get:google.protobuf.FieldOptions.target)
+  return _internal_target();
+}
+inline void FieldOptions::_internal_set_target(::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType value) {
+  assert(::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType_IsValid(value));
+  _impl_._has_bits_[0] |= 0x00000200u;
+  _impl_.target_ = value;
+}
+inline void FieldOptions::set_target(::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType value) {
+  _internal_set_target(value);
+  // @@protoc_insertion_point(field_set:google.protobuf.FieldOptions.target)
+}
+
 // repeated .google.protobuf.UninterpretedOption uninterpreted_option = 999;
 inline int FieldOptions::_internal_uninterpreted_option_size() const {
   return _impl_.uninterpreted_option_.size();
@@ -13692,7 +13880,7 @@ inline void SourceCodeInfo_Location::set_leading_detached_comments(int index, st
   // @@protoc_insertion_point(field_set:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline void SourceCodeInfo_Location::set_leading_detached_comments(int index, const char* value) {
-  GOOGLE_ABSL_DCHECK(value != nullptr);  _impl_.leading_detached_comments_.Mutable(index)->assign(value);
+  ABSL_DCHECK(value != nullptr);  _impl_.leading_detached_comments_.Mutable(index)->assign(value);
   // @@protoc_insertion_point(field_set_char:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline void SourceCodeInfo_Location::set_leading_detached_comments(int index, absl::string_view value) {
@@ -13716,7 +13904,7 @@ inline void SourceCodeInfo_Location::add_leading_detached_comments(std::string&&
   // @@protoc_insertion_point(field_add:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline void SourceCodeInfo_Location::add_leading_detached_comments(const char* value) {
-  GOOGLE_ABSL_DCHECK(value != nullptr);  _impl_.leading_detached_comments_.Add()->assign(value);
+  ABSL_DCHECK(value != nullptr);  _impl_.leading_detached_comments_.Add()->assign(value);
   // @@protoc_insertion_point(field_add_char:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline void SourceCodeInfo_Location::add_leading_detached_comments(absl::string_view value) {
@@ -14052,6 +14240,18 @@ struct is_proto_enum<::PROTOBUF_NAMESPACE_ID::FieldOptions_JSType> : std::true_t
 template <>
 inline const EnumDescriptor* GetEnumDescriptor<::PROTOBUF_NAMESPACE_ID::FieldOptions_JSType>() {
   return ::PROTOBUF_NAMESPACE_ID::FieldOptions_JSType_descriptor();
+}
+template <>
+struct is_proto_enum<::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention> : std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor<::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention>() {
+  return ::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionRetention_descriptor();
+}
+template <>
+struct is_proto_enum<::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType> : std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor<::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType>() {
+  return ::PROTOBUF_NAMESPACE_ID::FieldOptions_OptionTargetType_descriptor();
 }
 template <>
 struct is_proto_enum<::PROTOBUF_NAMESPACE_ID::MethodOptions_IdempotencyLevel> : std::true_type {};

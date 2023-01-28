@@ -204,10 +204,6 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 
 #ifdef PROTOBUF_FUTURE_BREAKING_CHANGES
 
-// Used to upgrade google::protobuf::MapPair<K, V> to std::pair<const K, V>.
-// Owner: mordberg@
-#define PROTOBUF_FUTURE_MAP_PAIR_UPGRADE 1
-
 // Used to remove the manipulation of cleared elements in RepeatedPtrField.
 // Owner: mkruskal@
 #define PROTOBUF_FUTURE_REMOVE_CLEARED_API 1
@@ -551,6 +547,15 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 #define PROTOBUF_NODISCARD
 #endif
 
+#ifdef PROTOBUF_RESTRICT
+#error PROTOBUF_RESTRICT was previously defined
+#endif
+#if defined( __clang__) || defined(__GNUC__)
+#define PROTOBUF_RESTRICT __restrict
+#else
+#define PROTOBUF_RESTRICT
+#endif
+
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
 #error PROTOBUF_FORCE_COPY_IN_RELEASE was previously defined
 #endif
@@ -595,7 +600,7 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 #endif
 
 // PROTOBUF_ASSUME(pred) tells the compiler that it can assume pred is true. To
-// be safe, we also validate the assumption with a GOOGLE_ABSL_DCHECK in unoptimized
+// be safe, we also validate the assumption with a ABSL_DCHECK in unoptimized
 // builds. The macro does not do anything useful if the compiler does not
 // support __builtin_assume.
 #ifdef PROTOBUF_ASSUME
@@ -603,10 +608,10 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 #endif
 #if __has_builtin(__builtin_assume)
 #define PROTOBUF_ASSUME(pred) \
-  GOOGLE_ABSL_DCHECK(pred);               \
+  ABSL_DCHECK(pred);               \
   __builtin_assume(pred)
 #else
-#define PROTOBUF_ASSUME(pred) GOOGLE_ABSL_DCHECK(pred)
+#define PROTOBUF_ASSUME(pred) ABSL_DCHECK(pred)
 #endif
 
 // Specify memory alignment for structs, classes, etc.
@@ -1024,14 +1029,14 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 #define PROTOBUF_DEBUG false
 #endif
 
-// This `for` allows us to condition the `GOOGLE_ABSL_LOG` on the define above, so that
+// This `for` allows us to condition the `ABSL_LOG` on the define above, so that
 // code can write `PROTOBUF_DLOG(INFO) << ...;` and have it turned off when
 // debug logging is off.
 //
 // This is a `for`, not and `if`, to avoid it accidentally chaining with an
 // `else` below it.
 #define PROTOBUF_DLOG(x) \
-  for (bool b = PROTOBUF_DEBUG; b; b = false) GOOGLE_ABSL_LOG(x)
+  for (bool b = PROTOBUF_DEBUG; b; b = false) ABSL_LOG(x)
 
 #define PROTO2_IS_OSS true
 

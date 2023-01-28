@@ -129,14 +129,14 @@ class PROTOBUF_EXPORT SourceTreeDescriptorDatabase : public DescriptorDatabase {
     ~ValidationErrorCollector() override;
 
     // implements ErrorCollector ---------------------------------------
-    void AddError(const std::string& filename, const std::string& element_name,
-                  const Message* descriptor, ErrorLocation location,
-                  const std::string& message) override;
+    void RecordError(absl::string_view filename, absl::string_view element_name,
+                     const Message* descriptor, ErrorLocation location,
+                     absl::string_view message) override;
 
-    void AddWarning(const std::string& filename,
-                    const std::string& element_name, const Message* descriptor,
-                    ErrorLocation location,
-                    const std::string& message) override;
+    void RecordWarning(absl::string_view filename,
+                       absl::string_view element_name,
+                       const Message* descriptor, ErrorLocation location,
+                       absl::string_view message) override;
 
    private:
     SourceTreeDescriptorDatabase* owner_;
@@ -222,7 +222,7 @@ class PROTOBUF_EXPORT MultiFileErrorCollector {
   ABSL_DEPRECATED("Use RecordError")
   virtual void AddError(const std::string& filename, int line, int column,
                         const std::string& message) {
-    GOOGLE_ABSL_LOG(FATAL) << "AddError or RecordError must be implemented.";
+    ABSL_LOG(FATAL) << "AddError or RecordError must be implemented.";
   }
 
   ABSL_DEPRECATED("Use RecordWarning")
