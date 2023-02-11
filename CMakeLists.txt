@@ -61,6 +61,7 @@ option(protobuf_BUILD_PROTOC_BINARIES "Build libprotoc and protoc compiler" ON)
 option(protobuf_BUILD_LIBPROTOC "Build libprotoc" OFF)
 option(protobuf_DISABLE_RTTI "Remove runtime type information in the binaries" OFF)
 option(protobuf_TEST_XML_OUTDIR "Output directory for XML logs from tests." "")
+option(protobuf_ALLOW_CCACHE "Adjust build flags to allow for ccache support." OFF)
 if (BUILD_SHARED_LIBS)
   set(protobuf_BUILD_SHARED_LIBS_DEFAULT ON)
 else (BUILD_SHARED_LIBS)
@@ -289,6 +290,20 @@ if (MSVC)
   string(REPLACE "/" "\\" PROTOBUF_SOURCE_WIN32_PATH ${protobuf_SOURCE_DIR})
   string(REPLACE "/" "\\" PROTOBUF_BINARY_WIN32_PATH ${protobuf_BINARY_DIR})
   string(REPLACE "." ","  protobuf_RC_FILEVERSION "${protobuf_VERSION}")
+
+  if (protobuf_ALLOW_CCACHE)
+    # In order to support ccache, we need to remove the /Zi option because it
+    # puts debug symbols into separate pdb files (which in incompatible with
+    # ccache).  This can be replaced with /Z7 to preserve debug symbols, which
+    # embeds debug symbols into the object files instead of creating a separate
+    # pdb file, which isn't currently supported by ccache.  However, this bloats
+    # the ccache size by about a factor of 2x, making it very expensive in CI.
+    # Instead, we strip debug symbols to reduce this overhead.
+    string(REPLACE "/Zi" "/DEBUG:NONE" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+    string(REPLACE "/Zi" "/DEBUG:NONE" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+    string(REPLACE "/Zi" "/DEBUG:NONE" CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
+    string(REPLACE "/Zi" "/DEBUG:NONE" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+  endif()
 
   # Suppress linker warnings about files with no symbols defined.
   string(APPEND CMAKE_STATIC_LINKER_FLAGS " /ignore:4221")
