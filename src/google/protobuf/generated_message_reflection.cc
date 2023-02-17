@@ -1339,8 +1339,8 @@ void Reflection::ClearField(Message* message,
 
         case FieldDescriptor::CPPTYPE_MESSAGE:
           if (schema_.HasBitIndex(field) == static_cast<uint32_t>(-1)) {
-            // Some fields do not have hasbits and we need to set a message
-            // field to nullptr in order to indicate its un-presence.
+            // Proto3 does not have has-bits and we need to set a message field
+            // to nullptr in order to indicate its un-presence.
             if (message->GetArenaForAllocation() == nullptr) {
               delete *MutableRaw<Message*>(message, field);
             }
@@ -1554,7 +1554,8 @@ void CheckInOrder(const FieldDescriptor* field, uint32_t* last) {
 
 namespace internal {
 bool CreateUnknownEnumValues(const FieldDescriptor* field) {
-  return field->enum_type() == nullptr || !field->enum_type()->is_closed();
+  bool open_enum = false;
+  return field->file()->syntax() == FileDescriptor::SYNTAX_PROTO3 || open_enum;
 }
 }  // namespace internal
 using internal::CreateUnknownEnumValues;
@@ -3091,9 +3092,9 @@ const internal::TcParseTableBase* Reflection::CreateTcParseTableForMessageSet()
   // We use `operator new` here because the destruction will be done with
   // `operator delete` unconditionally.
   void* p = ::operator new(sizeof(Table));
-  auto* full_table = ::new (p) Table{
-      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, schema_.default_instance_, nullptr},
-      {{{&internal::TcParser::ReflectionParseLoop, {}}}}};
+  auto* full_table = ::new (p)
+      Table{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, schema_.default_instance_, nullptr},
+            {{{&internal::TcParser::ReflectionParseLoop, {}}}}};
   ABSL_DCHECK_EQ(static_cast<void*>(&full_table->header),
                  static_cast<void*>(full_table));
   return &full_table->header;
@@ -3291,14 +3292,19 @@ const internal::TcParseTableBase* Reflection::CreateTcParseTable() const {
   void* p = ::operator new(byte_size);
   auto* res = ::new (p) TcParseTableBase{
       static_cast<uint16_t>(schema_.HasHasbits() ? schema_.HasBitsOffset() : 0),
-      // extensions handled through reflection.
-      0, 0, 0,
+      schema_.HasExtensionSet()
+          ? static_cast<uint16_t>(schema_.GetExtensionSetOffset())
+          : uint16_t{0},
       static_cast<uint32_t>(fields.empty() ? 0 : fields.back()->number()),
-      static_cast<uint8_t>((fast_entries_count - 1) << 3), lookup_table_offset,
-      table_info.num_to_entry_table.skipmap32, field_entry_offset,
+      static_cast<uint8_t>((fast_entries_count - 1) << 3),
+      lookup_table_offset,
+      table_info.num_to_entry_table.skipmap32,
+      field_entry_offset,
       static_cast<uint16_t>(fields.size()),
-      static_cast<uint16_t>(table_info.aux_entries.size()), aux_offset,
-      schema_.default_instance_, &internal::TcParser::ReflectionFallback};
+      static_cast<uint16_t>(table_info.aux_entries.size()),
+      aux_offset,
+      schema_.default_instance_,
+      &internal::TcParser::ReflectionFallback};
 
   // Now copy the rest of the payloads
   PopulateTcParseFastEntries(table_info, res->fast_entry(0));
