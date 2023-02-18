@@ -28,6 +28,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#import <Foundation/Foundation.h>
 #import "GPBMessage_PackagePrivate.h"
 
 #import <objc/message.h>
@@ -964,27 +965,18 @@ static GPBUnknownFieldSet *GetOrMakeUnknownFields(GPBMessage *self) {
            extensionRegistry:(id<GPBExtensionRegistry>)extensionRegistry
                        error:(NSError **)errorPtr {
   if ((self = [self init])) {
-    @try {
-      [self mergeFromData:data extensionRegistry:extensionRegistry];
-      if (errorPtr) {
-        *errorPtr = nil;
-      }
-    } @catch (NSException *exception) {
+    if (![self mergeFromData:data extensionRegistry:extensionRegistry error:errorPtr]) {
       [self release];
       self = nil;
-      if (errorPtr) {
-        *errorPtr = ErrorFromException(exception);
-      }
-    }
 #ifdef DEBUG
-    if (self && !self.initialized) {
+    } else if (!self.initialized) {
       [self release];
       self = nil;
       if (errorPtr) {
         *errorPtr = MessageError(GPBMessageErrorCodeMissingRequiredField, nil);
       }
-    }
 #endif
+    }
   }
   return self;
 }
@@ -1995,22 +1987,33 @@ static GPBUnknownFieldSet *GetOrMakeUnknownFields(GPBMessage *self) {
 
 - (void)mergeFromData:(NSData *)data extensionRegistry:(id<GPBExtensionRegistry>)extensionRegistry {
   GPBCodedInputStream *input = [[GPBCodedInputStream alloc] initWithData:data];
-  [self mergeFromCodedInputStream:input extensionRegistry:extensionRegistry];
-  [input checkLastTagWas:0];
-  [input release];
+  @try {
+    [self mergeFromCodedInputStream:input extensionRegistry:extensionRegistry];
+    [input checkLastTagWas:0];
+  } @finally {
+    [input release];
+  }
 }
 
-#pragma mark - mergeDelimitedFrom
-
-- (void)mergeDelimitedFromCodedInputStream:(GPBCodedInputStream *)input
-                         extensionRegistry:(id<GPBExtensionRegistry>)extensionRegistry {
-  GPBCodedInputStreamState *state = &input->state_;
-  if (GPBCodedInputStreamIsAtEnd(state)) {
-    return;
+- (BOOL)mergeFromData:(NSData *)data
+    extensionRegistry:(nullable id<GPBExtensionRegistry>)extensionRegistry
+                error:(NSError **)errorPtr {
+  GPBCodedInputStream *input = [[GPBCodedInputStream alloc] initWithData:data];
+  @try {
+    [self mergeFromCodedInputStream:input extensionRegistry:extensionRegistry];
+    [input checkLastTagWas:0];
+    if (errorPtr) {
+      *errorPtr = nil;
+    }
+  } @catch (NSException *exception) {
+    [input release];
+    if (errorPtr) {
+      *errorPtr = ErrorFromException(exception);
+    }
+    return NO;
   }
-  NSData *data = GPBCodedInputStreamReadRetainedBytesNoCopy(state);
-  [self mergeFromData:data extensionRegistry:extensionRegistry];
-  [data release];
+  [input release];
+  return YES;
 }
 
 #pragma mark - Parse From Data Support
@@ -2039,27 +2042,36 @@ static GPBUnknownFieldSet *GetOrMakeUnknownFields(GPBMessage *self) {
 + (instancetype)parseDelimitedFromCodedInputStream:(GPBCodedInputStream *)input
                                  extensionRegistry:(id<GPBExtensionRegistry>)extensionRegistry
                                              error:(NSError **)errorPtr {
-  GPBMessage *message = [[[self alloc] init] autorelease];
+  GPBCodedInputStreamState *state = &input->state_;
+  // This doesn't completely match the C++, but if the stream has nothing, just make an empty
+  // message.
+  if (GPBCodedInputStreamIsAtEnd(state)) {
+    return [[[self alloc] init] autorelease];
+  }
+
+  // Manually extract the data and parse it. If we read a varint and push a limit, that consumes
+  // some of the recursion buffer which isn't correct, it also can result in a change in error
+  // codes for attempts to parse partial data; and there are projects sensitive to that, so this
+  // maintains existing error flows.
+
+  // Extract the data, but in a "no copy" mode since we will immediately parse it so this NSData
+  // is transient.
+  NSData *data = nil;
   @try {
-    [message mergeDelimitedFromCodedInputStream:input extensionRegistry:extensionRegistry];
-    if (errorPtr) {
-      *errorPtr = nil;
-    }
+    data = GPBCodedInputStreamReadRetainedBytesNoCopy(state);
   } @catch (NSException *exception) {
-    message = nil;
     if (errorPtr) {
       *errorPtr = ErrorFromException(exception);
     }
+    return nil;
   }
-#ifdef DEBUG
-  if (message && !message.initialized) {
-    message = nil;
-    if (errorPtr) {
-      *errorPtr = MessageError(GPBMessageErrorCodeMissingRequiredField, nil);
-    }
+
+  GPBMessage *result = [self parseFromData:data extensionRegistry:extensionRegistry error:errorPtr];
+  [data release];
+  if (result && errorPtr) {
+    *errorPtr = nil;
   }
-#endif
-  return message;
+  return result;
 }
 
 #pragma mark - Unknown Field Support
@@ -2207,8 +2219,8 @@ static void MergeSingleFieldFromCodedInputStream(GPBMessage *self, GPBFieldDescr
         [input readMessage:message extensionRegistry:extensionRegistry];
       } else {
         GPBMessage *message = [[field.msgClass alloc] init];
-        [input readMessage:message extensionRegistry:extensionRegistry];
         GPBSetRetainedObjectIvarWithFieldPrivate(self, field, message);
+        [input readMessage:message extensionRegistry:extensionRegistry];
       }
       break;
     }
@@ -2221,8 +2233,8 @@ static void MergeSingleFieldFromCodedInputStream(GPBMessage *self, GPBFieldDescr
         [input readGroup:GPBFieldNumber(field) message:message extensionRegistry:extensionRegistry];
       } else {
         GPBMessage *message = [[field.msgClass alloc] init];
-        [input readGroup:GPBFieldNumber(field) message:message extensionRegistry:extensionRegistry];
         GPBSetRetainedObjectIvarWithFieldPrivate(self, field, message);
+        [input readGroup:GPBFieldNumber(field) message:message extensionRegistry:extensionRegistry];
       }
       break;
     }
@@ -2330,16 +2342,20 @@ static void MergeRepeatedNotPackedFieldFromCodedInputStream(
 #undef CASE_NOT_PACKED_OBJECT
     case GPBDataTypeMessage: {
       GPBMessage *message = [[field.msgClass alloc] init];
-      [input readMessage:message extensionRegistry:extensionRegistry];
       [(NSMutableArray *)genericArray addObject:message];
+      // The array will now retain message, so go ahead and release it in case
+      // -readMessage:extensionRegistry: throws so it won't be leaked.
       [message release];
+      [input readMessage:message extensionRegistry:extensionRegistry];
       break;
     }
     case GPBDataTypeGroup: {
       GPBMessage *message = [[field.msgClass alloc] init];
-      [input readGroup:GPBFieldNumber(field) message:message extensionRegistry:extensionRegistry];
       [(NSMutableArray *)genericArray addObject:message];
+      // The array will now retain message, so go ahead and release it in case
+      // -readGroup:extensionRegistry: throws so it won't be leaked.
       [message release];
+      [input readGroup:GPBFieldNumber(field) message:message extensionRegistry:extensionRegistry];
       break;
     }
     case GPBDataTypeEnum: {
