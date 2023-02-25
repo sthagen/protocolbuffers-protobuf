@@ -61,6 +61,12 @@ typedef NS_ENUM(NSInteger, GPBMessageErrorCode) {
  **/
 extern NSString *const GPBErrorReasonKey;
 
+/**
+ * An exception name raised during serialization when the message would be
+ * larger than the 2GB limit.
+ **/
+extern NSString *const GPBMessageExceptionMessageTooLarge;
+
 CF_EXTERN_C_END
 
 /**
@@ -276,7 +282,9 @@ CF_EXTERN_C_END
  *                                         unsuccessful.
  **/
 - (void)mergeFromData:(NSData *)data
-    extensionRegistry:(nullable id<GPBExtensionRegistry>)extensionRegistry;
+    extensionRegistry:(nullable id<GPBExtensionRegistry>)extensionRegistry
+    __attribute__((deprecated(
+        "Use -mergeFromData:extensionRegistry:error: instead, especaily if calling from Swift.")));
 
 /**
  * Parses the given data as this message's class, and merges those values into

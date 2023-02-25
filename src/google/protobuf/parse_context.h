@@ -667,7 +667,9 @@ inline const char* VarintParseSlow(const char* p, uint32_t res, uint64_t* out) {
 }
 
 #ifdef __aarch64__
+PROTOBUF_EXPORT
 const char* VarintParseSlowArm64(const char* p, uint64_t* out, uint64_t first8);
+PROTOBUF_EXPORT
 const char* VarintParseSlowArm32(const char* p, uint32_t* out, uint64_t first8);
 
 inline const char* VarintParseSlowArm(const char* p, uint32_t* out,
@@ -1168,7 +1170,7 @@ PROTOBUF_NODISCARD const char* PackedEnumParser(void* object, const char* ptr,
                                                 InternalMetadata* metadata,
                                                 int field_num) {
   return ctx->ReadPackedVarint(
-      ptr, [object, is_valid, metadata, field_num](uint64_t val) {
+      ptr, [object, is_valid, metadata, field_num](int32_t val) {
         if (is_valid(val)) {
           static_cast<RepeatedField<int>*>(object)->Add(val);
         } else {
@@ -1183,7 +1185,7 @@ PROTOBUF_NODISCARD const char* PackedEnumParserArg(
     bool (*is_valid)(const void*, int), const void* data,
     InternalMetadata* metadata, int field_num) {
   return ctx->ReadPackedVarint(
-      ptr, [object, is_valid, data, metadata, field_num](uint64_t val) {
+      ptr, [object, is_valid, data, metadata, field_num](int32_t val) {
         if (is_valid(data, val)) {
           static_cast<RepeatedField<int>*>(object)->Add(val);
         } else {
