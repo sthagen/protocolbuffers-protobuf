@@ -28,50 +28,60 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_RETENTION_H__
-#define GOOGLE_PROTOBUF_COMPILER_RETENTION_H__
+#include "google/protobuf/compiler/rust/generator.h"
 
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/algorithm/container.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "google/protobuf/descriptor.h"
-#include "google/protobuf/descriptor.pb.h"
-
-// Must appear last
-#include "google/protobuf/port_def.inc"
+#include "google/protobuf/io/printer.h"
 
 namespace google {
 namespace protobuf {
 namespace compiler {
+namespace rust {
 
-// Returns a FileDescriptorProto for this file, with all RETENTION_SOURCE
-// options stripped out.
-PROTOC_EXPORT FileDescriptorProto
-StripSourceRetentionOptions(const FileDescriptor& file);
+bool ExperimentalRustGeneratorEnabled(
+    const std::vector<std::pair<std::string, std::string>>& options) {
+  static constexpr std::pair<absl::string_view, absl::string_view> kMagicValue =
+      {"experimental-codegen", "enabled"};
 
-// The following functions take a descriptor and strip all source-retention
-// options from just the local entity (e.g. message, enum, field). Most code
-// generators should not need these functions, but they are sometimes useful if
-// you need to strip the options on a single entity rather than handling the
-// entire file at once.
-PROTOC_EXPORT EnumOptions
-StripLocalSourceRetentionOptions(const EnumDescriptor& descriptor);
-PROTOC_EXPORT EnumValueOptions
-StripLocalSourceRetentionOptions(const EnumValueDescriptor& descriptor);
-PROTOC_EXPORT FieldOptions
-StripLocalSourceRetentionOptions(const FieldDescriptor& descriptor);
-PROTOC_EXPORT FileOptions
-StripLocalSourceRetentionOptions(const FileDescriptor& descriptor);
-PROTOC_EXPORT MessageOptions
-StripLocalSourceRetentionOptions(const Descriptor& descriptor);
-PROTOC_EXPORT MethodOptions
-StripLocalSourceRetentionOptions(const MethodDescriptor& descriptor);
-PROTOC_EXPORT OneofOptions
-StripLocalSourceRetentionOptions(const OneofDescriptor& descriptor);
-PROTOC_EXPORT ServiceOptions
-StripLocalSourceRetentionOptions(const ServiceDescriptor& descriptor);
+  return absl::c_any_of(
+      options, [](std::pair<absl::string_view, absl::string_view> pair) {
+        return pair == kMagicValue;
+      });
+}
 
+bool RustGenerator::Generate(const FileDescriptor* file,
+                             const std::string& parameter,
+                             GeneratorContext* generator_context,
+                             std::string* error) const {
+  std::vector<std::pair<std::string, std::string>> options;
+  ParseGeneratorParameter(parameter, &options);
+
+  if (!ExperimentalRustGeneratorEnabled(options)) {
+    *error =
+        "The Rust codegen is highly experimental. Future versions will break "
+        "existing code. Use at your own risk. You can opt-in by passing "
+        "'experimental-codegen=enabled' to '--rust_out'.";
+    return false;
+  }
+
+  auto basename = StripProto(file->name());
+  auto outfile = absl::WrapUnique(
+      generator_context->Open(absl::StrCat(basename, ".pb.rs")));
+
+  google::protobuf::io::Printer(outfile.get()).Emit(R"cc(
+    // TODO: Generate Bindings
+  )cc");
+  return true;
+}
+
+}  // namespace rust
 }  // namespace compiler
 }  // namespace protobuf
 }  // namespace google
-
-#include "google/protobuf/port_undef.inc"
-
-#endif  // GOOGLE_PROTOBUF_COMPILER_RETENTION_H__
