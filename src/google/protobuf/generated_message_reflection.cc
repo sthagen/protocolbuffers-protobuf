@@ -1540,10 +1540,6 @@ bool IsIndexInHasBitSet(const uint32_t* has_bit_set, uint32_t has_bit_index) {
           static_cast<uint32_t>(1)) != 0;
 }
 
-bool CreateUnknownEnumValues(const FileDescriptor* file) {
-  return file->syntax() == FileDescriptor::SYNTAX_PROTO3;
-}
-
 void CheckInOrder(const FieldDescriptor* field, uint32_t* last) {
   *last = *last <= static_cast<uint32_t>(field->number())
               ? static_cast<uint32_t>(field->number())
@@ -1555,7 +1551,7 @@ void CheckInOrder(const FieldDescriptor* field, uint32_t* last) {
 namespace internal {
 bool CreateUnknownEnumValues(const FieldDescriptor* field) {
   bool open_enum = false;
-  return field->file()->syntax() == FileDescriptor::SYNTAX_PROTO3 || open_enum;
+  return !field->legacy_enum_field_treated_as_closed() || open_enum;
 }
 }  // namespace internal
 using internal::CreateUnknownEnumValues;
@@ -2486,7 +2482,7 @@ const FieldDescriptor* Reflection::FindKnownExtensionByNumber(
 }
 
 bool Reflection::SupportsUnknownEnumValues() const {
-  return CreateUnknownEnumValues(descriptor_->file());
+  return descriptor_->file()->syntax() == FileDescriptor::SYNTAX_PROTO3;
 }
 
 // ===================================================================
@@ -3091,6 +3087,7 @@ void Reflection::PopulateTcParseFieldAux(
       case internal::TailCallTableInfo::kSubTable:
       case internal::TailCallTableInfo::kSubMessageWeak:
       case internal::TailCallTableInfo::kCreateInArena:
+      case internal::TailCallTableInfo::kMessageVerifyFunc:
         ABSL_LOG(FATAL) << "Not supported";
         break;
       case internal::TailCallTableInfo::kMapAuxInfo:
@@ -3152,9 +3149,16 @@ const internal::TcParseTableBase* Reflection::CreateTcParseTable() const {
     explicit ReflectionOptionProvider(const Reflection& ref) : ref_(ref) {}
     internal::TailCallTableInfo::PerFieldOptions GetForField(
         const FieldDescriptor* field) const final {
+      const auto verify_flag = [&] {
+        if (ref_.IsEagerlyVerifiedLazyField(field))
+          return internal::field_layout::kTvEager;
+        if (ref_.IsLazilyVerifiedLazyField(field))
+          return internal::field_layout::kTvLazy;
+        return internal::field_layout::TransformValidation{};
+      };
       return {
-          ref_.IsLazyField(field),  //
-          ref_.IsInlined(field),    //
+          verify_flag(),          //
+          ref_.IsInlined(field),  //
 
           // Only LITE can be implicitly weak.
           /* is_implicitly_weak */ false,

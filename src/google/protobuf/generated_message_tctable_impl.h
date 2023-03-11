@@ -85,6 +85,7 @@ enum {
 namespace field_layout {
 // clang-format off
 
+
 // Field kind (3 bits):
 // These values broadly represent a wire type and an in-memory storage class.
 enum FieldKind : uint16_t {
@@ -129,6 +130,7 @@ enum Cardinality : uint16_t {
   kFcOneof    = 3 << kFcShift,
 };
 
+
 // Field representation (3 bits):
 // These values are the specific refinements of storage classes in FieldType.
 enum FieldRep : uint16_t {
@@ -171,6 +173,10 @@ enum TransformValidation : uint16_t {
   kTvDefault   = 1 << kTvShift,  // Aux has default_instance*
   kTvTable     = 2 << kTvShift,  // Aux has TcParseTableBase*
   kTvWeakPtr   = 3 << kTvShift,  // Aux has default_instance** (for weak)
+
+  // Lazy message fields:
+  kTvEager     = 1 << kTvShift,
+  kTvLazy      = 2 << kTvShift,
 };
 
 static_assert((kTvEnum & kTvRange) != 0,
@@ -365,6 +371,7 @@ inline void AlignFail(std::integral_constant<size_t, 1>,
   PROTOBUF_TC_PARSE_FUNCTION_LIST_REPEATED(FastGt) \
   PROTOBUF_TC_PARSE_FUNCTION_LIST_REPEATED(FastMd) \
   PROTOBUF_TC_PARSE_FUNCTION_LIST_REPEATED(FastMt) \
+  PROTOBUF_TC_PARSE_FUNCTION_LIST_SINGLE(FastMl)   \
   PROTOBUF_TC_PARSE_FUNCTION_LIST_END_GROUP()
 
 #define PROTOBUF_TC_PARSE_FUNCTION_X(value) k##value,
@@ -545,7 +552,7 @@ class PROTOBUF_EXPORT TcParser final {
 
   // Functions referenced by generated fast tables (message types):
   //   M: message    G: group
-  //   d: default*   t: TcParseTable* (the contents of aux)
+  //   d: default*   t: TcParseTable* (the contents of aux)  l: lazy
   //   S: singular   R: repeated
   //   1/2: tag length (bytes)
   static const char* FastMdS1(PROTOBUF_TC_PARAM_DECL);
@@ -565,6 +572,9 @@ class PROTOBUF_EXPORT TcParser final {
   static const char* FastMtR2(PROTOBUF_TC_PARAM_DECL);
   static const char* FastGtR1(PROTOBUF_TC_PARAM_DECL);
   static const char* FastGtR2(PROTOBUF_TC_PARAM_DECL);
+
+  static const char* FastMlS1(PROTOBUF_TC_PARAM_DECL);
+  static const char* FastMlS2(PROTOBUF_TC_PARAM_DECL);
 
   template <typename T>
   static inline T& RefAt(void* x, size_t offset) {
@@ -670,6 +680,8 @@ class PROTOBUF_EXPORT TcParser final {
   static inline const char* SingularParseMessageAuxImpl(PROTOBUF_TC_PARAM_DECL);
   template <typename TagType, bool group_coding, bool aux_is_table>
   static inline const char* RepeatedParseMessageAuxImpl(PROTOBUF_TC_PARAM_DECL);
+  template <typename TagType>
+  static inline const char* LazyMessage(PROTOBUF_TC_PARAM_DECL);
 
   template <typename TagType>
   static const char* FastEndGroupImpl(PROTOBUF_TC_PARAM_DECL);
@@ -857,6 +869,7 @@ class PROTOBUF_EXPORT TcParser final {
   template <bool is_split>
   static const char* MpMessage(PROTOBUF_TC_PARAM_DECL);
   static const char* MpRepeatedMessage(PROTOBUF_TC_PARAM_DECL);
+  static const char* MpLazyMessage(PROTOBUF_TC_PARAM_DECL);
   static const char* MpFallback(PROTOBUF_TC_PARAM_DECL);
   static const char* MpMap(PROTOBUF_TC_PARAM_DECL);
 };

@@ -217,12 +217,16 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 // Owner: mvels@, mkruskal@
 #define PROTOBUF_FUTURE_OPENSOURCE_CORD 1
 
+// Used to remove `RepeatedPtrField::GetArena() const`.
+// Owner: ezb@
+#define PROTOBUF_FUTURE_REMOVE_CONST_REPEATEDFIELD_GETARENA_API 1
+
 #endif
 
 #ifdef PROTOBUF_VERSION
 #error PROTOBUF_VERSION was previously defined
 #endif
-#define PROTOBUF_VERSION 3021012
+#define PROTOBUF_VERSION 4022002
 
 #ifdef PROTOBUF_MIN_HEADER_VERSION_FOR_PROTOC
 #error PROTOBUF_MIN_HEADER_VERSION_FOR_PROTOC was previously defined
@@ -403,16 +407,6 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 #else
 # define PROTOBUF_DEPRECATED
 # define PROTOBUF_DEPRECATED_MSG(msg)
-#endif
-
-#if defined(PROTOBUF_DEPRECATED_ENUM)
-#error PROTOBUF_DEPRECATED_ENUM was previously defined
-#endif
-#if defined(__clang__) || defined(__GNUC__)
-// https://gcc.gnu.org/gcc-6/changes.html
-# define PROTOBUF_DEPRECATED_ENUM __attribute__((deprecated))
-#else
-# define PROTOBUF_DEPRECATED_ENUM
 #endif
 
 #if defined(__clang__)

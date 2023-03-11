@@ -3521,6 +3521,11 @@ bool FieldDescriptor::is_packed() const {
   }
 }
 
+bool FieldDescriptor::requires_utf8_validation() const {
+  return type() == TYPE_STRING &&
+         file()->syntax() == FileDescriptor::SYNTAX_PROTO3;
+}
+
 bool Descriptor::GetSourceLocation(SourceLocation* out_location) const {
   std::vector<int> path;
   GetLocationPath(&path);
@@ -3740,10 +3745,10 @@ class DescriptorBuilder {
   // Maximum recursion depth corresponds to 32 nested message declarations.
   int recursion_depth_ = 32;
 
-  void AddError(absl::string_view element_name, const Message& descriptor,
+  void AddError(const std::string& element_name, const Message& descriptor,
                 DescriptorPool::ErrorCollector::ErrorLocation location,
-                absl::string_view error);
-  void AddError(absl::string_view element_name, const Message& descriptor,
+                const std::string& error);
+  void AddError(const std::string& element_name, const Message& descriptor,
                 DescriptorPool::ErrorCollector::ErrorLocation location,
                 const char* error);
   void AddRecursiveImportError(const FileDescriptorProto& proto, int from_here);
@@ -4190,9 +4195,9 @@ DescriptorBuilder::DescriptorBuilder(
 DescriptorBuilder::~DescriptorBuilder() {}
 
 PROTOBUF_NOINLINE void DescriptorBuilder::AddError(
-    absl::string_view element_name, const Message& descriptor,
+    const std::string& element_name, const Message& descriptor,
     DescriptorPool::ErrorCollector::ErrorLocation location,
-    absl::string_view error) {
+    const std::string& error) {
   if (error_collector_ == nullptr) {
     if (!had_errors_) {
       ABSL_LOG(ERROR) << "Invalid proto descriptor for file \"" << filename_
@@ -4207,7 +4212,7 @@ PROTOBUF_NOINLINE void DescriptorBuilder::AddError(
 }
 
 PROTOBUF_NOINLINE void DescriptorBuilder::AddError(
-    absl::string_view element_name, const Message& descriptor,
+    const std::string& element_name, const Message& descriptor,
     DescriptorPool::ErrorCollector::ErrorLocation location, const char* error) {
   AddError(element_name, descriptor, location, std::string(error));
 }
@@ -8415,7 +8420,7 @@ void LazyDescriptor::Once(const ServiceDescriptor* service) {
 
 namespace cpp {
 bool HasPreservingUnknownEnumSemantics(const FieldDescriptor* field) {
-  return field->file()->syntax() == FileDescriptor::SYNTAX_PROTO3;
+  return !field->legacy_enum_field_treated_as_closed();
 }
 
 bool HasHasbit(const FieldDescriptor* field) {

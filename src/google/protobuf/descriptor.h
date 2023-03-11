@@ -85,6 +85,7 @@
 namespace google {
 namespace protobuf {
 
+
 // Defined in this file.
 class Descriptor;
 class FieldDescriptor;
@@ -118,7 +119,6 @@ class MethodOptions;
 class FileOptions;
 class UninterpretedOption;
 class SourceCodeInfo;
-class ExtensionMetadata;
 
 // Defined in message.h
 class Message;
@@ -2455,11 +2455,6 @@ inline bool FieldDescriptor::has_presence() const {
   if (is_repeated()) return false;
   return cpp_type() == CPPTYPE_MESSAGE || containing_oneof() ||
          file()->syntax() == FileDescriptor::SYNTAX_PROTO2;
-}
-
-inline bool FieldDescriptor::requires_utf8_validation() const {
-  return type() == TYPE_STRING &&
-         file()->syntax() == FileDescriptor::SYNTAX_PROTO3;
 }
 
 inline bool FieldDescriptor::legacy_enum_field_treated_as_closed() const {
