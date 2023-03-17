@@ -40,6 +40,9 @@ namespace compiler {
 // Returns whether a file can use the `import weak` syntax.
 bool IsWeakImportFile(absl::string_view file);
 
+// Returns whether a file can have an empty package.
+bool IsEmptyPackageFile(absl::string_view file);
+
 }  // namespace compiler
 }  // namespace protobuf
 }  // namespace google

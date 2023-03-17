@@ -71,6 +71,7 @@
 #include "google/protobuf/any.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/descriptor_database.h"
+#include "google/protobuf/descriptor_legacy.h"
 #include "google/protobuf/dynamic_message.h"
 #include "google/protobuf/generated_message_util.h"
 #include "google/protobuf/io/strtod.h"
@@ -4871,10 +4872,11 @@ PROTOBUF_NOINLINE static bool ExistingFileMatchesProto(
   existing_file->CopyTo(&existing_proto);
   // TODO(liujisi): Remove it when CopyTo supports copying syntax params when
   // syntax="proto2".
-  if (existing_file->syntax() == FileDescriptor::SYNTAX_PROTO2 &&
+  if (FileDescriptorLegacy(existing_file).syntax() ==
+          FileDescriptorLegacy::Syntax::SYNTAX_PROTO2 &&
       proto.has_syntax()) {
-    existing_proto.set_syntax(
-        existing_file->SyntaxName(existing_file->syntax()));
+    existing_proto.set_syntax(FileDescriptorLegacy::SyntaxName(
+        FileDescriptorLegacy(existing_file).syntax()));
   }
 
   return existing_proto.SerializeAsString() == proto.SerializeAsString();
@@ -4991,7 +4993,7 @@ static void PlanAllocationSize(const FileDescriptorProto& proto,
   alloc.PlanArray<FileDescriptor>(1);
   alloc.PlanArray<FileDescriptorTables>(1);
   alloc.PlanArray<std::string>(2
-  );  // name + package
+  );    // name + package
   if (proto.has_options()) alloc.PlanArray<FileOptions>(1);
   if (proto.has_source_code_info()) alloc.PlanArray<SourceCodeInfo>(1);
 
@@ -8424,18 +8426,7 @@ bool HasPreservingUnknownEnumSemantics(const FieldDescriptor* field) {
 }
 
 bool HasHasbit(const FieldDescriptor* field) {
-  // This predicate includes proto3 message fields only if they have "optional".
-  //   Foo submsg1 = 1;           // HasHasbit() == false
-  //   optional Foo submsg2 = 2;  // HasHasbit() == true
-  // This is slightly odd, as adding "optional" to a singular proto3 field does
-  // not change the semantics or API. However whenever any field in a message
-  // has a hasbit, it forces reflection to include hasbit offsets for *all*
-  // fields, even if almost all of them are set to -1 (no hasbit). So to avoid
-  // causing a sudden size regression for ~all proto3 messages, we give proto3
-  // message fields a hasbit only if "optional" is present. If the user is
-  // explicitly writing "optional", it is likely they are writing it on
-  // primitive fields also.
-  return (field->has_optional_keyword() || field->is_required()) &&
+  return field->has_presence() && !field->real_containing_oneof() &&
          !field->options().weak();
 }
 
@@ -8449,7 +8440,8 @@ static bool FileUtf8Verification(const FileDescriptor* file) {
 
 // Which level of UTF-8 enforcemant is placed on this file.
 Utf8CheckMode GetUtf8CheckMode(const FieldDescriptor* field, bool is_lite) {
-  if (field->file()->syntax() == FileDescriptor::SYNTAX_PROTO3 &&
+  if (FileDescriptorLegacy(field->file()).syntax() ==
+          FileDescriptorLegacy::Syntax::SYNTAX_PROTO3 &&
       FieldEnforceUtf8(field)) {
     return Utf8CheckMode::kStrict;
   } else if (!is_lite && FileUtf8Verification(field->file())) {

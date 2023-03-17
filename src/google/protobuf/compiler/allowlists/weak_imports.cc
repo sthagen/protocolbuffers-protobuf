@@ -28,21 +28,25 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#[test]
-fn test_canonical_types() {
-    let _child = child_proto::Child::new();
-    let _parent = parent_proto::Parent::new();
-    // Parent from child_proto crate should be the same type as Parent from
-    // parent_proto crate.
-    let _parent_from_child: child_proto::Parent = parent_proto::Parent::new();
-}
+#include "google/protobuf/compiler/allowlists/allowlists.h"
 
-#[test]
-fn test_parent_serialization() {
-    assert_eq!(*parent_proto::Parent::new().serialize(), []);
-}
+#include "absl/strings/string_view.h"
+#include "google/protobuf/compiler/allowlists/allowlist.h"
 
-#[test]
-fn test_child_serialization() {
-    assert_eq!(*child_proto::Child::new().serialize(), []);
+namespace google {
+namespace protobuf {
+namespace compiler {
+
+// NOTE: Allowlists in this file are not accepting new entries unless otherwise
+// specified.
+
+static constexpr auto kWeakImports = internal::MakeAllowlist({
+// Intentionally left blank.
+});
+
+bool IsWeakImportFile(absl::string_view file) {
+  return kWeakImports.Allows(file);
 }
+}  // namespace compiler
+}  // namespace protobuf
+}  // namespace google

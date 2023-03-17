@@ -111,6 +111,7 @@ set(libprotobuf_hdrs
   ${protobuf_SOURCE_DIR}/src/google/protobuf/descriptor.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/descriptor.pb.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/descriptor_database.h
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/descriptor_legacy.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/dynamic_message.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/endian.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/explicitly_constructed.h
@@ -272,7 +273,8 @@ set(libprotobuf_lite_hdrs
 
 # @//pkg:protoc
 set(libprotoc_srcs
-  ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/allowlists/allowlists.cc
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/allowlists/empty_package.cc
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/allowlists/weak_imports.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/code_generator.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/command_line_interface.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/cpp/enum.cc
