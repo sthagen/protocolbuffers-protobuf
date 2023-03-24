@@ -77,6 +77,7 @@
 #include "google/protobuf/io/strtod.h"
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/port.h"
+#include "google/protobuf/repeated_ptr_field.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/unknown_field_set.h"
 
@@ -1819,7 +1820,37 @@ const SourceCodeInfo_Location* FileDescriptorTables::GetSourceLocation(
 // ===================================================================
 // DescriptorPool
 
+
 DescriptorPool::ErrorCollector::~ErrorCollector() {}
+
+absl::string_view DescriptorPool::ErrorCollector::ErrorLocationName(
+    ErrorLocation location) {
+  switch (location) {
+    case NAME:
+      return "NAME";
+    case NUMBER:
+      return "NUMBER";
+    case TYPE:
+      return "TYPE";
+    case EXTENDEE:
+      return "EXTENDEE";
+    case DEFAULT_VALUE:
+      return "DEFAULT_VALUE";
+    case OPTION_NAME:
+      return "OPTION_NAME";
+    case OPTION_VALUE:
+      return "OPTION_VALUE";
+    case INPUT_TYPE:
+      return "INPUT_TYPE";
+    case OUTPUT_TYPE:
+      return "OUTPUT_TYPE";
+    case IMPORT:
+      return "IMPORT";
+    case OTHER:
+      return "OTHER";
+  }
+  return "UNKNOWN";
+}
 
 DescriptorPool::DescriptorPool()
     : mutex_(nullptr),
@@ -4115,17 +4146,8 @@ class DescriptorBuilder {
                            const EnumDescriptorProto& proto);
   void ValidateEnumValueOptions(EnumValueDescriptor* enum_value,
                                 const EnumValueDescriptorProto& proto);
-  void ValidateExtensionRangeOptions(
-      const std::string& full_name, Descriptor::ExtensionRange* extension_range,
-      const DescriptorProto_ExtensionRange& proto);
-  void ValidateExtensionMetadata(
-      const std::string& full_name,
-      const Descriptor::ExtensionRange& extension_range,
-      const DescriptorProto_ExtensionRange& proto);
-  void ValidateExtensionDeclaration(
-      const std::string& full_name,
-      const Descriptor::ExtensionRange& extension_range,
-      const DescriptorProto_ExtensionRange& proto);
+  void ValidateExtensionRangeOptions(const DescriptorProto& proto,
+                                     const Descriptor& message);
   void ValidateServiceOptions(ServiceDescriptor* service,
                               const ServiceDescriptorProto& proto);
   void ValidateMethodOptions(MethodDescriptor* method,
@@ -5392,7 +5414,6 @@ struct IncrementWhenDestroyed {
 }  // namespace
 
 
-
 void DescriptorBuilder::BuildMessage(const DescriptorProto& proto,
                                      const Descriptor* parent,
                                      Descriptor* result,
@@ -5490,7 +5511,6 @@ void DescriptorBuilder::BuildMessage(const DescriptorProto& proto,
                                 name));
     }
   }
-
   // Check that fields aren't using reserved names or numbers and that they
   // aren't using extension numbers.
   for (int i = 0; i < result->field_count(); i++) {
@@ -5525,7 +5545,6 @@ void DescriptorBuilder::BuildMessage(const DescriptorProto& proto,
           DescriptorPool::ErrorCollector::NAME,
           absl::Substitute("Field name \"$0\" is reserved.", field->name()));
     }
-
   }
 
   // Check that extension ranges don't overlap and don't include
@@ -7030,23 +7049,7 @@ void DescriptorBuilder::ValidateMessageOptions(Descriptor* message,
   VALIDATE_OPTIONS_FROM_ARRAY(message, extension, Field);
 
   CheckFieldJsonNameUniqueness(proto, message);
-
-  const int64_t max_extension_range =
-      static_cast<int64_t>(message->options().message_set_wire_format()
-                               ? std::numeric_limits<int32_t>::max()
-                               : FieldDescriptor::kMaxNumber);
-  for (int i = 0; i < message->extension_range_count(); ++i) {
-    if (message->extension_range(i)->end > max_extension_range + 1) {
-      AddError(message->full_name(), proto.extension_range(i),
-               DescriptorPool::ErrorCollector::NUMBER,
-               absl::Substitute("Extension numbers cannot be greater than $0.",
-                                max_extension_range));
-    }
-
-    ValidateExtensionRangeOptions(message->full_name(),
-                                  message->extension_ranges_ + i,
-                                  proto.extension_range(i));
-  }
+  ValidateExtensionRangeOptions(proto, *message);
 }
 
 
@@ -7166,10 +7169,20 @@ void DescriptorBuilder::ValidateEnumValueOptions(
 
 
 void DescriptorBuilder::ValidateExtensionRangeOptions(
-    const std::string& full_name, Descriptor::ExtensionRange* extension_range,
-    const DescriptorProto_ExtensionRange& proto) {
-  (void)full_name;        // Parameter is used by Google-internal code.
-  (void)extension_range;  // Parameter is used by Google-internal code.
+    const DescriptorProto& proto, const Descriptor& message) {
+  const int64_t max_extension_range =
+      static_cast<int64_t>(message.options().message_set_wire_format()
+                               ? std::numeric_limits<int32_t>::max()
+                               : FieldDescriptor::kMaxNumber);
+  for (int i = 0; i < message.extension_range_count(); i++) {
+    const auto& range = *message.extension_range(i);
+    if (range.end > max_extension_range + 1) {
+      AddError(message.full_name(), proto,
+               DescriptorPool::ErrorCollector::NUMBER,
+               absl::Substitute("Extension numbers cannot be greater than $0.",
+                                max_extension_range));
+    }
+  }
 }
 
 void DescriptorBuilder::ValidateServiceOptions(

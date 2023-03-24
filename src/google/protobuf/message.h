@@ -651,6 +651,11 @@ class PROTOBUF_EXPORT Reflection final {
                bool value) const;
   void SetString(Message* message, const FieldDescriptor* field,
                  std::string value) const;
+  // Set a string field to a Cord value.  If the underlying field is
+  // represented using a Cord already, this involves no copies  (just
+  // reference counting).  Otherwise, a copy must be made.
+  void SetString(Message* message, const FieldDescriptor* field,
+                 const absl::Cord& value) const;
   void SetEnum(Message* message, const FieldDescriptor* field,
                const EnumValueDescriptor* value) const;
   // Set an enum field's value with an integer rather than EnumValueDescriptor.
@@ -1080,7 +1085,7 @@ class PROTOBUF_EXPORT Reflection final {
   }
 
   const TcParseTableBase* CreateTcParseTable() const;
-  const TcParseTableBase* CreateTcParseTableForMessageSet() const;
+  const TcParseTableBase* CreateTcParseTableReflectionOnly() const;
   void PopulateTcParseFastEntries(
       const internal::TailCallTableInfo& table_info,
       TcParseTableBase::FastFieldEntry* fast_entries) const;

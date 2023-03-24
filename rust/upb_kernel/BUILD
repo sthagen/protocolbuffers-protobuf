@@ -22,6 +22,6 @@ cc_library(
     name = "upb_c_api",
     srcs = ["upb_api.c"],
     deps = [
-        "//third_party/upb",
+        "@upb//:upb",
     ],
 )
