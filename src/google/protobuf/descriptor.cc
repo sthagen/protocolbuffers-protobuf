@@ -986,34 +986,39 @@ struct SymbolByParentEq {
 using SymbolsByParentSet =
     absl::flat_hash_set<Symbol, SymbolByParentHash, SymbolByParentEq>;
 
-struct FilesByNameHash {
+template <typename DescriptorT>
+struct DescriptorsByNameHash {
   using is_transparent = void;
 
   size_t operator()(absl::string_view name) const { return absl::HashOf(name); }
 
-  size_t operator()(const FileDescriptor* file) const {
+  size_t operator()(const DescriptorT* file) const {
     return absl::HashOf(file->name());
   }
 };
 
-struct FilesByNameEq {
+template <typename DescriptorT>
+struct DescriptorsByNameEq {
   using is_transparent = void;
 
   bool operator()(absl::string_view lhs, absl::string_view rhs) const {
     return lhs == rhs;
   }
-  bool operator()(absl::string_view lhs, const FileDescriptor* rhs) const {
+  bool operator()(absl::string_view lhs, const DescriptorT* rhs) const {
     return lhs == rhs->name();
   }
-  bool operator()(const FileDescriptor* lhs, absl::string_view rhs) const {
+  bool operator()(const DescriptorT* lhs, absl::string_view rhs) const {
     return lhs->name() == rhs;
   }
-  bool operator()(const FileDescriptor* lhs, const FileDescriptor* rhs) const {
+  bool operator()(const DescriptorT* lhs, const DescriptorT* rhs) const {
     return lhs == rhs || lhs->name() == rhs->name();
   }
 };
-using FilesByNameSet =
-    absl::flat_hash_set<const FileDescriptor*, FilesByNameHash, FilesByNameEq>;
+
+template <typename DescriptorT>
+using DescriptorsByNameSet =
+    absl::flat_hash_set<const DescriptorT*, DescriptorsByNameHash<DescriptorT>,
+                        DescriptorsByNameEq<DescriptorT>>;
 
 using FieldsByNameMap =
     absl::flat_hash_map<std::pair<const void*, absl::string_view>,
@@ -1364,7 +1369,7 @@ class DescriptorPool::Tables {
       flat_allocs_;
 
   SymbolsByNameSet symbols_by_name_;
-  FilesByNameSet files_by_name_;
+  DescriptorsByNameSet<FileDescriptor> files_by_name_;
   ExtensionsGroupedByDescriptorMap extensions_;
 
   struct CheckPoint {
@@ -2970,9 +2975,8 @@ class SourceLocationCommentPrinter {
   std::string FormatComment(const std::string& comment_text) {
     std::string stripped_comment = comment_text;
     absl::StripAsciiWhitespace(&stripped_comment);
-    std::vector<std::string> lines = absl::StrSplit(stripped_comment, "\n");
     std::string output;
-    for (const std::string& line : lines) {
+    for (absl::string_view line : absl::StrSplit(stripped_comment, '\n')) {
       absl::SubstituteAndAppend(&output, "$0// $1\n", prefix_, line);
     }
     return output;
@@ -3154,9 +3158,23 @@ void Descriptor::DebugString(int depth, std::string* contents,
   }
 
   for (int i = 0; i < extension_range_count(); i++) {
-    absl::SubstituteAndAppend(contents, "$0  extensions $1 to $2;\n", prefix,
-                              extension_range(i)->start,
-                              extension_range(i)->end - 1);
+    absl::SubstituteAndAppend(contents, "$0  extensions $1", prefix,
+                              extension_range(i)->start);
+    if (extension_range(i)->end > extension_range(i)->start + 1) {
+      absl::SubstituteAndAppend(contents, " to $0",
+                                extension_range(i)->end - 1);
+    }
+    if (extension_range(i)->options_ != nullptr) {
+      if (extension_range(i)->options_->declaration_size() > 0) {
+        absl::StrAppend(contents, " [");
+        for (auto& decl : extension_range(i)->options_->declaration()) {
+          absl::SubstituteAndAppend(contents, " declaration = { $0 }",
+                                    decl.ShortDebugString());
+        }
+        absl::StrAppend(contents, " ] ");
+      }
+    }
+    absl::StrAppend(contents, ";\n");
   }
 
   // Group extensions by what they extend, so they can be printed out together.
@@ -3777,6 +3795,10 @@ class DescriptorBuilder {
   // Maximum recursion depth corresponds to 32 nested message declarations.
   int recursion_depth_ = 32;
 
+  // Note: changing these string refs to string_view can actually result in
+  // stack overflows downstream for very large protos.  String view requires 2
+  // registers vs the 1 for const std::string&, which can change the stack size
+  // of a deeply nested build.
   void AddError(const std::string& element_name, const Message& descriptor,
                 DescriptorPool::ErrorCollector::ErrorLocation location,
                 const std::string& error);
@@ -3974,6 +3996,12 @@ class DescriptorBuilder {
   void SuggestFieldNumbers(FileDescriptor* file,
                            const FileDescriptorProto& proto);
 
+  // Checks that the extension field matches what is declared.
+  void CheckExtensionDeclaration(const FieldDescriptor& field,
+                                 const FieldDescriptorProto& proto,
+                                 absl::string_view declared_full_name,
+                                 absl::string_view declared_type_name,
+                                 bool is_repeated);
 
   // Must be run only after cross-linking.
   void InterpretOptions();
@@ -4148,6 +4176,11 @@ class DescriptorBuilder {
                                 const EnumValueDescriptorProto& proto);
   void ValidateExtensionRangeOptions(const DescriptorProto& proto,
                                      const Descriptor& message);
+  void ValidateExtensionDeclaration(
+      const std::string& full_name,
+      const RepeatedPtrField<ExtensionRangeOptions_Declaration>& declarations,
+      const DescriptorProto_ExtensionRange& proto,
+      absl::flat_hash_set<absl::string_view>& full_name_set);
   void ValidateServiceOptions(ServiceDescriptor* service,
                               const ServiceDescriptorProto& proto);
   void ValidateMethodOptions(MethodDescriptor* method,
@@ -5413,6 +5446,17 @@ struct IncrementWhenDestroyed {
 
 }  // namespace
 
+namespace {
+bool IsNonMessageType(absl::string_view type) {
+  static const auto* non_message_types =
+      new absl::flat_hash_set<absl::string_view>(
+          {"double", "float", "int64", "uint64", "int32", "fixed32", "fixed64",
+           "bool", "string", "bytes", "uint32", "enum", "sfixed32", "sfixed64",
+           "sint32", "sint64"});
+  return non_message_types->contains(type);
+}
+}  // namespace
+
 
 void DescriptorBuilder::BuildMessage(const DescriptorProto& proto,
                                      const Descriptor* parent,
@@ -5502,9 +5546,8 @@ void DescriptorBuilder::BuildMessage(const DescriptorProto& proto,
     }
   }
 
-  absl::flat_hash_set<std::string> reserved_name_set;
-  for (int i = 0; i < proto.reserved_name_size(); i++) {
-    const std::string& name = proto.reserved_name(i);
+  absl::flat_hash_set<absl::string_view> reserved_name_set;
+  for (const std::string& name : proto.reserved_name()) {
     if (!reserved_name_set.insert(name).second) {
       AddError(name, proto, DescriptorPool::ErrorCollector::NAME,
                absl::Substitute("Field name \"$0\" is reserved multiple times.",
@@ -5539,7 +5582,7 @@ void DescriptorBuilder::BuildMessage(const DescriptorProto& proto,
                                   field->name(), field->number()));
       }
     }
-    if (reserved_name_set.find(field->name()) != reserved_name_set.end()) {
+    if (reserved_name_set.contains(field->name())) {
       AddError(
           field->full_name(), proto.field(i),
           DescriptorPool::ErrorCollector::NAME,
@@ -6185,12 +6228,9 @@ void DescriptorBuilder::BuildEnum(const EnumDescriptorProto& proto,
     }
   }
 
-  absl::flat_hash_set<std::string> reserved_name_set;
-  for (int i = 0; i < proto.reserved_name_size(); i++) {
-    const std::string& name = proto.reserved_name(i);
-    if (reserved_name_set.find(name) == reserved_name_set.end()) {
-      reserved_name_set.insert(name);
-    } else {
+  absl::flat_hash_set<absl::string_view> reserved_name_set;
+  for (const std::string& name : proto.reserved_name()) {
+    if (!reserved_name_set.insert(name).second) {
       AddError(name, proto, DescriptorPool::ErrorCollector::NAME,
                absl::Substitute("Enum value \"$0\" is reserved multiple times.",
                                 name));
@@ -6208,7 +6248,7 @@ void DescriptorBuilder::BuildEnum(const EnumDescriptorProto& proto,
                                   value->name(), value->number()));
       }
     }
-    if (reserved_name_set.find(value->name()) != reserved_name_set.end()) {
+    if (reserved_name_set.contains(value->name())) {
       AddError(
           value->full_name(), proto.value(i),
           DescriptorPool::ErrorCollector::NAME,
@@ -6497,6 +6537,36 @@ void DescriptorBuilder::CrossLinkExtensionRange(
 }
 
 
+void DescriptorBuilder::CheckExtensionDeclaration(
+    const FieldDescriptor& field, const FieldDescriptorProto& proto,
+    absl::string_view declared_full_name, absl::string_view declared_type_name,
+    bool is_repeated) {
+  if (declared_type_name.empty() && declared_full_name.empty()) {
+    return;
+  }
+
+
+  if (!declared_full_name.empty()) {
+    std::string actual_full_name = absl::StrCat(".", field.full_name());
+    if (declared_full_name != actual_full_name) {
+      AddError(field.full_name(), proto,
+               DescriptorPool::ErrorCollector::EXTENDEE,
+               absl::Substitute(
+                   "\"$0\" extension field $1 is expected to have field name "
+                   "\"$2\", not \"$3\".",
+                   field.containing_type()->full_name(), field.number(),
+                   declared_full_name, actual_full_name));
+    }
+  }
+
+  if (is_repeated != field.is_repeated()) {
+    AddError(
+        field.full_name(), proto, DescriptorPool::ErrorCollector::EXTENDEE,
+        absl::Substitute("\"$0\" extension field $1 is expected to be $2.",
+                         field.containing_type()->full_name(), field.number(),
+                         is_repeated ? "repeated" : "optional"));
+  }
+}
 
 void DescriptorBuilder::CrossLinkField(FieldDescriptor* field,
                                        const FieldDescriptorProto& proto) {
@@ -7130,6 +7200,38 @@ void DescriptorBuilder::ValidateFieldOptions(
              "option json_name is not allowed on extension fields.");
   }
 
+
+  // If this is a declared extension, validate that the actual name and type
+  // match the declaration.
+  if (field->is_extension()) {
+    const Descriptor::ExtensionRange* extension_range =
+        field->containing_type()->FindExtensionRangeContainingNumber(
+            field->number());
+
+
+    if (extension_range->options_ == nullptr) {
+      return;
+    }
+
+    for (const auto& declaration : extension_range->options_->declaration()) {
+      if (declaration.number() != field->number()) continue;
+      CheckExtensionDeclaration(*field, proto, declaration.full_name(),
+                                declaration.type(), declaration.is_repeated());
+      return;
+    }
+
+    if (!extension_range->options_->declaration().empty()) {
+      AddError(field->full_name(), proto,
+               DescriptorPool::ErrorCollector::EXTENDEE,
+               absl::Substitute(
+                   "Missing extension declaration for field $0 with number $1. "
+                   "An extension range must declare for all extension fields "
+                   "once if there's any declaration in the range. Otherwise, "
+                   "consider splitting up the range.",
+                   field->full_name(), field->number()));
+      return;
+    }
+  }
 }
 
 void DescriptorBuilder::ValidateEnumOptions(EnumDescriptor* enm,
@@ -7167,6 +7269,67 @@ void DescriptorBuilder::ValidateEnumValueOptions(
   // Nothing to do so far.
 }
 
+namespace {
+// Validates that a fully-qualified symbol for extension declaration must
+// have a leading dot and valid identifiers.
+absl::optional<std::string> ValidateSymbolForDeclaration(
+    absl::string_view symbol) {
+  if (!absl::StartsWith(symbol, ".")) {
+    return absl::StrCat("\"", symbol,
+                        "\" must have a leading dot to indicate the "
+                        "fully-qualified scope.");
+  }
+  if (!ValidateQualifiedName(symbol)) {
+    return absl::StrCat("\"", symbol, "\" contains invalid identifiers.");
+  }
+  return absl::nullopt;
+}
+}  // namespace
+
+
+void DescriptorBuilder::ValidateExtensionDeclaration(
+    const std::string& full_name,
+    const RepeatedPtrField<ExtensionRangeOptions_Declaration>& declarations,
+    const DescriptorProto_ExtensionRange& proto,
+    absl::flat_hash_set<absl::string_view>& full_name_set) {
+  for (const auto& declaration : declarations) {
+    if (declaration.number() < proto.start() ||
+        declaration.number() >= proto.end()) {
+      AddError(full_name, proto, DescriptorPool::ErrorCollector::NUMBER,
+               absl::Substitute("Extension declaration number $0 is not in the "
+                                "extension range.",
+                                declaration.number()));
+    }
+
+    if (!declaration.has_full_name() || !declaration.has_type()) {
+      AddError(
+          full_name, proto, DescriptorPool::ErrorCollector::EXTENDEE,
+          absl::StrCat("Extension declaration #", declaration.number(),
+                       " should have both \"full_name\" and \"type\" set."));
+    } else {
+      if (!full_name_set.insert(declaration.full_name()).second) {
+        AddError(declaration.full_name(), proto,
+                 DescriptorPool::ErrorCollector::NAME,
+                 absl::Substitute(
+                     "Extension field name \"$0\" is declared multiple times.",
+                     declaration.full_name()));
+        return;
+      }
+      absl::optional<std::string> err =
+          ValidateSymbolForDeclaration(declaration.full_name());
+      if (err.has_value()) {
+        AddError(full_name, proto, DescriptorPool::ErrorCollector::NAME, *err);
+      }
+      if (!IsNonMessageType(declaration.type())) {
+        err = ValidateSymbolForDeclaration(declaration.type());
+        if (err.has_value()) {
+          AddError(full_name, proto, DescriptorPool::ErrorCollector::NAME,
+                   *err);
+        }
+      }
+    }
+  }
+}
 
 void DescriptorBuilder::ValidateExtensionRangeOptions(
     const DescriptorProto& proto, const Descriptor& message) {
@@ -7174,6 +7337,18 @@ void DescriptorBuilder::ValidateExtensionRangeOptions(
       static_cast<int64_t>(message.options().message_set_wire_format()
                                ? std::numeric_limits<int32_t>::max()
                                : FieldDescriptor::kMaxNumber);
+
+  size_t num_declarations = 0;
+  for (int i = 0; i < message.extension_range_count(); i++) {
+    if (message.extension_range(i)->options_ == nullptr) continue;
+    num_declarations +=
+        message.extension_range(i)->options_->declaration_size();
+  }
+
+  // Contains the full names from both "declaration" and "metadata".
+  absl::flat_hash_set<absl::string_view> declaration_full_name_set;
+  declaration_full_name_set.reserve(num_declarations);
+
   for (int i = 0; i < message.extension_range_count(); i++) {
     const auto& range = *message.extension_range(i);
     if (range.end > max_extension_range + 1) {
@@ -7181,6 +7356,14 @@ void DescriptorBuilder::ValidateExtensionRangeOptions(
                DescriptorPool::ErrorCollector::NUMBER,
                absl::Substitute("Extension numbers cannot be greater than $0.",
                                 max_extension_range));
+    }
+    const auto& range_options = *range.options_;
+
+
+    if (!range_options.declaration().empty()) {
+      ValidateExtensionDeclaration(
+          message.full_name(), range_options.declaration(),
+          proto.extension_range(i), declaration_full_name_set);
     }
   }
 }
@@ -7279,13 +7462,13 @@ bool DescriptorBuilder::ValidateMapEntry(FieldDescriptor* field,
 
 void DescriptorBuilder::DetectMapConflicts(const Descriptor* message,
                                            const DescriptorProto& proto) {
-  absl::flat_hash_map<std::string, const Descriptor*> seen_types;
+  DescriptorsByNameSet<Descriptor> seen_types;
   for (int i = 0; i < message->nested_type_count(); ++i) {
     const Descriptor* nested = message->nested_type(i);
-    auto insert_result = seen_types.emplace(nested->name(), nested);
+    auto insert_result = seen_types.insert(nested);
     bool inserted = insert_result.second;
     if (!inserted) {
-      if (insert_result.first->second->options().map_entry() ||
+      if ((*insert_result.first)->options().map_entry() ||
           nested->options().map_entry()) {
         AddError(
             message->full_name(), proto, DescriptorPool::ErrorCollector::NAME,
@@ -7301,10 +7484,10 @@ void DescriptorBuilder::DetectMapConflicts(const Descriptor* message,
   for (int i = 0; i < message->field_count(); ++i) {
     const FieldDescriptor* field = message->field(i);
     auto iter = seen_types.find(field->name());
-    if (iter != seen_types.end() && iter->second->options().map_entry()) {
+    if (iter != seen_types.end() && (*iter)->options().map_entry()) {
       AddError(message->full_name(), proto,
                DescriptorPool::ErrorCollector::NAME,
-               absl::StrCat("Expanded map entry type ", iter->second->name(),
+               absl::StrCat("Expanded map entry type ", (*iter)->name(),
                             " conflicts with an existing field."));
     }
   }
@@ -7312,10 +7495,10 @@ void DescriptorBuilder::DetectMapConflicts(const Descriptor* message,
   for (int i = 0; i < message->enum_type_count(); ++i) {
     const EnumDescriptor* enum_desc = message->enum_type(i);
     auto iter = seen_types.find(enum_desc->name());
-    if (iter != seen_types.end() && iter->second->options().map_entry()) {
+    if (iter != seen_types.end() && (*iter)->options().map_entry()) {
       AddError(message->full_name(), proto,
                DescriptorPool::ErrorCollector::NAME,
-               absl::StrCat("Expanded map entry type ", iter->second->name(),
+               absl::StrCat("Expanded map entry type ", (*iter)->name(),
                             " conflicts with an existing enum type."));
     }
   }
@@ -7323,10 +7506,10 @@ void DescriptorBuilder::DetectMapConflicts(const Descriptor* message,
   for (int i = 0; i < message->oneof_decl_count(); ++i) {
     const OneofDescriptor* oneof_desc = message->oneof_decl(i);
     auto iter = seen_types.find(oneof_desc->name());
-    if (iter != seen_types.end() && iter->second->options().map_entry()) {
+    if (iter != seen_types.end() && (*iter)->options().map_entry()) {
       AddError(message->full_name(), proto,
                DescriptorPool::ErrorCollector::NAME,
-               absl::StrCat("Expanded map entry type ", iter->second->name(),
+               absl::StrCat("Expanded map entry type ", (*iter)->name(),
                             " conflicts with an existing oneof type."));
     }
   }
