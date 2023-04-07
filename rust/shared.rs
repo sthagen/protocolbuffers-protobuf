@@ -28,24 +28,66 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Rust Protobuf runtime using the C++ kernel.
+//! Kernel-agnostic logic for the Rust Protobuf Runtime.
+//!
+//! For kernel-specific logic this crate delegates to the respective __runtime
+//! crate.
 
-use std::boxed::Box;
+#[cfg(cpp_kernel)]
+pub extern crate cpp as __runtime;
+#[cfg(upb_kernel)]
+pub extern crate upb as __runtime;
 
-/// TODO(b/272728844): Replace this placeholder code with a real implementation.
-#[repr(C)]
-pub struct Arena {
-    _data: [u8; 0],
+pub use __runtime::Arena;
+
+use std::ops::Deref;
+use std::ptr::NonNull;
+use std::slice;
+
+/// Represents serialized Protobuf wire format data. It's typically produced by
+/// `<Message>.serialize()`.
+pub struct SerializedData {
+    data: NonNull<u8>,
+    len: usize,
+    arena: *mut Arena,
 }
 
-impl Arena {
-    pub unsafe fn new() -> *mut Self {
-        let arena = Box::new(Arena { _data: [] });
-        Box::leak(arena) as *mut _
+impl SerializedData {
+    pub unsafe fn from_raw_parts(arena: *mut Arena, data: NonNull<u8>, len: usize) -> Self {
+        SerializedData { arena, data, len }
     }
+}
 
-    pub unsafe fn free(arena: *mut Self) {
-        let arena = Box::from_raw(arena);
-        std::mem::drop(arena);
+impl Deref for SerializedData {
+    type Target = [u8];
+    fn deref(&self) -> &Self::Target {
+        unsafe { slice::from_raw_parts(self.data.as_ptr() as *const _, self.len) }
+    }
+}
+
+impl Drop for SerializedData {
+    fn drop(&mut self) {
+        unsafe { Arena::free(self.arena) };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_serialized_data_roundtrip() {
+        let arena = unsafe { Arena::new() };
+        let original_data = b"Hello world";
+        let len = original_data.len();
+
+        let serialized_data = unsafe {
+            SerializedData::from_raw_parts(
+                arena,
+                NonNull::new(original_data as *const _ as *mut _).unwrap(),
+                len,
+            )
+        };
+        assert_eq!(&*serialized_data, b"Hello world");
     }
 }
