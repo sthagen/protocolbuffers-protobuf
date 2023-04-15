@@ -39,55 +39,25 @@ pub extern crate cpp as __runtime;
 pub extern crate upb as __runtime;
 
 pub use __runtime::Arena;
+pub use __runtime::SerializedData;
 
-use std::ops::Deref;
-use std::ptr::NonNull;
-use std::slice;
+use std::fmt;
 
-/// Represents serialized Protobuf wire format data. It's typically produced by
-/// `<Message>.serialize()`.
-pub struct SerializedData {
-    data: NonNull<u8>,
-    len: usize,
-    arena: *mut Arena,
-}
+/// Represents error during deserialization.
+#[derive(Debug, Clone)]
+pub struct ParseError;
 
-impl SerializedData {
-    pub unsafe fn from_raw_parts(arena: *mut Arena, data: NonNull<u8>, len: usize) -> Self {
-        SerializedData { arena, data, len }
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Couldn't deserialize given bytes into a proto")
     }
 }
 
-impl Deref for SerializedData {
-    type Target = [u8];
-    fn deref(&self) -> &Self::Target {
-        unsafe { slice::from_raw_parts(self.data.as_ptr() as *const _, self.len) }
-    }
-}
-
-impl Drop for SerializedData {
-    fn drop(&mut self) {
-        unsafe { Arena::free(self.arena) };
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_serialized_data_roundtrip() {
-        let arena = unsafe { Arena::new() };
-        let original_data = b"Hello world";
-        let len = original_data.len();
-
-        let serialized_data = unsafe {
-            SerializedData::from_raw_parts(
-                arena,
-                NonNull::new(original_data as *const _ as *mut _).unwrap(),
-                len,
-            )
-        };
-        assert_eq!(&*serialized_data, b"Hello world");
-    }
+/// Represents an ABI-stable version of &[u8]/string_view (a borrowed slice of
+/// bytes) for FFI use only.
+#[repr(C)]
+pub struct PtrAndLen {
+    /// Borrows the memory.
+    pub ptr: *const u8,
+    pub len: usize,
 }

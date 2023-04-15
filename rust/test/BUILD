@@ -10,6 +10,16 @@ UNITTEST_PROTO_TARGET = (
     "//src/google/protobuf:test_protos"
 )
 
+UNITTEST_CC_PROTO_TARGET = (
+    "//src/google/protobuf:cc_test_protos"
+)
+
+alias(
+    name = "unittest_cc_proto",
+    actual = UNITTEST_CC_PROTO_TARGET,
+    visibility = ["//rust/test:__subpackages__"],
+)
+
 rust_proto_library(
     name = "unittest_rust_proto",
     testonly = True,
@@ -34,7 +44,7 @@ rust_cc_proto_library(
         "//rust/test/cpp:__subpackages__",
         "//rust/test/shared:__subpackages__",
     ],
-    deps = [":unittest_cc_proto"],
+    deps = [UNITTEST_CC_PROTO_TARGET],
 )
 
 proto_library(
@@ -100,4 +110,68 @@ rust_cc_proto_library(
         "//rust/test/shared:__subpackages__",
     ],
     deps = [":child_cc_proto"],
+)
+
+proto_library(
+    name = "dots_in_package_proto",
+    testonly = True,
+    srcs = ["dots_in_package.proto"],
+)
+
+cc_proto_library(
+    name = "dots_in_package_cc_proto",
+    testonly = True,
+    deps = [":dots_in_package_proto"],
+)
+
+rust_cc_proto_library(
+    name = "dots_in_package_cc_rust_proto",
+    testonly = True,
+    visibility = [
+        "//rust/test/cpp:__subpackages__",
+        "//rust/test/shared:__subpackages__",
+    ],
+    deps = [":dots_in_package_cc_proto"],
+)
+
+rust_upb_proto_library(
+    name = "dots_in_package_upb_rust_proto",
+    testonly = True,
+    visibility = [
+        "//rust/test/shared:__subpackages__",
+        "//rust/test/upb:__subpackages__",
+    ],
+    deps = [":dots_in_package_proto"],
+)
+
+proto_library(
+    name = "no_package_proto",
+    testonly = True,
+    srcs = ["no_package.proto"],
+)
+
+cc_proto_library(
+    name = "no_package_cc_proto",
+    testonly = True,
+    deps = [":no_package_proto"],
+)
+
+rust_cc_proto_library(
+    name = "no_package_cc_rust_proto",
+    testonly = True,
+    visibility = [
+        "//rust/test/cpp:__subpackages__",
+        "//rust/test/shared:__subpackages__",
+    ],
+    deps = [":no_package_cc_proto"],
+)
+
+rust_upb_proto_library(
+    name = "no_package_upb_rust_proto",
+    testonly = True,
+    visibility = [
+        "//rust/test/shared:__subpackages__",
+        "//rust/test/upb:__subpackages__",
+    ],
+    deps = [":no_package_proto"],
 )

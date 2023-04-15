@@ -1868,7 +1868,7 @@ DescriptorPool::DescriptorPool()
       lazily_build_dependencies_(false),
       allow_unknown_(false),
       enforce_weak_(false),
-      enforce_special_extension_ranges_(true),
+      enforce_special_extension_ranges_(false),
       disallow_enforce_utf8_(false),
       deprecated_legacy_json_field_conflicts_(false) {}
 
@@ -1883,7 +1883,7 @@ DescriptorPool::DescriptorPool(DescriptorDatabase* fallback_database,
       lazily_build_dependencies_(false),
       allow_unknown_(false),
       enforce_weak_(false),
-      enforce_special_extension_ranges_(true),
+      enforce_special_extension_ranges_(false),
       disallow_enforce_utf8_(false),
       deprecated_legacy_json_field_conflicts_(false) {}
 
@@ -1897,7 +1897,7 @@ DescriptorPool::DescriptorPool(const DescriptorPool* underlay)
       lazily_build_dependencies_(false),
       allow_unknown_(false),
       enforce_weak_(false),
-      enforce_special_extension_ranges_(true),
+      enforce_special_extension_ranges_(false),
       disallow_enforce_utf8_(false),
       deprecated_legacy_json_field_conflicts_(false) {}
 
@@ -6626,10 +6626,6 @@ void DescriptorBuilder::CheckExtensionDeclaration(
     const FieldDescriptor& field, const FieldDescriptorProto& proto,
     absl::string_view declared_full_name, absl::string_view declared_type_name,
     bool is_repeated) {
-  if (declared_type_name.empty() && declared_full_name.empty()) {
-    return;
-  }
-
 
   if (!declared_full_name.empty()) {
     std::string actual_full_name = absl::StrCat(".", field.full_name());
@@ -7333,6 +7329,17 @@ void DescriptorBuilder::ValidateFieldOptions(
 
     for (const auto& declaration : extension_range->options_->declaration()) {
       if (declaration.number() != field->number()) continue;
+      if (declaration.reserved()) {
+        AddError(field->full_name(), proto,
+                 DescriptorPool::ErrorCollector::EXTENDEE, [&] {
+                   return absl::Substitute(
+                       "Cannot use number $0 for extension field $1, as it is "
+                       "reserved in the extension declarations for message $2.",
+                       field->number(), field->full_name(),
+                       field->containing_type()->full_name());
+                 });
+        return;
+      }
       CheckExtensionDeclaration(*field, proto, declaration.full_name(),
                                 declaration.type(), declaration.is_repeated());
       return;
@@ -7371,12 +7378,25 @@ void DescriptorBuilder::ValidateEnumOptions(EnumDescriptor* enm,
         if (!enm->options().allow_alias()) {
           // Generate error if duplicated enum values are explicitly disallowed.
           auto make_error = [&] {
-            return absl::StrCat(
+            // Find the next free number.
+            absl::flat_hash_set<int64_t> used;
+            for (int j = 0; j < enm->value_count(); ++j) {
+              used.insert(enm->value(j)->number());
+            }
+            int64_t next_value = static_cast<int64_t>(enum_value->number()) + 1;
+            while (used.contains(next_value)) ++next_value;
+
+            std::string error = absl::StrCat(
                 "\"", enum_value->full_name(),
                 "\" uses the same enum value as \"",
                 insert_result.first->second,
                 "\". If this is intended, set "
                 "'option allow_alias = true;' to the enum definition.");
+            if (next_value < std::numeric_limits<int32_t>::max()) {
+              absl::StrAppend(&error, " The next available enum value is ",
+                              next_value, ".");
+            }
+            return error;
           };
           AddError(enm->full_name(), proto.value(i),
                    DescriptorPool::ErrorCollector::NUMBER, make_error);
@@ -7415,6 +7435,7 @@ void DescriptorBuilder::ValidateExtensionDeclaration(
     const RepeatedPtrField<ExtensionRangeOptions_Declaration>& declarations,
     const DescriptorProto_ExtensionRange& proto,
     absl::flat_hash_set<absl::string_view>& full_name_set) {
+  absl::flat_hash_set<int> extension_number_set;
   for (const auto& declaration : declarations) {
     if (declaration.number() < proto.start() ||
         declaration.number() >= proto.end()) {
@@ -7426,12 +7447,27 @@ void DescriptorBuilder::ValidateExtensionDeclaration(
       });
     }
 
-    if (!declaration.has_full_name() || !declaration.has_type()) {
-      AddError(full_name, proto, DescriptorPool::ErrorCollector::EXTENDEE, [&] {
-        return absl::StrCat(
-            "Extension declaration #", declaration.number(),
-            " should have both \"full_name\" and \"type\" set.");
+    if (!extension_number_set.insert(declaration.number()).second) {
+      AddError(full_name, proto, DescriptorPool::ErrorCollector::NUMBER, [&] {
+        return absl::Substitute(
+            "Extension declaration number $0 is declared multiple times.",
+            declaration.number());
       });
+    }
+
+    // Both full_name and type should be present. If none of them is set,
+    // add an error unless reserved is set to true. If only one of them is set,
+    // add an error whether or not reserved is set to true.
+    if (!declaration.has_full_name() || !declaration.has_type()) {
+      if (declaration.has_full_name() != declaration.has_type() ||
+          !declaration.reserved()) {
+        AddError(full_name, proto, DescriptorPool::ErrorCollector::EXTENDEE,
+                 [&] {
+                   return absl::StrCat(
+                       "Extension declaration #", declaration.number(),
+                       " should have both \"full_name\" and \"type\" set.");
+                 });
+      }
     } else {
       if (!full_name_set.insert(declaration.full_name()).second) {
         AddError(

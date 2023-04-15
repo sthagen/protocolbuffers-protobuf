@@ -31,6 +31,7 @@
 #ifndef GOOGLE_PROTOBUF_COMPILER_RUST_GENERATOR_H__
 #define GOOGLE_PROTOBUF_COMPILER_RUST_GENERATOR_H__
 
+#include <cstdint>
 #include <string>
 
 #include "google/protobuf/compiler/code_generator.h"
