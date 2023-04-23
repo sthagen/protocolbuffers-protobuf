@@ -67,10 +67,6 @@ rust_test(
     tags = [
         # TODO(b/270274576): Enable testing on arm once we have a Rust Arm toolchain.
         "not_build:arm",
-        # TODO(b/243126140): Enable tsan once we support sanitizers with Rust.
-        "notsan",
-        # TODO(b/243126140): Enable msan once we support sanitizers with Rust.
-        "nomsan",
     ],
     deps = [
         "//rust/test:child_cc_rust_proto",
@@ -84,10 +80,6 @@ rust_test(
     tags = [
         # TODO(b/270274576): Enable testing on arm once we have a Rust Arm toolchain.
         "not_build:arm",
-        # TODO(b/243126140): Enable tsan once we support sanitizers with Rust.
-        "notsan",
-        # TODO(b/243126140): Enable msan once we support sanitizers with Rust.
-        "nomsan",
     ],
     deps = [
         "//rust/test:dots_in_package_cc_rust_proto",
@@ -102,14 +94,30 @@ rust_test(
     tags = [
         # TODO(b/270274576): Enable testing on arm once we have a Rust Arm toolchain.
         "not_build:arm",
-        # TODO(b/243126140): Enable tsan once we support sanitizers with Rust.
-        "notsan",
-        # TODO(b/243126140): Enable msan once we support sanitizers with Rust.
-        "nomsan",
     ],
     deps = [
         "//rust/test:dots_in_package_upb_rust_proto",
         "//rust/test:no_package_upb_rust_proto",
         "//rust/test:unittest_upb_rust_proto",
     ],
+)
+
+rust_test(
+    name = "nested_messages_cpp_test",
+    srcs = ["nested_messages_test.rs"],
+    tags = [
+        # TODO(b/270274576): Enable testing on arm once we have a Rust Arm toolchain.
+        "not_build:arm",
+    ],
+    deps = ["//rust/test:unittest_cc_rust_proto"],
+)
+
+rust_test(
+    name = "nested_messages_upb_test",
+    srcs = ["nested_messages_test.rs"],
+    tags = [
+        # TODO(b/270274576): Enable testing on arm once we have a Rust Arm toolchain.
+        "not_build:arm",
+    ],
+    deps = ["//rust/test:unittest_upb_rust_proto"],
 )

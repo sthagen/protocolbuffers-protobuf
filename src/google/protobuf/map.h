@@ -658,7 +658,7 @@ struct KeyNode : NodeBase {
 // Multiply two numbers where overflow is expected.
 template <typename N>
 N MultiplyWithOverflow(N a, N b) {
-#if __has_builtin(__builtin_mul_overflow)
+#if defined(PROTOBUF_HAS_BUILTIN_MUL_OVERFLOW)
   N res;
   (void)__builtin_mul_overflow(a, b, &res);
   return res;
@@ -1069,6 +1069,12 @@ class KeyMapBase : public UntypedMapBase {
     return TableEntryIsList(bucket_index);
   }
 };
+
+template <typename T, typename K>
+bool InitializeMapKey(T*, K&&, Arena*) {
+  return false;
+}
+
 
 }  // namespace internal
 
@@ -1555,13 +1561,17 @@ class Map : private internal::KeyMapBase<internal::KeyForBase<Key>> {
         std::is_same<typename std::decay<K>::type, key_type>::value, K&&,
         key_type>::type;
     Node* node = static_cast<Node*>(this->AllocNode(sizeof(Node)));
+
     // Even when arena is nullptr, CreateInArenaStorage is still used to
     // ensure the arena of submessage will be consistent. Otherwise,
     // submessage may have its own arena when message-owned arena is enabled.
     // Note: This only works if `Key` is not arena constructible.
-    Arena::CreateInArenaStorage(const_cast<Key*>(&node->kv.first),
-                                this->alloc_.arena(),
-                                static_cast<TypeToInit>(std::forward<K>(k)));
+    if (!internal::InitializeMapKey(const_cast<Key*>(&node->kv.first),
+                                    std::forward<K>(k), this->alloc_.arena())) {
+      Arena::CreateInArenaStorage(const_cast<Key*>(&node->kv.first),
+                                  this->alloc_.arena(),
+                                  static_cast<TypeToInit>(std::forward<K>(k)));
+    }
     // Note: if `T` is arena constructible, `Args` needs to be empty.
     Arena::CreateInArenaStorage(&node->kv.second, this->alloc_.arena(),
                                 std::forward<Args>(args)...);

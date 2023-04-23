@@ -642,7 +642,7 @@ CodeGeneratorRequest::_Internal::compiler_version(const CodeGeneratorRequest* ms
   return *msg->_impl_.compiler_version_;
 }
 void CodeGeneratorRequest::clear_proto_file() {
-  _impl_.proto_file_.Clear();
+  _internal_mutable_proto_file()->Clear();
 }
 CodeGeneratorRequest::CodeGeneratorRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
@@ -703,8 +703,8 @@ CodeGeneratorRequest::~CodeGeneratorRequest() {
 
 inline void CodeGeneratorRequest::SharedDtor() {
   ABSL_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.file_to_generate_.~RepeatedPtrField();
-  _impl_.proto_file_.~RepeatedPtrField();
+  _internal_mutable_file_to_generate()->~RepeatedPtrField();
+  _internal_mutable_proto_file()->~RepeatedPtrField();
   _impl_.parameter_.Destroy();
   if (this != internal_default_instance()) delete _impl_.compiler_version_;
 }
@@ -719,8 +719,8 @@ void CodeGeneratorRequest::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.file_to_generate_.Clear();
-  _impl_.proto_file_.Clear();
+  _internal_mutable_file_to_generate()->Clear();
+  _internal_mutable_proto_file()->Clear();
   cached_has_bits = _impl_._has_bits_[0];
   if (cached_has_bits & 0x00000003u) {
     if (cached_has_bits & 0x00000001u) {
@@ -875,14 +875,15 @@ failure:
   (void) cached_has_bits;
 
   // repeated string file_to_generate = 1;
-  total_size += 1 * ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.file_to_generate_.size());
-  for (int i = 0, n = _impl_.file_to_generate_.size(); i < n; ++i) {
-    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(_impl_.file_to_generate_.Get(i));
+  total_size += 1 * ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_internal_file_to_generate().size());
+  for (int i = 0, n = _internal_file_to_generate().size(); i < n; ++i) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        _internal_file_to_generate().Get(i));
   }
 
   // repeated .google.protobuf.FileDescriptorProto proto_file = 15;
   total_size += 1UL * this->_internal_proto_file_size();
-  for (const auto& msg : this->_impl_.proto_file_) {
+  for (const auto& msg : this->_internal_proto_file()) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
@@ -921,8 +922,8 @@ void CodeGeneratorRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, c
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.file_to_generate_.MergeFrom(from._impl_.file_to_generate_);
-  _this->_impl_.proto_file_.MergeFrom(from._impl_.proto_file_);
+  _this->_internal_mutable_file_to_generate()->MergeFrom(from._internal_file_to_generate());
+  _this->_internal_mutable_proto_file()->MergeFrom(from._internal_proto_file());
   cached_has_bits = from._impl_._has_bits_[0];
   if (cached_has_bits & 0x00000003u) {
     if (cached_has_bits & 0x00000001u) {
@@ -944,7 +945,7 @@ void CodeGeneratorRequest::CopyFrom(const CodeGeneratorRequest& from) {
 }
 
 bool CodeGeneratorRequest::IsInitialized() const {
-  if (!::PROTOBUF_NAMESPACE_ID::internal::AllAreInitialized(_impl_.proto_file_))
+  if (!::PROTOBUF_NAMESPACE_ID::internal::AllAreInitialized(_internal_proto_file()))
     return false;
   return true;
 }
@@ -955,8 +956,9 @@ void CodeGeneratorRequest::InternalSwap(CodeGeneratorRequest* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
-  _impl_.file_to_generate_.InternalSwap(&other->_impl_.file_to_generate_);
-  _impl_.proto_file_.InternalSwap(&other->_impl_.proto_file_);
+  _internal_mutable_file_to_generate()->InternalSwap(
+      other->_internal_mutable_file_to_generate());
+  _internal_mutable_proto_file()->InternalSwap(other->_internal_mutable_proto_file());
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.parameter_, lhs_arena,
                                        &other->_impl_.parameter_, rhs_arena);
   swap(_impl_.compiler_version_, other->_impl_.compiler_version_);
@@ -1419,7 +1421,7 @@ CodeGeneratorResponse::~CodeGeneratorResponse() {
 
 inline void CodeGeneratorResponse::SharedDtor() {
   ABSL_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.file_.~RepeatedPtrField();
+  _internal_mutable_file()->~RepeatedPtrField();
   _impl_.error_.Destroy();
 }
 
@@ -1433,7 +1435,7 @@ void CodeGeneratorResponse::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.file_.Clear();
+  _internal_mutable_file()->Clear();
   cached_has_bits = _impl_._has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
     _impl_.error_.ClearNonDefaultToEmpty();
@@ -1559,7 +1561,7 @@ failure:
 
   // repeated .google.protobuf.compiler.CodeGeneratorResponse.File file = 15;
   total_size += 1UL * this->_internal_file_size();
-  for (const auto& msg : this->_impl_.file_) {
+  for (const auto& msg : this->_internal_file()) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
@@ -1597,7 +1599,7 @@ void CodeGeneratorResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, 
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.file_.MergeFrom(from._impl_.file_);
+  _this->_internal_mutable_file()->MergeFrom(from._internal_file());
   cached_has_bits = from._impl_._has_bits_[0];
   if (cached_has_bits & 0x00000003u) {
     if (cached_has_bits & 0x00000001u) {
@@ -1628,7 +1630,7 @@ void CodeGeneratorResponse::InternalSwap(CodeGeneratorResponse* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
-  _impl_.file_.InternalSwap(&other->_impl_.file_);
+  _internal_mutable_file()->InternalSwap(other->_internal_mutable_file());
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.error_, lhs_arena,
                                        &other->_impl_.error_, rhs_arena);
 

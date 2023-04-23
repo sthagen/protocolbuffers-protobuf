@@ -59,7 +59,7 @@
 #pragma runtime_checks("c", off)
 #endif
 #else
-#ifdef __APPLE__
+#if (defined(__APPLE__) || defined(__NEWLIB__))
 #include <machine/endian.h>  // __BYTE_ORDER
 #elif defined(__FreeBSD__)
 #include <sys/endian.h>  // __BYTE_ORDER
@@ -108,9 +108,8 @@
   #define LIBPROTOC_EXPORT
 #endif
 
-#define PROTOBUF_RUNTIME_DEPRECATED(message) PROTOBUF_DEPRECATED_MSG(message)
-#define GOOGLE_PROTOBUF_RUNTIME_DEPRECATED(message) \
-  PROTOBUF_DEPRECATED_MSG(message)
+#define PROTOBUF_RUNTIME_DEPRECATED(message) [[deprecated]] (message)
+#define GOOGLE_PROTOBUF_RUNTIME_DEPRECATED(message) [[deprecated]] (message)
 
 // ===================================================================
 // from google3/base/port.h

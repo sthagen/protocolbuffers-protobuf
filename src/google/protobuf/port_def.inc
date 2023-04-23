@@ -149,6 +149,11 @@
 #define PROTOBUF_BUILTIN_BSWAP64(x) __builtin_bswap64(x)
 #endif
 
+// Portable check for __builtin_mul_overflow.
+#if __has_builtin(__builtin_mul_overflow)
+#define PROTOBUF_HAS_BUILTIN_MUL_OVERFLOW 1
+#endif
+
 // Portable check for gcc-style atomic built-ins
 #if __has_builtin(__atomic_load_n)
 #define PROTOBUF_BUILTIN_ATOMIC 1
@@ -226,7 +231,7 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 #ifdef PROTOBUF_VERSION
 #error PROTOBUF_VERSION was previously defined
 #endif
-#define PROTOBUF_VERSION 4022002
+#define PROTOBUF_VERSION 4022003
 
 #ifdef PROTOBUF_MIN_HEADER_VERSION_FOR_PROTOC
 #error PROTOBUF_MIN_HEADER_VERSION_FOR_PROTOC was previously defined
@@ -390,23 +395,6 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 # define PROTOBUF_SECTION_VARIABLE(x) __attribute__((section(#x)))
 #else
 # define PROTOBUF_SECTION_VARIABLE(x)
-#endif
-
-#if defined(PROTOBUF_DEPRECATED)
-#error PROTOBUF_DEPRECATED was previously defined
-#endif
-#if defined(PROTOBUF_DEPRECATED_MSG)
-#error PROTOBUF_DEPRECATED_MSG was previously defined
-#endif
-#if __has_attribute(deprecated) || defined(__GNUC__)
-# define PROTOBUF_DEPRECATED __attribute__((deprecated))
-# define PROTOBUF_DEPRECATED_MSG(msg) __attribute__((deprecated(msg)))
-#elif defined(_MSC_VER)
-# define PROTOBUF_DEPRECATED __declspec(deprecated)
-# define PROTOBUF_DEPRECATED_MSG(msg) __declspec(deprecated(msg))
-#else
-# define PROTOBUF_DEPRECATED
-# define PROTOBUF_DEPRECATED_MSG(msg)
 #endif
 
 #if defined(__clang__)

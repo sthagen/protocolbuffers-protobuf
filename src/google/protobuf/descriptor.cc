@@ -5927,8 +5927,13 @@ void DescriptorBuilder::BuildFieldOrExtension(const FieldDescriptorProto& proto,
         case FieldDescriptor::CPPTYPE_STRING:
           if (result->type() == FieldDescriptor::TYPE_BYTES) {
             std::string value;
-            absl::CUnescape(proto.default_value(), &value);
-            result->default_value_string_ = alloc.AllocateStrings(value);
+            if (absl::CUnescape(proto.default_value(), &value)) {
+              result->default_value_string_ = alloc.AllocateStrings(value);
+            } else {
+              AddError(result->full_name(), proto,
+                       DescriptorPool::ErrorCollector::DEFAULT_VALUE,
+                       "Invalid escaping in default value.");
+            }
           } else {
             result->default_value_string_ =
                 alloc.AllocateStrings(proto.default_value());
@@ -7314,51 +7319,6 @@ void DescriptorBuilder::ValidateFieldOptions(
              "option json_name is not allowed on extension fields.");
   }
 
-
-  // If this is a declared extension, validate that the actual name and type
-  // match the declaration.
-  if (field->is_extension()) {
-    const Descriptor::ExtensionRange* extension_range =
-        field->containing_type()->FindExtensionRangeContainingNumber(
-            field->number());
-
-
-    if (extension_range->options_ == nullptr) {
-      return;
-    }
-
-    for (const auto& declaration : extension_range->options_->declaration()) {
-      if (declaration.number() != field->number()) continue;
-      if (declaration.reserved()) {
-        AddError(field->full_name(), proto,
-                 DescriptorPool::ErrorCollector::EXTENDEE, [&] {
-                   return absl::Substitute(
-                       "Cannot use number $0 for extension field $1, as it is "
-                       "reserved in the extension declarations for message $2.",
-                       field->number(), field->full_name(),
-                       field->containing_type()->full_name());
-                 });
-        return;
-      }
-      CheckExtensionDeclaration(*field, proto, declaration.full_name(),
-                                declaration.type(), declaration.is_repeated());
-      return;
-    }
-
-    if (!extension_range->options_->declaration().empty()) {
-      AddError(
-          field->full_name(), proto, DescriptorPool::ErrorCollector::EXTENDEE,
-          [&] {
-            return absl::Substitute(
-                "Missing extension declaration for field $0 with number $1. "
-                "An extension range must declare for all extension fields "
-                "once if there's any declaration in the range. Otherwise, "
-                "consider splitting up the range.",
-                field->full_name(), field->number());
-          });
-      return;
-    }
-  }
 }
 
 void DescriptorBuilder::ValidateEnumOptions(EnumDescriptor* enm,
@@ -7528,6 +7488,18 @@ void DescriptorBuilder::ValidateExtensionRangeOptions(
 
 
     if (!range_options.declaration().empty()) {
+      // TODO(b/278783756): remove the "has_verification" check once the default
+      // is flipped to DECLARATION.
+      if (range_options.has_verification() &&
+          range_options.verification() == ExtensionRangeOptions::UNVERIFIED) {
+        AddError(message.full_name(), proto.extension_range(i),
+                 DescriptorPool::ErrorCollector::EXTENDEE, [&] {
+                   return absl::Substitute(
+                       "Cannot mark the extension range as UNVERIFIED when it "
+                       "has extension(s) declared.");
+                 });
+        return;
+      }
       ValidateExtensionDeclaration(
           message.full_name(), range_options.declaration(),
           proto.extension_range(i), declaration_full_name_set);
