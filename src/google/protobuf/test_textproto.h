@@ -28,10 +28,41 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use unittest_proto::proto2_unittest::TestAllTypes;
+#ifndef GOOGLE_PROTOBUF_TEST_TEXTPROTO_H__
+#define GOOGLE_PROTOBUF_TEST_TEXTPROTO_H__
 
-#[test]
-fn test_serialization() {
-    let test_all_types = TestAllTypes::new();
-    assert_eq!(*test_all_types.serialize(), []);
+#include <gmock/gmock.h>
+#include "absl/log/absl_check.h"
+#include "absl/memory/memory.h"
+#include "google/protobuf/text_format.h"
+
+// This file contains private helpers for dealing with textprotos in our
+// tests.  We make no guarantees about the behavior in real-world situations,
+// and these are only meant for basic unit-tests of protobuf internals.
+namespace google {
+namespace protobuf {
+
+MATCHER_P(EqualsProto, textproto, "") {
+  auto msg = absl::WrapUnique(arg.New());
+  return TextFormat::ParseFromString(textproto, msg.get()) &&
+         msg->DebugString() == arg.DebugString();
 }
+
+class ParseTextOrDie {
+ public:
+  explicit ParseTextOrDie(absl::string_view text) : text_(text) {}
+  template <typename Proto>
+  operator Proto() {  // NOLINT(google-explicit-constructor)
+    Proto ret;
+    ABSL_CHECK(TextFormat::ParseFromString(text_, &ret));
+    return ret;
+  }
+
+ private:
+  absl::string_view text_;
+};
+
+}  // namespace protobuf
+}  // namespace google
+
+#endif  // GOOGLE_PROTOBUF_TEST_TEXTPROTO_H__

@@ -28,29 +28,34 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_RUST_UPB_KERNEL_H__
-#define GOOGLE_PROTOBUF_COMPILER_RUST_UPB_KERNEL_H__
+use unittest_proto::proto2_unittest::TestAllTypes;
 
-#include "google/protobuf/descriptor.h"
-#include "google/protobuf/io/printer.h"
+#[test]
+fn serialize_deserialize_message() {
+    let mut msg = TestAllTypes::new();
+    msg.optional_int64_set(Some(42));
+    msg.optional_bool_set(Some(true));
+    msg.optional_bytes_set(Some(b"serialize deserialize test"));
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace rust {
+    let serialized = msg.serialize();
 
-class UpbKernel {
- public:
-  UpbKernel() = default;
-  UpbKernel(const UpbKernel&) = delete;
-  UpbKernel& operator=(const UpbKernel&) = delete;
+    let mut msg2 = TestAllTypes::new();
+    assert!(msg2.deserialize(&serialized).is_ok());
 
-  void Generate(const FileDescriptor* file, google::protobuf::io::Printer& p) const;
-};
+    assert_eq!(msg.optional_int64(), msg2.optional_int64());
+    assert_eq!(msg.optional_bool(), msg2.optional_bool());
+    assert_eq!(msg.optional_bytes(), msg2.optional_bytes());
+}
 
-}  // namespace rust
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
+#[test]
+fn deserialize_empty() {
+    let mut msg = TestAllTypes::new();
+    assert!(msg.deserialize(&[]).is_ok());
+}
 
-#endif  // GOOGLE_PROTOBUF_COMPILER_RUST_UPB_KERNEL_H__
+#[test]
+fn deserialize_error() {
+    let mut msg = TestAllTypes::new();
+    let data = b"not a serialized proto";
+    assert!(msg.deserialize(&*data).is_err());
+}

@@ -378,7 +378,6 @@ set(libprotoc_srcs
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/rust/generator.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/rust/message.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/rust/naming.cc
-  ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/rust/upb_kernel.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/subprocess.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/zip_writer.cc
 )
@@ -486,7 +485,6 @@ set(libprotoc_hdrs
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/rust/generator.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/rust/message.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/rust/naming.h
-  ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/rust/upb_kernel.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/scc.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/subprocess.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/zip_writer.h
@@ -556,6 +554,7 @@ set(common_test_srcs
 # @//pkg:common_test
 set(common_test_hdrs
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/mock_code_generator.h
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/test_textproto.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/testing/file.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/testing/googletest.h
 )
@@ -750,6 +749,7 @@ set(util_test_protos_files
   ${protobuf_SOURCE_DIR}/src/google/protobuf/util/json_format.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/util/json_format_proto3.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/util/message_differencer_unittest.proto
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/util/message_differencer_unittest_proto3.proto
 )
 
 # @//src/google/protobuf/stubs:test_srcs
