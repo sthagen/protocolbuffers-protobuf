@@ -1872,7 +1872,7 @@ DescriptorPool::DescriptorPool()
       lazily_build_dependencies_(false),
       allow_unknown_(false),
       enforce_weak_(false),
-      enforce_special_extension_ranges_(false),
+      enforce_extension_declarations_(false),
       disallow_enforce_utf8_(false),
       deprecated_legacy_json_field_conflicts_(false) {}
 
@@ -1887,7 +1887,7 @@ DescriptorPool::DescriptorPool(DescriptorDatabase* fallback_database,
       lazily_build_dependencies_(false),
       allow_unknown_(false),
       enforce_weak_(false),
-      enforce_special_extension_ranges_(false),
+      enforce_extension_declarations_(false),
       disallow_enforce_utf8_(false),
       deprecated_legacy_json_field_conflicts_(false) {}
 
@@ -1901,7 +1901,7 @@ DescriptorPool::DescriptorPool(const DescriptorPool* underlay)
       lazily_build_dependencies_(false),
       allow_unknown_(false),
       enforce_weak_(false),
-      enforce_special_extension_ranges_(false),
+      enforce_extension_declarations_(false),
       disallow_enforce_utf8_(false),
       deprecated_legacy_json_field_conflicts_(false) {}
 
@@ -7334,6 +7334,12 @@ void DescriptorBuilder::ValidateFieldOptions(
     AddError(field->full_name(), proto,
              DescriptorPool::ErrorCollector::OPTION_NAME,
              "option json_name is not allowed on extension fields.");
+  }
+
+  if (absl::StrContains(field->json_name(), '\0')) {
+    AddError(field->full_name(), proto,
+             DescriptorPool::ErrorCollector::OPTION_NAME,
+             "json_name cannot have embedded null characters.");
   }
 
 }

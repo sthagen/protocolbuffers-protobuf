@@ -41,21 +41,20 @@
 #include <string>
 #include <tuple>
 
-#include "google/protobuf/compiler/scc.h"
-#include "google/protobuf/compiler/code_generator.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/absl_check.h"
-#include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "google/protobuf/compiler/code_generator.h"
 #include "google/protobuf/compiler/cpp/names.h"
 #include "google/protobuf/compiler/cpp/options.h"
+#include "google/protobuf/compiler/scc.h"
 #include "google/protobuf/descriptor.pb.h"
-#include "google/protobuf/descriptor.h"
-#include "google/protobuf/port.h"
-#include "absl/strings/str_cat.h"
 #include "google/protobuf/io/printer.h"
+#include "google/protobuf/port.h"
+
 
 // Must be included last.
 #include "google/protobuf/port_def.inc"
@@ -64,23 +63,27 @@ namespace google {
 namespace protobuf {
 namespace compiler {
 namespace cpp {
-
 enum class ArenaDtorNeeds { kNone = 0, kOnDemand = 1, kRequired = 2 };
 
-inline std::string ProtobufNamespace(const Options& /* options */) {
-  return "PROTOBUF_NAMESPACE_ID";
+inline absl::string_view ProtobufNamespace(const Options& opts) {
+  // This won't be transformed by copybara, since copybara looks for google::protobuf::.
+  constexpr absl::string_view kGoogle3Ns = "proto2";
+  constexpr absl::string_view kOssNs = "google::protobuf";
+
+  return opts.opensource_runtime ? kOssNs : kGoogle3Ns;
 }
 
-inline std::string MacroPrefix(const Options& /* options */) {
-  return "GOOGLE_PROTOBUF";
+inline std::string MacroPrefix(const Options& options) {
+  // Constants are different in the internal and external version.
+  return options.opensource_runtime ? "GOOGLE_PROTOBUF" : "GOOGLE_PROTOBUF";
 }
 
-inline std::string DeprecatedAttribute(const Options& /* options */,
+inline std::string DeprecatedAttribute(const Options&,
                                        const FieldDescriptor* d) {
   return d->options().deprecated() ? "[[deprecated]] " : "";
 }
 
-inline std::string DeprecatedAttribute(const Options& /* options */,
+inline std::string DeprecatedAttribute(const Options&,
                                        const EnumValueDescriptor* d) {
   return d->options().deprecated() ? "[[deprecated]] " : "";
 }
@@ -119,10 +122,10 @@ std::string Namespace(const FileDescriptor* d, const Options& options);
 std::string Namespace(const Descriptor* d, const Options& options);
 std::string Namespace(const FieldDescriptor* d, const Options& options);
 std::string Namespace(const EnumDescriptor* d, const Options& options);
-std::string Namespace(const FileDescriptor* d);
-std::string Namespace(const Descriptor* d);
-std::string Namespace(const FieldDescriptor* d);
-std::string Namespace(const EnumDescriptor* d);
+PROTOC_EXPORT std::string Namespace(const FileDescriptor* d);
+PROTOC_EXPORT std::string Namespace(const Descriptor* d);
+PROTOC_EXPORT std::string Namespace(const FieldDescriptor* d);
+PROTOC_EXPORT std::string Namespace(const EnumDescriptor* d);
 
 class MessageSCCAnalyzer;
 
@@ -136,14 +139,14 @@ bool CanClearByZeroing(const FieldDescriptor* field);
 bool HasTrivialSwap(const FieldDescriptor* field, const Options& options,
                     MessageSCCAnalyzer* scc_analyzer);
 
-std::string ClassName(const Descriptor* descriptor);
-std::string ClassName(const EnumDescriptor* enum_descriptor);
+PROTOC_EXPORT std::string ClassName(const Descriptor* descriptor);
+PROTOC_EXPORT std::string ClassName(const EnumDescriptor* enum_descriptor);
 
 std::string QualifiedClassName(const Descriptor* d, const Options& options);
 std::string QualifiedClassName(const EnumDescriptor* d, const Options& options);
 
-std::string QualifiedClassName(const Descriptor* d);
-std::string QualifiedClassName(const EnumDescriptor* d);
+PROTOC_EXPORT std::string QualifiedClassName(const Descriptor* d);
+PROTOC_EXPORT std::string QualifiedClassName(const EnumDescriptor* d);
 
 // DEPRECATED just use ClassName or QualifiedClassName, a boolean is very
 // unreadable at the callsite.
@@ -215,7 +218,7 @@ std::string ResolveKeyword(absl::string_view name);
 // The name is coerced to lower-case to emulate proto1 behavior.  People
 // should be using lowercase-with-underscores style for proto field names
 // anyway, so normally this just returns field->name().
-std::string FieldName(const FieldDescriptor* field);
+PROTOC_EXPORT std::string FieldName(const FieldDescriptor* field);
 
 // Returns the (unqualified) private member name for this field in C++ code.
 std::string FieldMemberName(const FieldDescriptor* field, bool split);
@@ -393,8 +396,7 @@ bool ShouldSplit(const FieldDescriptor* field, const Options& options);
 bool ShouldForceAllocationOnConstruction(const Descriptor* desc,
                                          const Options& options);
 
-inline bool IsFieldUsed(const FieldDescriptor* /* field */,
-                        const Options& /* options */) {
+inline bool IsFieldUsed(const FieldDescriptor* /* field */, const Options&) {
   return true;
 }
 
