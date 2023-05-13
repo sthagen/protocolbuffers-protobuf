@@ -1396,8 +1396,8 @@ bool GetBootstrapBasename(const Options& options, absl::string_view basename,
       new absl::flat_hash_map<absl::string_view, std::string>{
           {"net/proto2/proto/descriptor",
            "third_party/protobuf/descriptor"},
-          {"net/proto2/compiler/proto/plugin",
-           "net/proto2/compiler/proto/plugin"},
+          {"third_party/protobuf/compiler/plugin",
+           "third_party/protobuf/compiler/plugin"},
           {"net/proto2/compiler/proto/profile",
            "net/proto2/compiler/proto/profile_bootstrap"},
       };
@@ -1646,6 +1646,17 @@ std::vector<io::Printer::Sub> AnnotatedAccessors(
   }
 
   return vars;
+}
+
+bool IsFileDescriptorProto(const FileDescriptor* file, const Options& options) {
+  if (Namespace(file, options) !=
+      absl::StrCat("::", ProtobufNamespace(options))) {
+    return false;
+  }
+  for (int i = 0; i < file->message_type_count(); ++i) {
+    if (file->message_type(i)->name() == "FileDescriptorProto") return true;
+  }
+  return false;
 }
 
 }  // namespace cpp

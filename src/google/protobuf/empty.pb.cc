@@ -11,6 +11,7 @@
 #include "google/protobuf/generated_message_reflection.h"
 #include "google/protobuf/reflection_ops.h"
 #include "google/protobuf/wire_format.h"
+#include "google/protobuf/generated_message_tctable_impl.h"
 // @@protoc_insertion_point(includes)
 
 // Must be included last.
@@ -18,10 +19,10 @@
 PROTOBUF_PRAGMA_INIT_SEG
 namespace _pb = ::google::protobuf;
 namespace _pbi = ::google::protobuf::internal;
+namespace _fl = ::google::protobuf::internal::field_layout;
 namespace google {
 namespace protobuf {
-PROTOBUF_CONSTEXPR Empty::Empty(
-    ::_pbi::ConstantInitialized) {}
+PROTOBUF_CONSTEXPR Empty::Empty(::_pbi::ConstantInitialized) {}
 struct EmptyDefaultTypeInternal {
   PROTOBUF_CONSTEXPR EmptyDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~EmptyDefaultTypeInternal() {}
@@ -53,7 +54,7 @@ const ::uint32_t TableStruct_google_2fprotobuf_2fempty_2eproto::offsets[] PROTOB
 
 static const ::_pbi::MigrationSchema
     schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-        { 0, -1, -1, sizeof(::google::protobuf::Empty)},
+        {0, -1, -1, sizeof(::google::protobuf::Empty)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -111,16 +112,17 @@ class Empty::_Internal {
 };
 
 Empty::Empty(::google::protobuf::Arena* arena)
-  : ::google::protobuf::internal::ZeroFieldsBase(arena) {
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:google.protobuf.Empty)
 }
-Empty::Empty(const Empty& from)
-  : ::google::protobuf::internal::ZeroFieldsBase() {
-  Empty* const _this = this; (void)_this;
-  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+Empty::Empty(const Empty& from) : ::google::protobuf::internal::ZeroFieldsBase() {
+  Empty* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+
   // @@protoc_insertion_point(copy_constructor:google.protobuf.Empty)
 }
-
 
 
 

@@ -39,7 +39,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/absl_check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -112,24 +111,29 @@ std::vector<Sub> FieldVars(const FieldDescriptor* field, const Options& opts) {
 }
 
 void FieldGeneratorBase::GenerateAggregateInitializer(io::Printer* p) const {
-  Formatter format(p, variables_);
   if (ShouldSplit(descriptor_, options_)) {
-    format("decltype(Impl_::Split::$name$_){arena}");
-    return;
+    p->Emit(R"cc(
+      decltype(Impl_::Split::$name$_){arena},
+    )cc");
+  } else {
+    p->Emit(R"cc(
+      decltype($field$){arena},
+    )cc");
   }
-  format("decltype($field$){arena}");
 }
 
 void FieldGeneratorBase::GenerateConstexprAggregateInitializer(
     io::Printer* p) const {
-  Formatter format(p, variables_);
-  format("/*decltype($field$)*/{}");
+  p->Emit(R"cc(
+    /*decltype($field$)*/ {},
+  )cc");
 }
 
 void FieldGeneratorBase::GenerateCopyAggregateInitializer(
     io::Printer* p) const {
-  Formatter format(p, variables_);
-  format("decltype($field$){from.$field$}");
+  p->Emit(R"cc(
+    decltype($field$){from.$field$},
+  )cc");
 }
 
 void FieldGeneratorBase::GenerateCopyConstructorCode(io::Printer* p) const {

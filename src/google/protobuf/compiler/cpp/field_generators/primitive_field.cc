@@ -167,19 +167,19 @@ class SingularPrimitive final : public FieldGeneratorBase {
 
   void GenerateConstexprAggregateInitializer(io::Printer* p) const override {
     p->Emit(R"cc(
-      /*decltype($field_$)*/ $kDefault$
+      /*decltype($field_$)*/ $kDefault$,
     )cc");
   }
 
   void GenerateAggregateInitializer(io::Printer* p) const override {
     p->Emit(R"cc(
-      decltype($field_$) { $kDefault$ }
+      decltype($field_$){$kDefault$},
     )cc");
   }
 
   void GenerateCopyAggregateInitializer(io::Printer* p) const override {
     p->Emit(R"cc(
-      decltype($field_$) {}
+      decltype($field_$){},
     )cc");
   }
 
@@ -343,25 +343,25 @@ class RepeatedPrimitive final : public FieldGeneratorBase {
 
   void GenerateConstexprAggregateInitializer(io::Printer* p) const override {
     p->Emit(R"cc(
-      /*decltype($field_$)*/ {}
+      /*decltype($field_$)*/ {},
     )cc");
-    InitCachedSize(p);
+    GenerateCacheSizeInitializer(p);
   }
 
   void GenerateAggregateInitializer(io::Printer* p) const override {
     ABSL_CHECK(!ShouldSplit(descriptor_, options_));
     p->Emit(R"cc(
-      decltype($field_$) { arena }
+      decltype($field_$){arena},
     )cc");
-    InitCachedSize(p);
+    GenerateCacheSizeInitializer(p);
   }
 
   void GenerateCopyAggregateInitializer(io::Printer* p) const override {
     ABSL_CHECK(!ShouldSplit(descriptor_, options_));
     p->Emit(R"cc(
-      decltype($field_$) { from.$field_$ }
+      decltype($field_$){from.$field_$},
     )cc");
-    InitCachedSize(p);
+    GenerateCacheSizeInitializer(p);
   }
 
   void GeneratePrivateMembers(io::Printer* p) const override;
@@ -377,13 +377,13 @@ class RepeatedPrimitive final : public FieldGeneratorBase {
     return is_packed_varint && HasGeneratedMethods(field_->file(), *opts_);
   }
 
-  void InitCachedSize(io::Printer* p) const {
+  void GenerateCacheSizeInitializer(io::Printer* p) const {
     if (!HasCachedSize()) return;
     // std::atomic has no move constructor, which prevents explicit aggregate
     // initialization pre-C++17.
-    p->Emit(R"(
-      ,/* $_field_cached_byte_size_$ = */ { 0 }
-    )");
+    p->Emit(R"cc(
+      /* $_field_cached_byte_size_$ = */ {0},
+    )cc");
   }
 
   const FieldDescriptor* field_;

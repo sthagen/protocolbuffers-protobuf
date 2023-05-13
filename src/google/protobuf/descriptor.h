@@ -299,6 +299,7 @@ class PROTOBUF_EXPORT Descriptor : private internal::SymbolBase {
   // available extensions of that message.
   const MessageOptions& options() const;
 
+
   // Write the contents of this Descriptor into the given DescriptorProto.
   // The target DescriptorProto must be clear before calling this; if it
   // isn't, the result may be garbage.
@@ -423,7 +424,8 @@ class PROTOBUF_EXPORT Descriptor : private internal::SymbolBase {
 
   // A range of field numbers which are designated for third-party
   // extensions.
-  struct ExtensionRange {
+  class ExtensionRange {
+   public:
     typedef DescriptorProto_ExtensionRange Proto;
 
     typedef ExtensionRangeOptions OptionsType;
@@ -431,12 +433,50 @@ class PROTOBUF_EXPORT Descriptor : private internal::SymbolBase {
     // See Descriptor::CopyTo().
     void CopyTo(DescriptorProto_ExtensionRange* proto) const;
 
-    const ExtensionRangeOptions& options() const;
+    // Returns the start field number of this range (inclusive).
+    int start_number() const { return start; }
 
-    int start;  // inclusive
-    int end;    // exclusive
+    // Returns the end field number of this range (exclusive).
+    int end_number() const { return end; }
 
+    // Returns the index of this extension range within the message's extension
+    // range array.
+    int index() const;
+
+    // Returns the ExtensionRangeOptions for this range.
+    const ExtensionRangeOptions& options() const { return *options_; }
+
+
+    // Returns the name of the containing type.
+    const std::string& name() const { return containing_type_->name(); }
+
+    // Returns the full name of the containing type.
+    const std::string& full_name() const {
+      return containing_type_->full_name();
+    }
+
+    // Returns the .proto file in which this oneof was defined.
+    // Never nullptr.
+    const FileDescriptor* file() const { return containing_type_->file(); }
+
+    // Returns the Descriptor for the message containing this oneof.
+    // Never nullptr.
+    const Descriptor* containing_type() const { return containing_type_; }
+
+    // TODO(b/282012847) Make these private.
+    int start;  // NOLINT(google3-readability-class-member-naming)
+    int end;    // NOLINT(google3-readability-class-member-naming)
     const ExtensionRangeOptions* options_;
+
+   private:
+    const Descriptor* containing_type_;
+
+    // Walks up the descriptor tree to generate the source location path
+    // to this descriptor from the file root.
+    void GetLocationPath(std::vector<int>* output) const;
+
+    friend class DescriptorPool;
+    friend class DescriptorBuilder;
   };
 
   // The number of extension ranges in this message type.
@@ -874,6 +914,7 @@ class PROTOBUF_EXPORT FieldDescriptor : private internal::SymbolBase {
   // descriptor.proto, and any available extensions of that message.
   const FieldOptions& options() const;
 
+
   // See Descriptor::CopyTo().
   void CopyTo(FieldDescriptorProto* proto) const;
 
@@ -1070,6 +1111,7 @@ class PROTOBUF_EXPORT OneofDescriptor : private internal::SymbolBase {
 
   const OneofOptions& options() const;
 
+
   // See Descriptor::CopyTo().
   void CopyTo(OneofDescriptorProto* proto) const;
 
@@ -1181,6 +1223,7 @@ class PROTOBUF_EXPORT EnumDescriptor : private internal::SymbolBase {
   // options are defined by EnumOptions in descriptor.proto, and any available
   // extensions of that message.
   const EnumOptions& options() const;
+
 
   // See Descriptor::CopyTo().
   void CopyTo(EnumDescriptorProto* proto) const;
@@ -1366,6 +1409,7 @@ class PROTOBUF_EXPORT EnumValueDescriptor : private internal::SymbolBaseN<0>,
   // available extensions of that message.
   const EnumValueOptions& options() const;
 
+
   // See Descriptor::CopyTo().
   void CopyTo(EnumValueDescriptorProto* proto) const;
 
@@ -1444,6 +1488,7 @@ class PROTOBUF_EXPORT ServiceDescriptor : private internal::SymbolBase {
   // Allowed options are defined by ServiceOptions in descriptor.proto, and any
   // available extensions of that message.
   const ServiceOptions& options() const;
+
 
   // The number of methods this service defines.
   int method_count() const;
@@ -1545,6 +1590,7 @@ class PROTOBUF_EXPORT MethodDescriptor : private internal::SymbolBase {
   // declaration.  Allowed options are defined by MethodOptions in
   // descriptor.proto, and any available extensions of that message.
   const MethodOptions& options() const;
+
 
   // See Descriptor::CopyTo().
   void CopyTo(MethodDescriptorProto* proto) const;
@@ -2392,9 +2438,6 @@ PROTOBUF_DEFINE_ARRAY_ACCESSOR(FileDescriptor, service,
 PROTOBUF_DEFINE_ARRAY_ACCESSOR(FileDescriptor, extension,
                                const FieldDescriptor*)
 
-PROTOBUF_DEFINE_OPTIONS_ACCESSOR(Descriptor::ExtensionRange,
-                                 ExtensionRangeOptions)
-
 #undef PROTOBUF_DEFINE_ACCESSOR
 #undef PROTOBUF_DEFINE_STRING_ACCESSOR
 #undef PROTOBUF_DEFINE_ARRAY_ACCESSOR
@@ -2552,6 +2595,10 @@ inline int Descriptor::index() const {
   } else {
     return static_cast<int>(this - containing_type_->nested_types_);
   }
+}
+
+inline int Descriptor::ExtensionRange::index() const {
+  return static_cast<int>(this - containing_type_->extension_ranges_);
 }
 
 inline const FileDescriptor* OneofDescriptor::file() const {

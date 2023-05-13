@@ -140,26 +140,25 @@ class SingularEnum : public FieldGeneratorBase {
 
   void GenerateConstexprAggregateInitializer(io::Printer* p) const override {
     p->Emit(R"cc(
-      /*decltype($field_$)*/ $kDefault$
+      /*decltype($field_$)*/ $kDefault$,
     )cc");
   }
 
   void GenerateAggregateInitializer(io::Printer* p) const override {
     if (ShouldSplit(descriptor_, options_)) {
       p->Emit(R"cc(
-        decltype(Impl_::Split::$name$_) { $kDefault$ }
+        decltype(Impl_::Split::$name$_){$kDefault$},
       )cc");
-      return;
+    } else {
+      p->Emit(R"cc(
+        decltype($field_$){$kDefault$},
+      )cc");
     }
-
-    p->Emit(R"cc(
-      decltype($field_$) { $kDefault$ }
-    )cc");
   }
 
   void GenerateCopyAggregateInitializer(io::Printer* p) const override {
     p->Emit(R"cc(
-      decltype($field_$) {}
+      decltype($field_$){},
     )cc");
   }
 
@@ -284,35 +283,36 @@ class RepeatedEnum : public FieldGeneratorBase {
 
   void GenerateConstexprAggregateInitializer(io::Printer* p) const override {
     p->Emit(R"cc(
-      /*decltype($field_$)*/ {}
+      /*decltype($field_$)*/ {},
     )cc");
     if (has_cached_size_) {
       p->Emit(R"cc(
-        , /*decltype($cached_size_$)*/ { 0 }
+        /*decltype($cached_size_$)*/ {0},
       )cc");
     }
   }
 
   void GenerateAggregateInitializer(io::Printer* p) const override {
     p->Emit(R"cc(
-      decltype($field_$) { arena }
+      decltype($field_$){arena},
     )cc");
     if (has_cached_size_) {
       // std::atomic has no copy constructor, which prevents explicit aggregate
       // initialization pre-C++17.
       p->Emit(R"cc(
-        , /*decltype($cached_size_$)*/ { 0 }
+        /*decltype($cached_size_$)*/ {0},
       )cc");
     }
   }
 
   void GenerateCopyAggregateInitializer(io::Printer* p) const override {
     p->Emit(R"cc(
-      decltype($field_$) { from._internal_$name$() })cc");
+      decltype($field_$){from._internal_$name$()},
+    )cc");
     if (has_cached_size_) {
       // std::atomic has no copy constructor.
       p->Emit(R"cc(
-        , /*decltype($cached_size_$)*/ { 0 }
+        /*decltype($cached_size_$)*/ {0},
       )cc");
     }
   }
