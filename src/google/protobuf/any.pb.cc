@@ -26,6 +26,7 @@ namespace _fl = ::google::protobuf::internal::field_layout;
 #endif  // __llvm__
 namespace google {
 namespace protobuf {
+        template <typename>
 PROTOBUF_CONSTEXPR Any::Any(::_pbi::ConstantInitialized)
     : _impl_{
       /*decltype(_impl_.type_url_)*/ {
@@ -200,7 +201,7 @@ inline void Any::SharedCtor(::_pb::Arena* arena) {
 }
 Any::~Any() {
   // @@protoc_insertion_point(destructor:google.protobuf.Any)
-  _internal_metadata_.DeleteReturnArena<::google::protobuf::UnknownFieldSet>();
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
 inline void Any::SharedDtor() {
@@ -209,7 +210,6 @@ inline void Any::SharedDtor() {
   _impl_.value_.Destroy();
   _impl_._any_metadata_.~AnyMetadata();
 }
-
 void Any::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
@@ -272,10 +272,11 @@ const ::_pbi::TcParseTable<1, 2, 0, 36, 2> Any::_table_ = {
 };
 
 ::uint8_t* Any::_InternalSerialize(
-    ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:google.protobuf.Any)
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   // string type_url = 1;
   if (!this->_internal_type_url().empty()) {
@@ -292,8 +293,9 @@ const ::_pbi::TcParseTable<1, 2, 0, 36, 2> Any::_table_ = {
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:google.protobuf.Any)
   return target;

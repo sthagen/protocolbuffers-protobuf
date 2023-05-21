@@ -131,6 +131,7 @@ public:
     ::google::protobuf::internal::WireFormatLite::TYPE_STRING,
     ::google::protobuf::internal::WireFormatLite::TYPE_MESSAGE> SuperType;
   Struct_FieldsEntry_DoNotUse();
+  template <typename = void>
   explicit PROTOBUF_CONSTEXPR Struct_FieldsEntry_DoNotUse(
       ::google::protobuf::internal::ConstantInitialized);
   explicit Struct_FieldsEntry_DoNotUse(::google::protobuf::Arena* arena);
@@ -151,6 +152,7 @@ class PROTOBUF_EXPORT Struct final :
  public:
   inline Struct() : Struct(nullptr) {}
   ~Struct() override;
+  template<typename = void>
   explicit PROTOBUF_CONSTEXPR Struct(::google::protobuf::internal::ConstantInitialized);
 
   Struct(const Struct& from);
@@ -316,6 +318,7 @@ class PROTOBUF_EXPORT Value final :
  public:
   inline Value() : Value(nullptr) {}
   ~Value() override;
+  template<typename = void>
   explicit PROTOBUF_CONSTEXPR Value(::google::protobuf::internal::ConstantInitialized);
 
   Value(const Value& from);
@@ -587,6 +590,7 @@ class PROTOBUF_EXPORT ListValue final :
  public:
   inline ListValue() : ListValue(nullptr) {}
   ~ListValue() override;
+  template<typename = void>
   explicit PROTOBUF_CONSTEXPR ListValue(::google::protobuf::internal::ConstantInitialized);
 
   ListValue(const ListValue& from);
@@ -766,7 +770,7 @@ class PROTOBUF_EXPORT ListValue final :
 
 // map<string, .google.protobuf.Value> fields = 1;
 inline int Struct::_internal_fields_size() const {
-  return _impl_.fields_.size();
+  return _internal_fields().size();
 }
 inline int Struct::fields_size() const {
   return _internal_fields_size();
@@ -1138,7 +1142,7 @@ inline Value::KindCase Value::kind_case() const {
 
 // repeated .google.protobuf.Value values = 1;
 inline int ListValue::_internal_values_size() const {
-  return _impl_.values_.size();
+  return _internal_values().size();
 }
 inline int ListValue::values_size() const {
   return _internal_values_size();

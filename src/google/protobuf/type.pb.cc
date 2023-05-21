@@ -22,6 +22,7 @@ namespace _pbi = ::google::protobuf::internal;
 namespace _fl = ::google::protobuf::internal::field_layout;
 namespace google {
 namespace protobuf {
+        template <typename>
 PROTOBUF_CONSTEXPR Type::Type(::_pbi::ConstantInitialized)
     : _impl_{
       /*decltype(_impl_._has_bits_)*/ {},
@@ -50,6 +51,7 @@ struct TypeDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TypeDefaultTypeInternal _Type_default_instance_;
+        template <typename>
 PROTOBUF_CONSTEXPR Field::Field(::_pbi::ConstantInitialized)
     : _impl_{
       /*decltype(_impl_.options_)*/ {},
@@ -86,6 +88,7 @@ struct FieldDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FieldDefaultTypeInternal _Field_default_instance_;
+        template <typename>
 PROTOBUF_CONSTEXPR Enum::Enum(::_pbi::ConstantInitialized)
     : _impl_{
       /*decltype(_impl_._has_bits_)*/ {},
@@ -113,6 +116,7 @@ struct EnumDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EnumDefaultTypeInternal _Enum_default_instance_;
+        template <typename>
 PROTOBUF_CONSTEXPR EnumValue::EnumValue(::_pbi::ConstantInitialized)
     : _impl_{
       /*decltype(_impl_.options_)*/ {},
@@ -133,6 +137,7 @@ struct EnumValueDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EnumValueDefaultTypeInternal _EnumValue_default_instance_;
+        template <typename>
 PROTOBUF_CONSTEXPR Option::Option(::_pbi::ConstantInitialized)
     : _impl_{
       /*decltype(_impl_._has_bits_)*/ {},
@@ -535,7 +540,7 @@ inline void Type::SharedCtor(::_pb::Arena* arena) {
 }
 Type::~Type() {
   // @@protoc_insertion_point(destructor:google.protobuf.Type)
-  _internal_metadata_.DeleteReturnArena<::google::protobuf::UnknownFieldSet>();
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
 inline void Type::SharedDtor() {
@@ -547,7 +552,6 @@ inline void Type::SharedDtor() {
   _impl_.edition_.Destroy();
   if (this != internal_default_instance()) delete _impl_.source_context_;
 }
-
 void Type::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
@@ -655,10 +659,11 @@ const ::_pbi::TcParseTable<3, 7, 3, 46, 2> Type::_table_ = {
 };
 
 ::uint8_t* Type::_InternalSerialize(
-    ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:google.protobuf.Type)
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   // string name = 1;
   if (!this->_internal_name().empty()) {
@@ -716,8 +721,9 @@ const ::_pbi::TcParseTable<3, 7, 3, 46, 2> Type::_table_ = {
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:google.protobuf.Type)
   return target;
@@ -737,21 +743,18 @@ const ::_pbi::TcParseTable<3, 7, 3, 46, 2> Type::_table_ = {
     total_size +=
       ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
-
   // repeated string oneofs = 3;
   total_size += 1 * ::google::protobuf::internal::FromIntSize(_internal_oneofs().size());
   for (int i = 0, n = _internal_oneofs().size(); i < n; ++i) {
     total_size += ::google::protobuf::internal::WireFormatLite::StringSize(
         _internal_oneofs().Get(i));
   }
-
   // repeated .google.protobuf.Option options = 4;
   total_size += 1UL * this->_internal_options_size();
   for (const auto& msg : this->_internal_options()) {
     total_size +=
       ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
-
   // string name = 1;
   if (!this->_internal_name().empty()) {
     total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
@@ -950,7 +953,7 @@ inline void Field::SharedCtor(::_pb::Arena* arena) {
 }
 Field::~Field() {
   // @@protoc_insertion_point(destructor:google.protobuf.Field)
-  _internal_metadata_.DeleteReturnArena<::google::protobuf::UnknownFieldSet>();
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
 inline void Field::SharedDtor() {
@@ -961,7 +964,6 @@ inline void Field::SharedDtor() {
   _impl_.json_name_.Destroy();
   _impl_.default_value_.Destroy();
 }
-
 void Field::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
@@ -1087,10 +1089,11 @@ const ::_pbi::TcParseTable<4, 10, 1, 72, 2> Field::_table_ = {
 };
 
 ::uint8_t* Field::_InternalSerialize(
-    ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:google.protobuf.Field)
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   // .google.protobuf.Field.Kind kind = 1;
   if (this->_internal_kind() != 0) {
@@ -1168,8 +1171,9 @@ const ::_pbi::TcParseTable<4, 10, 1, 72, 2> Field::_table_ = {
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:google.protobuf.Field)
   return target;
@@ -1189,7 +1193,6 @@ const ::_pbi::TcParseTable<4, 10, 1, 72, 2> Field::_table_ = {
     total_size +=
       ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
-
   // string name = 4;
   if (!this->_internal_name().empty()) {
     total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
@@ -1414,7 +1417,7 @@ inline void Enum::SharedCtor(::_pb::Arena* arena) {
 }
 Enum::~Enum() {
   // @@protoc_insertion_point(destructor:google.protobuf.Enum)
-  _internal_metadata_.DeleteReturnArena<::google::protobuf::UnknownFieldSet>();
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
 inline void Enum::SharedDtor() {
@@ -1425,7 +1428,6 @@ inline void Enum::SharedDtor() {
   _impl_.edition_.Destroy();
   if (this != internal_default_instance()) delete _impl_.source_context_;
 }
-
 void Enum::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
@@ -1526,10 +1528,11 @@ const ::_pbi::TcParseTable<3, 6, 3, 40, 2> Enum::_table_ = {
 };
 
 ::uint8_t* Enum::_InternalSerialize(
-    ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:google.protobuf.Enum)
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   // string name = 1;
   if (!this->_internal_name().empty()) {
@@ -1579,8 +1582,9 @@ const ::_pbi::TcParseTable<3, 6, 3, 40, 2> Enum::_table_ = {
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:google.protobuf.Enum)
   return target;
@@ -1600,14 +1604,12 @@ const ::_pbi::TcParseTable<3, 6, 3, 40, 2> Enum::_table_ = {
     total_size +=
       ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
-
   // repeated .google.protobuf.Option options = 3;
   total_size += 1UL * this->_internal_options_size();
   for (const auto& msg : this->_internal_options()) {
     total_size +=
       ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
-
   // string name = 1;
   if (!this->_internal_name().empty()) {
     total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
@@ -1754,7 +1756,7 @@ inline void EnumValue::SharedCtor(::_pb::Arena* arena) {
 }
 EnumValue::~EnumValue() {
   // @@protoc_insertion_point(destructor:google.protobuf.EnumValue)
-  _internal_metadata_.DeleteReturnArena<::google::protobuf::UnknownFieldSet>();
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
 inline void EnumValue::SharedDtor() {
@@ -1762,7 +1764,6 @@ inline void EnumValue::SharedDtor() {
   _impl_.options_.~RepeatedPtrField();
   _impl_.name_.Destroy();
 }
-
 void EnumValue::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
@@ -1833,10 +1834,11 @@ const ::_pbi::TcParseTable<2, 3, 1, 38, 2> EnumValue::_table_ = {
 };
 
 ::uint8_t* EnumValue::_InternalSerialize(
-    ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:google.protobuf.EnumValue)
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   // string name = 1;
   if (!this->_internal_name().empty()) {
@@ -1862,8 +1864,9 @@ const ::_pbi::TcParseTable<2, 3, 1, 38, 2> EnumValue::_table_ = {
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:google.protobuf.EnumValue)
   return target;
@@ -1883,7 +1886,6 @@ const ::_pbi::TcParseTable<2, 3, 1, 38, 2> EnumValue::_table_ = {
     total_size +=
       ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
-
   // string name = 1;
   if (!this->_internal_name().empty()) {
     total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
@@ -2015,7 +2017,7 @@ inline void Option::SharedCtor(::_pb::Arena* arena) {
 }
 Option::~Option() {
   // @@protoc_insertion_point(destructor:google.protobuf.Option)
-  _internal_metadata_.DeleteReturnArena<::google::protobuf::UnknownFieldSet>();
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
 inline void Option::SharedDtor() {
@@ -2023,7 +2025,6 @@ inline void Option::SharedDtor() {
   _impl_.name_.Destroy();
   if (this != internal_default_instance()) delete _impl_.value_;
 }
-
 void Option::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
@@ -2091,10 +2092,11 @@ const ::_pbi::TcParseTable<1, 2, 1, 35, 2> Option::_table_ = {
 };
 
 ::uint8_t* Option::_InternalSerialize(
-    ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:google.protobuf.Option)
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   // string name = 1;
   if (!this->_internal_name().empty()) {
@@ -2113,8 +2115,9 @@ const ::_pbi::TcParseTable<1, 2, 1, 35, 2> Option::_table_ = {
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:google.protobuf.Option)
   return target;

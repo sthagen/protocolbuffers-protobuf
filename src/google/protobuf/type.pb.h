@@ -215,6 +215,7 @@ class PROTOBUF_EXPORT Type final :
  public:
   inline Type() : Type(nullptr) {}
   ~Type() override;
+  template<typename = void>
   explicit PROTOBUF_CONSTEXPR Type(::google::protobuf::internal::ConstantInitialized);
 
   Type(const Type& from);
@@ -495,6 +496,7 @@ class PROTOBUF_EXPORT Field final :
  public:
   inline Field() : Field(nullptr) {}
   ~Field() override;
+  template<typename = void>
   explicit PROTOBUF_CONSTEXPR Field(::google::protobuf::internal::ConstantInitialized);
 
   Field(const Field& from);
@@ -850,6 +852,7 @@ class PROTOBUF_EXPORT Enum final :
  public:
   inline Enum() : Enum(nullptr) {}
   ~Enum() override;
+  template<typename = void>
   explicit PROTOBUF_CONSTEXPR Enum(::google::protobuf::internal::ConstantInitialized);
 
   Enum(const Enum& from);
@@ -1100,6 +1103,7 @@ class PROTOBUF_EXPORT EnumValue final :
  public:
   inline EnumValue() : EnumValue(nullptr) {}
   ~EnumValue() override;
+  template<typename = void>
   explicit PROTOBUF_CONSTEXPR EnumValue(::google::protobuf::internal::ConstantInitialized);
 
   EnumValue(const EnumValue& from);
@@ -1294,6 +1298,7 @@ class PROTOBUF_EXPORT Option final :
  public:
   inline Option() : Option(nullptr) {}
   ~Option() override;
+  template<typename = void>
   explicit PROTOBUF_CONSTEXPR Option(::google::protobuf::internal::ConstantInitialized);
 
   Option(const Option& from);
@@ -1532,7 +1537,7 @@ inline void Type::set_allocated_name(std::string* value) {
 
 // repeated .google.protobuf.Field fields = 2;
 inline int Type::_internal_fields_size() const {
-  return _impl_.fields_.size();
+  return _internal_fields().size();
 }
 inline int Type::fields_size() const {
   return _internal_fields_size();
@@ -1574,7 +1579,7 @@ Type::_internal_mutable_fields() {
 
 // repeated string oneofs = 3;
 inline int Type::_internal_oneofs_size() const {
-  return _impl_.oneofs_.size();
+  return _internal_oneofs().size();
 }
 inline int Type::oneofs_size() const {
   return _internal_oneofs_size();
@@ -1661,7 +1666,7 @@ Type::_internal_mutable_oneofs() {
 
 // repeated .google.protobuf.Option options = 4;
 inline int Type::_internal_options_size() const {
-  return _impl_.options_.size();
+  return _internal_options().size();
 }
 inline int Type::options_size() const {
   return _internal_options_size();
@@ -2048,7 +2053,7 @@ inline void Field::_internal_set_packed(bool value) {
 
 // repeated .google.protobuf.Option options = 9;
 inline int Field::_internal_options_size() const {
-  return _impl_.options_.size();
+  return _internal_options().size();
 }
 inline int Field::options_size() const {
   return _internal_options_size();
@@ -2229,7 +2234,7 @@ inline void Enum::set_allocated_name(std::string* value) {
 
 // repeated .google.protobuf.EnumValue enumvalue = 2;
 inline int Enum::_internal_enumvalue_size() const {
-  return _impl_.enumvalue_.size();
+  return _internal_enumvalue().size();
 }
 inline int Enum::enumvalue_size() const {
   return _internal_enumvalue_size();
@@ -2271,7 +2276,7 @@ Enum::_internal_mutable_enumvalue() {
 
 // repeated .google.protobuf.Option options = 3;
 inline int Enum::_internal_options_size() const {
-  return _impl_.options_.size();
+  return _internal_options().size();
 }
 inline int Enum::options_size() const {
   return _internal_options_size();
@@ -2533,7 +2538,7 @@ inline void EnumValue::_internal_set_number(::int32_t value) {
 
 // repeated .google.protobuf.Option options = 3;
 inline int EnumValue::_internal_options_size() const {
-  return _impl_.options_.size();
+  return _internal_options().size();
 }
 inline int EnumValue::options_size() const {
   return _internal_options_size();

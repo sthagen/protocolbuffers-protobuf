@@ -209,6 +209,21 @@ static_assert(PROTOBUF_MSC_VER_MIN(1910), "Protobuf only supports MSVC 2017 and 
 #endif
 static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and newer.");
 
+// Check minimum Abseil version.
+#if defined(ABSL_LTS_RELEASE_VERSION) && defined(ABSL_LTS_RELEASE_PATCH_LEVEL)
+#define PROTOBUF_ABSL_MIN(x, y)      \
+  (ABSL_LTS_RELEASE_VERSION > (x) || \
+   (ABSL_LTS_RELEASE_VERSION == (x) && ABSL_LTS_RELEASE_PATCH_LEVEL >= (y)))
+#else
+// If we can't find an Abseil version, it's either not installed at all (which
+// should trigger cmake errors), using a non-LTS release, or just isn't used in
+// this file.
+#define PROTOBUF_ABSL_MIN(x, y) 1
+#endif
+
+static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
+              "Protobuf only supports Abseil version 20230125.3 and newer.");
+
 // Future versions of protobuf will include breaking changes to some APIs.
 // This macro can be set to enable these API changes ahead of time, so that
 // user code can be updated before upgrading versions of protobuf.
@@ -230,6 +245,10 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 // Used to remove Protobuf editions feature.
 // Owner: mkruskal@
 #define PROTOBUF_FUTURE_EDITIONS 1
+
+// Used to make ExtensionRange into a fully-fledged descriptor class.
+// Owner: mkruskal@
+#define PROTOBUF_FUTURE_EXTENSION_RANGE_CLASS 1
 
 #endif
 

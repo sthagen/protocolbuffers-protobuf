@@ -257,6 +257,7 @@ class PROTOBUF_EXPORT SymbolBase {
 template <int N>
 class PROTOBUF_EXPORT SymbolBaseN : public SymbolBase {};
 
+
 }  // namespace internal
 
 // Describes a type of protocol message, or a particular group within a
@@ -298,7 +299,6 @@ class PROTOBUF_EXPORT Descriptor : private internal::SymbolBase {
   // Allowed options are defined by MessageOptions in descriptor.proto, and any
   // available extensions of that message.
   const MessageOptions& options() const;
-
 
   // Write the contents of this Descriptor into the given DescriptorProto.
   // The target DescriptorProto must be clear before calling this; if it
@@ -434,10 +434,10 @@ class PROTOBUF_EXPORT Descriptor : private internal::SymbolBase {
     void CopyTo(DescriptorProto_ExtensionRange* proto) const;
 
     // Returns the start field number of this range (inclusive).
-    int start_number() const { return start; }
+    int start_number() const { return start_; }
 
     // Returns the end field number of this range (exclusive).
-    int end_number() const { return end; }
+    int end_number() const { return end_; }
 
     // Returns the index of this extension range within the message's extension
     // range array.
@@ -445,7 +445,6 @@ class PROTOBUF_EXPORT Descriptor : private internal::SymbolBase {
 
     // Returns the ExtensionRangeOptions for this range.
     const ExtensionRangeOptions& options() const { return *options_; }
-
 
     // Returns the name of the containing type.
     const std::string& name() const { return containing_type_->name(); }
@@ -463,13 +462,17 @@ class PROTOBUF_EXPORT Descriptor : private internal::SymbolBase {
     // Never nullptr.
     const Descriptor* containing_type() const { return containing_type_; }
 
-    // TODO(b/282012847) Make these private.
-    int start;  // NOLINT(google3-readability-class-member-naming)
-    int end;    // NOLINT(google3-readability-class-member-naming)
+#ifdef PROTOBUF_FUTURE_EXTENSION_RANGE_CLASS
+
+   private:
+#endif
+    int start_;
+    int end_;
     const ExtensionRangeOptions* options_;
 
    private:
     const Descriptor* containing_type_;
+
 
     // Walks up the descriptor tree to generate the source location path
     // to this descriptor from the file root.
@@ -593,6 +596,7 @@ class PROTOBUF_EXPORT Descriptor : private internal::SymbolBase {
   friend class io::Printer;
   friend class compiler::cpp::Formatter;
 
+
   // Fill the json_name field of FieldDescriptorProto.
   void CopyJsonNameTo(DescriptorProto* proto) const;
 
@@ -656,7 +660,7 @@ class PROTOBUF_EXPORT Descriptor : private internal::SymbolBase {
   // and update them to initialize the field.
 
   // Must be constructed using DescriptorPool.
-  Descriptor() {}
+  Descriptor();
   friend class DescriptorBuilder;
   friend class DescriptorPool;
   friend class EnumDescriptor;
@@ -914,7 +918,6 @@ class PROTOBUF_EXPORT FieldDescriptor : private internal::SymbolBase {
   // descriptor.proto, and any available extensions of that message.
   const FieldOptions& options() const;
 
-
   // See Descriptor::CopyTo().
   void CopyTo(FieldDescriptorProto* proto) const;
 
@@ -978,6 +981,7 @@ class PROTOBUF_EXPORT FieldDescriptor : private internal::SymbolBase {
   bool has_optional_keyword() const;
 
  private:
+
 
   // Fill the json_name field of FieldDescriptorProto.
   void CopyJsonNameTo(FieldDescriptorProto* proto) const;
@@ -1073,7 +1077,7 @@ class PROTOBUF_EXPORT FieldDescriptor : private internal::SymbolBase {
   static const char* const kLabelToName[MAX_LABEL + 1];
 
   // Must be constructed using DescriptorPool.
-  FieldDescriptor() {}
+  FieldDescriptor();
   friend class DescriptorBuilder;
   friend class FileDescriptor;
   friend class Descriptor;
@@ -1111,7 +1115,6 @@ class PROTOBUF_EXPORT OneofDescriptor : private internal::SymbolBase {
 
   const OneofOptions& options() const;
 
-
   // See Descriptor::CopyTo().
   void CopyTo(OneofDescriptorProto* proto) const;
 
@@ -1148,6 +1151,7 @@ class PROTOBUF_EXPORT OneofDescriptor : private internal::SymbolBase {
 
  private:
 
+
   // See Descriptor::DebugString().
   void DebugString(int depth, std::string* contents,
                    const DebugStringOptions& options) const;
@@ -1169,7 +1173,7 @@ class PROTOBUF_EXPORT OneofDescriptor : private internal::SymbolBase {
   // in descriptor.cc and update them to initialize the field.
 
   // Must be constructed using DescriptorPool.
-  OneofDescriptor() {}
+  OneofDescriptor();
   friend class DescriptorBuilder;
   friend class Descriptor;
   friend class FieldDescriptor;
@@ -1223,7 +1227,6 @@ class PROTOBUF_EXPORT EnumDescriptor : private internal::SymbolBase {
   // options are defined by EnumOptions in descriptor.proto, and any available
   // extensions of that message.
   const EnumOptions& options() const;
-
 
   // See Descriptor::CopyTo().
   void CopyTo(EnumDescriptorProto* proto) const;
@@ -1307,6 +1310,7 @@ class PROTOBUF_EXPORT EnumDescriptor : private internal::SymbolBase {
   // Allow access to FindValueByNumberCreatingIfUnknown.
   friend class descriptor_unittest::DescriptorTest;
 
+
   // Looks up a value by number.  If the value does not exist, dynamically
   // creates a new EnumValueDescriptor for that value, assuming that it was
   // unknown. If a new descriptor is created, this is done in a thread-safe way,
@@ -1359,7 +1363,7 @@ class PROTOBUF_EXPORT EnumDescriptor : private internal::SymbolBase {
   // descriptor.cc and update them to initialize the field.
 
   // Must be constructed using DescriptorPool.
-  EnumDescriptor() {}
+  EnumDescriptor();
   friend class DescriptorBuilder;
   friend class Descriptor;
   friend class FieldDescriptor;
@@ -1409,7 +1413,6 @@ class PROTOBUF_EXPORT EnumValueDescriptor : private internal::SymbolBaseN<0>,
   // available extensions of that message.
   const EnumValueOptions& options() const;
 
-
   // See Descriptor::CopyTo().
   void CopyTo(EnumValueDescriptorProto* proto) const;
 
@@ -1434,6 +1437,7 @@ class PROTOBUF_EXPORT EnumValueDescriptor : private internal::SymbolBaseN<0>,
   friend class io::Printer;
   friend class compiler::cpp::Formatter;
 
+
   // See Descriptor::DebugString().
   void DebugString(int depth, std::string* contents,
                    const DebugStringOptions& options) const;
@@ -1452,7 +1456,7 @@ class PROTOBUF_EXPORT EnumValueDescriptor : private internal::SymbolBaseN<0>,
   // in descriptor.cc and update them to initialize the field.
 
   // Must be constructed using DescriptorPool.
-  EnumValueDescriptor() {}
+  EnumValueDescriptor();
   friend class DescriptorBuilder;
   friend class EnumDescriptor;
   friend class DescriptorPool;
@@ -1489,7 +1493,6 @@ class PROTOBUF_EXPORT ServiceDescriptor : private internal::SymbolBase {
   // available extensions of that message.
   const ServiceOptions& options() const;
 
-
   // The number of methods this service defines.
   int method_count() const;
   // Gets a MethodDescriptor by index, where 0 <= index < method_count().
@@ -1523,6 +1526,7 @@ class PROTOBUF_EXPORT ServiceDescriptor : private internal::SymbolBase {
   friend class io::Printer;
   friend class compiler::cpp::Formatter;
 
+
   // See Descriptor::DebugString().
   void DebugString(std::string* contents,
                    const DebugStringOptions& options) const;
@@ -1542,7 +1546,7 @@ class PROTOBUF_EXPORT ServiceDescriptor : private internal::SymbolBase {
   // descriptor.cc and update them to initialize the field.
 
   // Must be constructed using DescriptorPool.
-  ServiceDescriptor() {}
+  ServiceDescriptor();
   friend class DescriptorBuilder;
   friend class FileDescriptor;
   friend class MethodDescriptor;
@@ -1591,7 +1595,6 @@ class PROTOBUF_EXPORT MethodDescriptor : private internal::SymbolBase {
   // descriptor.proto, and any available extensions of that message.
   const MethodOptions& options() const;
 
-
   // See Descriptor::CopyTo().
   void CopyTo(MethodDescriptorProto* proto) const;
 
@@ -1616,6 +1619,7 @@ class PROTOBUF_EXPORT MethodDescriptor : private internal::SymbolBase {
   friend class io::Printer;
   friend class compiler::cpp::Formatter;
 
+
   // See Descriptor::DebugString().
   void DebugString(int depth, std::string* contents,
                    const DebugStringOptions& options) const;
@@ -1637,7 +1641,7 @@ class PROTOBUF_EXPORT MethodDescriptor : private internal::SymbolBase {
   // descriptor.cc and update them to initialize the field.
 
   // Must be constructed using DescriptorPool.
-  MethodDescriptor() {}
+  MethodDescriptor();
   friend class DescriptorBuilder;
   friend class ServiceDescriptor;
 };
@@ -1721,7 +1725,6 @@ class PROTOBUF_EXPORT FileDescriptor : private internal::SymbolBase {
   // other definitions.  Allowed options are defined by FileOptions in
   // descriptor.proto, and any available extensions of that message.
   const FileOptions& options() const;
-
 
 
  private:
@@ -1840,6 +1843,7 @@ class PROTOBUF_EXPORT FileDescriptor : private internal::SymbolBase {
   const std::string* package_;
   const DescriptorPool* pool_;
 
+
   // dependencies_once_ contain a once_flag followed by N NUL terminated
   // strings. Dependencies that do not need to be loaded will be empty. ie just
   // {'\0'}
@@ -1871,7 +1875,7 @@ class PROTOBUF_EXPORT FileDescriptor : private internal::SymbolBase {
   // of Allocate<FileDescriptor>() and AllocateArray<FileDescriptor>() in
   // descriptor.cc and update them to initialize the field.
 
-  FileDescriptor() {}
+  FileDescriptor();
   friend class DescriptorBuilder;
   friend class DescriptorPool;
   friend class Descriptor;

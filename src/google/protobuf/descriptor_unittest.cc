@@ -34,6 +34,7 @@
 //
 // This file makes extensive use of RFC 3092.  :)
 
+#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <vector>
@@ -2064,11 +2065,11 @@ TEST_F(ExtensionDescriptorTest, ExtensionRanges) {
   EXPECT_EQ(0, bar_->extension_range_count());
   ASSERT_EQ(2, foo_->extension_range_count());
 
-  EXPECT_EQ(10, foo_->extension_range(0)->start);
-  EXPECT_EQ(30, foo_->extension_range(1)->start);
+  EXPECT_EQ(10, foo_->extension_range(0)->start_number());
+  EXPECT_EQ(30, foo_->extension_range(1)->start_number());
 
-  EXPECT_EQ(20, foo_->extension_range(0)->end);
-  EXPECT_EQ(40, foo_->extension_range(1)->end);
+  EXPECT_EQ(20, foo_->extension_range(0)->end_number());
+  EXPECT_EQ(40, foo_->extension_range(1)->end_number());
 }
 
 TEST_F(ExtensionDescriptorTest, Extensions) {
@@ -3107,8 +3108,9 @@ TEST_P(AllowUnknownDependenciesTest, UnknownExtendee) {
   EXPECT_EQ("UnknownType", extendee->name());
   EXPECT_TRUE(extendee->is_placeholder());
   ASSERT_EQ(1, extendee->extension_range_count());
-  EXPECT_EQ(1, extendee->extension_range(0)->start);
-  EXPECT_EQ(FieldDescriptor::kMaxNumber + 1, extendee->extension_range(0)->end);
+  EXPECT_EQ(1, extendee->extension_range(0)->start_number());
+  EXPECT_EQ(FieldDescriptor::kMaxNumber + 1,
+            extendee->extension_range(0)->end_number());
 }
 
 TEST_P(AllowUnknownDependenciesTest, CustomOption) {
@@ -6202,6 +6204,42 @@ TEST_F(ValidationErrorTest, UnusedImportWarning) {
       "type_name:\"Base\" }"
       "}",
       "forward.proto: bar.proto: IMPORT: Import bar.proto is unused.\n");
+}
+
+// Verifies that the dependency checker isn't fooled by package symbols,
+// which can be defined in multiple files.
+TEST_F(ValidationErrorTest, SamePackageUnusedImportError) {
+  BuildFile(R"pb(
+    name: "unused_dependency.proto"
+    package: "protobuf_unittest.subpackage"
+    message_type { name: "Foo" }
+  )pb");
+
+  BuildFile(R"pb(
+    name: "used_dependency.proto"
+    package: "protobuf_unittest.subpackage"
+    message_type { name: "Bar" }
+  )pb");
+
+  pool_.AddUnusedImportTrackFile("import.proto", true);
+  BuildFileWithErrors(R"pb(
+                        name: "import.proto"
+                        package: "protobuf_unittest"
+                        dependency: "unused_dependency.proto"
+                        dependency: "used_dependency.proto"
+                        message_type {
+                          name: "Baz"
+                          field {
+                            name: "bar"
+                            number: 1
+                            label: LABEL_OPTIONAL
+                            type: TYPE_MESSAGE
+                            type_name: "subpackage.Bar"
+                          }
+                        }
+                      )pb",
+                      "import.proto: unused_dependency.proto: "
+                      "IMPORT: Import unused_dependency.proto is unused.\n");
 }
 
 namespace {

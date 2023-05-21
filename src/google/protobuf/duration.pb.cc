@@ -22,6 +22,7 @@ namespace _pbi = ::google::protobuf::internal;
 namespace _fl = ::google::protobuf::internal::field_layout;
 namespace google {
 namespace protobuf {
+        template <typename>
 PROTOBUF_CONSTEXPR Duration::Duration(::_pbi::ConstantInitialized)
     : _impl_{
       /*decltype(_impl_.seconds_)*/ ::int64_t{0},
@@ -140,13 +141,12 @@ inline void Duration::SharedCtor(::_pb::Arena* arena) {
 }
 Duration::~Duration() {
   // @@protoc_insertion_point(destructor:google.protobuf.Duration)
-  _internal_metadata_.DeleteReturnArena<::google::protobuf::UnknownFieldSet>();
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
 inline void Duration::SharedDtor() {
   ABSL_DCHECK(GetArenaForAllocation() == nullptr);
 }
-
 void Duration::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
@@ -207,10 +207,11 @@ const ::_pbi::TcParseTable<1, 2, 0, 0, 2> Duration::_table_ = {
 };
 
 ::uint8_t* Duration::_InternalSerialize(
-    ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:google.protobuf.Duration)
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   // int64 seconds = 1;
   if (this->_internal_seconds() != 0) {
@@ -227,8 +228,9 @@ const ::_pbi::TcParseTable<1, 2, 0, 0, 2> Duration::_table_ = {
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:google.protobuf.Duration)
   return target;

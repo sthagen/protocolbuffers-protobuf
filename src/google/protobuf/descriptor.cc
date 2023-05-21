@@ -74,6 +74,7 @@
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/descriptor_legacy.h"
+#include "google/protobuf/descriptor_visitor.h"
 #include "google/protobuf/dynamic_message.h"
 #include "google/protobuf/generated_message_util.h"
 #include "google/protobuf/io/strtod.h"
@@ -2378,8 +2379,8 @@ const FieldDescriptor* FileDescriptor::FindExtensionByCamelcaseName(
 
 void Descriptor::ExtensionRange::CopyTo(
     DescriptorProto_ExtensionRange* proto) const {
-  proto->set_start(this->start);
-  proto->set_end(this->end);
+  proto->set_start(start_);
+  proto->set_end(end_);
   if (options_ != &ExtensionRangeOptions::default_instance()) {
     *proto->mutable_options() = *options_;
   }
@@ -2390,8 +2391,8 @@ Descriptor::FindExtensionRangeContainingNumber(int number) const {
   // Linear search should be fine because we don't expect a message to have
   // more than a couple extension ranges.
   for (int i = 0; i < extension_range_count(); i++) {
-    if (number >= extension_range(i)->start &&
-        number < extension_range(i)->end) {
+    if (number >= extension_range(i)->start_number() &&
+        number < extension_range(i)->end_number()) {
       return extension_range(i);
     }
   }
@@ -2446,17 +2447,16 @@ bool DescriptorPool::TryFindFileInFallbackDatabase(
 }
 
 bool DescriptorPool::IsSubSymbolOfBuiltType(absl::string_view name) const {
-  auto prefix = std::string(name);
-  for (;;) {
-    std::string::size_type dot_pos = prefix.find_last_of('.');
-    if (dot_pos == std::string::npos) {
+  for (size_t pos = name.find('.'); pos != name.npos;
+       pos = name.find('.', pos + 1)) {
+    auto prefix = name.substr(0, pos);
+    Symbol symbol = tables_->FindSymbol(prefix);
+    if (symbol.IsNull()) {
       break;
     }
-    prefix = prefix.substr(0, dot_pos);
-    Symbol symbol = tables_->FindSymbol(prefix);
-    // If the symbol type is anything other than PACKAGE, then its complete
-    // definition is already known.
-    if (!symbol.IsNull() && !symbol.IsPackage()) {
+    if (!symbol.IsPackage()) {
+      // If the symbol type is anything other than PACKAGE, then its complete
+      // definition is already known.
       return true;
     }
   }
@@ -2578,6 +2578,21 @@ std::string FieldDescriptor::DefaultValueAsString(
   ABSL_LOG(FATAL) << "Can't get here: failed to get default value as string";
   return "";
 }
+
+// Out-of-line constructor definitions ==============================
+// When using constructor type homing in Clang, debug info for a type
+// is only emitted when a constructor definition is emitted, as an
+// optimization. These constructors are never called, so we define them
+// out of line to make sure the debug info is emitted somewhere.
+
+Descriptor::Descriptor() {}
+FieldDescriptor::FieldDescriptor() {}
+OneofDescriptor::OneofDescriptor() {}
+EnumDescriptor::EnumDescriptor() {}
+EnumValueDescriptor::EnumValueDescriptor() {}
+ServiceDescriptor::ServiceDescriptor() {}
+MethodDescriptor::MethodDescriptor() {}
+FileDescriptor::FileDescriptor() {}
 
 // CopyTo methods ====================================================
 
@@ -3173,25 +3188,24 @@ void Descriptor::DebugString(int depth, std::string* contents,
 
   for (int i = 0; i < extension_range_count(); i++) {
     absl::SubstituteAndAppend(contents, "$0  extensions $1", prefix,
-                              extension_range(i)->start);
-    if (extension_range(i)->end > extension_range(i)->start + 1) {
+                              extension_range(i)->start_number());
+    if (extension_range(i)->end_number() >
+        extension_range(i)->start_number() + 1) {
       absl::SubstituteAndAppend(contents, " to $0",
-                                extension_range(i)->end - 1);
+                                extension_range(i)->end_number() - 1);
     }
-    if (extension_range(i)->options_ != nullptr) {
-      if (extension_range(i)->options_->declaration_size() > 0) {
-        absl::StrAppend(contents, " [");
-        for (int j = 0; j < extension_range(i)->options_->declaration_size();
-             ++j) {
-          if (j > 0) {
-            absl::StrAppend(contents, ",");
-          }
-          absl::SubstituteAndAppend(
-              contents, " declaration = { $0 }",
-              extension_range(i)->options_->declaration(j).ShortDebugString());
+    if (extension_range(i)->options().declaration_size() > 0) {
+      absl::StrAppend(contents, " [");
+      for (int j = 0; j < extension_range(i)->options().declaration_size();
+           ++j) {
+        if (j > 0) {
+          absl::StrAppend(contents, ",");
         }
-        absl::StrAppend(contents, " ] ");
+        absl::SubstituteAndAppend(
+            contents, " declaration = { $0 }",
+            extension_range(i)->options().declaration(j).ShortDebugString());
       }
+      absl::StrAppend(contents, " ] ");
     }
     absl::StrAppend(contents, ";\n");
   }
@@ -4209,20 +4223,21 @@ class DescriptorBuilder {
   // descriptors, which are the ones that have been interpreted. The const
   // proto references are passed in only so they can be provided to calls to
   // AddError(). Do not look at their options, which have not been interpreted.
-  void ValidateFileOptions(const FileDescriptor* file,
-                           const FileDescriptorProto& proto);
-  void ValidateMessageOptions(const Descriptor* message,
-                              const DescriptorProto& proto);
-  void ValidateOneofOptions(const OneofDescriptor* oneof,
-                            const OneofDescriptorProto& proto);
-  void ValidateFieldOptions(const FieldDescriptor* field,
-                            const FieldDescriptorProto& proto);
+  void ValidateOptions(const FileDescriptor* file,
+                       const FileDescriptorProto& proto);
+  void ValidateOptions(const Descriptor* message, const DescriptorProto& proto);
+  void ValidateOptions(const OneofDescriptor* oneof,
+                       const OneofDescriptorProto& proto);
+  void ValidateOptions(const FieldDescriptor* field,
+                       const FieldDescriptorProto& proto);
   void ValidateFieldFeatures(const FieldDescriptor* field,
                              const FieldDescriptorProto& proto);
-  void ValidateEnumOptions(const EnumDescriptor* enm,
-                           const EnumDescriptorProto& proto);
-  void ValidateEnumValueOptions(const EnumValueDescriptor* enum_value,
-                                const EnumValueDescriptorProto& proto);
+  void ValidateOptions(const EnumDescriptor* enm,
+                       const EnumDescriptorProto& proto);
+  void ValidateOptions(const EnumValueDescriptor* enum_value,
+                       const EnumValueDescriptorProto& proto);
+  void ValidateOptions(const Descriptor::ExtensionRange* range,
+                       const DescriptorProto::ExtensionRange& proto) {}
   void ValidateExtensionRangeOptions(const DescriptorProto& proto,
                                      const Descriptor& message);
   void ValidateExtensionDeclaration(
@@ -4230,10 +4245,10 @@ class DescriptorBuilder {
       const RepeatedPtrField<ExtensionRangeOptions_Declaration>& declarations,
       const DescriptorProto_ExtensionRange& proto,
       absl::flat_hash_set<absl::string_view>& full_name_set);
-  void ValidateServiceOptions(const ServiceDescriptor* service,
-                              const ServiceDescriptorProto& proto);
-  void ValidateMethodOptions(const MethodDescriptor* method,
-                             const MethodDescriptorProto& proto);
+  void ValidateOptions(const ServiceDescriptor* service,
+                       const ServiceDescriptorProto& proto);
+  void ValidateOptions(const MethodDescriptor* method,
+                       const MethodDescriptorProto& proto);
   void ValidateProto3(const FileDescriptor* file,
                       const FileDescriptorProto& proto);
   void ValidateProto3Message(const Descriptor* message,
@@ -4437,7 +4452,7 @@ Symbol DescriptorBuilder::FindSymbolNotEnforcingDeps(const std::string& name,
   // Only find symbols which were defined in this file or one of its
   // dependencies.
   const FileDescriptor* file = result.GetFile();
-  if (file == file_ || dependencies_.contains(file)) {
+  if ((file == file_ || dependencies_.contains(file)) && !result.IsPackage()) {
     unused_dependency_.erase(file);
   }
   return result;
@@ -4700,9 +4715,9 @@ Symbol DescriptorPool::NewPlaceholderWithMutexHeld(
       placeholder_message->extension_range_count_ = 1;
       placeholder_message->extension_ranges_ =
           alloc.AllocateArray<Descriptor::ExtensionRange>(1);
-      placeholder_message->extension_ranges_[0].start = 1;
+      placeholder_message->extension_ranges_[0].start_ = 1;
       // kMaxNumber + 1 because ExtensionRange::end is exclusive.
-      placeholder_message->extension_ranges_[0].end =
+      placeholder_message->extension_ranges_[0].end_ =
           FieldDescriptor::kMaxNumber + 1;
       placeholder_message->extension_ranges_[0].options_ = nullptr;
     }
@@ -5477,10 +5492,14 @@ FileDescriptor* DescriptorBuilder::BuildFileImpl(
     }
   }
 
+
   // Validate options. See comments at InternalSetLazilyBuildDependencies about
   // error checking and lazy import building.
   if (!had_errors_ && !pool_->lazily_build_dependencies_) {
-    ValidateFileOptions(result, proto);
+    internal::VisitDescriptors(*result, proto,
+                               [&](const auto& descriptor, const auto& proto) {
+                                 ValidateOptions(&descriptor, proto);
+                               });
   }
 
   // Additional naming conflict check for map entry types. Only need to check
@@ -5643,15 +5662,16 @@ void DescriptorBuilder::BuildMessage(const DescriptorProto& proto,
     const FieldDescriptor* field = result->field(i);
     for (int j = 0; j < result->extension_range_count(); j++) {
       const Descriptor::ExtensionRange* range = result->extension_range(j);
-      if (range->start <= field->number() && field->number() < range->end) {
+      if (range->start_number() <= field->number() &&
+          field->number() < range->end_number()) {
         message_hints_[result].RequestHintOnFieldNumbers(
             proto.extension_range(j), DescriptorPool::ErrorCollector::NUMBER);
         AddError(field->full_name(), proto.extension_range(j),
                  DescriptorPool::ErrorCollector::NUMBER, [&] {
                    return absl::Substitute(
                        "Extension range $0 to $1 includes field \"$2\" ($3).",
-                       range->start, range->end - 1, field->name(),
-                       field->number());
+                       range->start_number(), range->end_number() - 1,
+                       field->name(), field->number());
                  });
       }
     }
@@ -5683,27 +5703,29 @@ void DescriptorBuilder::BuildMessage(const DescriptorProto& proto,
     const Descriptor::ExtensionRange* range1 = result->extension_range(i);
     for (int j = 0; j < result->reserved_range_count(); j++) {
       const Descriptor::ReservedRange* range2 = result->reserved_range(j);
-      if (range1->end > range2->start && range2->end > range1->start) {
+      if (range1->end_number() > range2->start &&
+          range2->end > range1->start_number()) {
         AddError(result->full_name(), proto.extension_range(i),
                  DescriptorPool::ErrorCollector::NUMBER, [&] {
                    return absl::Substitute(
                        "Extension range $0 to $1 overlaps with "
                        "reserved range $2 to $3.",
-                       range1->start, range1->end - 1, range2->start,
-                       range2->end - 1);
+                       range1->start_number(), range1->end_number() - 1,
+                       range2->start, range2->end - 1);
                  });
       }
     }
     for (int j = i + 1; j < result->extension_range_count(); j++) {
       const Descriptor::ExtensionRange* range2 = result->extension_range(j);
-      if (range1->end > range2->start && range2->end > range1->start) {
+      if (range1->end_number() > range2->start_number() &&
+          range2->end_number() > range1->start_number()) {
         AddError(result->full_name(), proto.extension_range(i),
                  DescriptorPool::ErrorCollector::NUMBER, [&] {
                    return absl::Substitute(
                        "Extension range $0 to $1 overlaps with "
                        "already-defined range $2 to $3.",
-                       range2->start, range2->end - 1, range1->start,
-                       range1->end - 1);
+                       range2->start_number(), range2->end_number() - 1,
+                       range1->start_number(), range1->end_number() - 1);
                  });
       }
     }
@@ -6106,11 +6128,11 @@ void DescriptorBuilder::BuildFieldOrExtension(const FieldDescriptorProto& proto,
 void DescriptorBuilder::BuildExtensionRange(
     const DescriptorProto::ExtensionRange& proto, const Descriptor* parent,
     Descriptor::ExtensionRange* result, internal::FlatAllocator& alloc) {
-  result->start = proto.start();
-  result->end = proto.end();
+  result->start_ = proto.start();
+  result->end_ = proto.end();
   result->containing_type_ = parent;
 
-  if (result->start <= 0) {
+  if (result->start_number() <= 0) {
     message_hints_[parent].RequestHintOnFieldNumbers(
         proto, DescriptorPool::ErrorCollector::NUMBER, result->start_number(),
         result->end_number());
@@ -7065,7 +7087,7 @@ void DescriptorBuilder::SuggestFieldNumbers(FileDescriptor* file,
     }
     for (int i = 0; i < message->extension_range_count(); i++) {
       auto range = message->extension_range(i);
-      add_range(range->start, range->end);
+      add_range(range->start_number(), range->end_number());
     }
     used_ordinals.push_back(
         {FieldDescriptor::kMaxNumber, FieldDescriptor::kMaxNumber + 1});
@@ -7102,12 +7124,6 @@ void DescriptorBuilder::SuggestFieldNumbers(FileDescriptor* file,
 
 // -------------------------------------------------------------------
 
-#define VALIDATE_OPTIONS_FROM_ARRAY(descriptor, array_name, type) \
-  for (int i = 0; i < descriptor->array_name##_count(); ++i) {    \
-    Validate##type##Options(descriptor->array_name##s_ + i,       \
-                            proto.array_name(i));                 \
-  }
-
 // Determine if the file uses optimize_for = LITE_RUNTIME, being careful to
 // avoid problems that exist at init time.
 static bool IsLite(const FileDescriptor* file) {
@@ -7118,13 +7134,8 @@ static bool IsLite(const FileDescriptor* file) {
          file->options().optimize_for() == FileOptions::LITE_RUNTIME;
 }
 
-void DescriptorBuilder::ValidateFileOptions(const FileDescriptor* file,
-                                            const FileDescriptorProto& proto) {
-  VALIDATE_OPTIONS_FROM_ARRAY(file, message_type, Message);
-  VALIDATE_OPTIONS_FROM_ARRAY(file, enum_type, Enum);
-  VALIDATE_OPTIONS_FROM_ARRAY(file, service, Service);
-  VALIDATE_OPTIONS_FROM_ARRAY(file, extension, Field);
-
+void DescriptorBuilder::ValidateOptions(const FileDescriptor* file,
+                                        const FileDescriptorProto& proto) {
   // Lite files can only be imported by other Lite files.
   if (!IsLite(file)) {
     for (int i = 0; i < file->dependency_count(); i++) {
@@ -7234,26 +7245,19 @@ void DescriptorBuilder::ValidateProto3Enum(const EnumDescriptor* enm,
   }
 }
 
-void DescriptorBuilder::ValidateMessageOptions(const Descriptor* message,
-                                               const DescriptorProto& proto) {
-  VALIDATE_OPTIONS_FROM_ARRAY(message, field, Field);
-  VALIDATE_OPTIONS_FROM_ARRAY(message, nested_type, Message);
-  VALIDATE_OPTIONS_FROM_ARRAY(message, enum_type, Enum);
-  VALIDATE_OPTIONS_FROM_ARRAY(message, extension, Field);
-
+void DescriptorBuilder::ValidateOptions(const Descriptor* message,
+                                        const DescriptorProto& proto) {
   CheckFieldJsonNameUniqueness(proto, message);
   ValidateExtensionRangeOptions(proto, *message);
-  for (int i = 0; i < message->real_oneof_decl_count(); ++i) {
-    ValidateOneofOptions(message->oneof_decl(i), proto.oneof_decl(i));
-  }
 }
 
-void DescriptorBuilder::ValidateOneofOptions(
-    const OneofDescriptor* /*oneof*/, const OneofDescriptorProto& /*proto*/) {}
+void DescriptorBuilder::ValidateOptions(const OneofDescriptor* /*oneof*/,
+                                        const OneofDescriptorProto& /*proto*/) {
+}
 
 
-void DescriptorBuilder::ValidateFieldOptions(
-    const FieldDescriptor* field, const FieldDescriptorProto& proto) {
+void DescriptorBuilder::ValidateOptions(const FieldDescriptor* field,
+                                        const FieldDescriptorProto& proto) {
   if (pool_->lazily_build_dependencies_ && (!field || !field->message_type())) {
     return;
   }
@@ -7344,10 +7348,8 @@ void DescriptorBuilder::ValidateFieldFeatures(
     const FieldDescriptor* field, const FieldDescriptorProto& proto) {
 }
 
-void DescriptorBuilder::ValidateEnumOptions(const EnumDescriptor* enm,
-                                            const EnumDescriptorProto& proto) {
-  VALIDATE_OPTIONS_FROM_ARRAY(enm, value, EnumValue);
-
+void DescriptorBuilder::ValidateOptions(const EnumDescriptor* enm,
+                                        const EnumDescriptorProto& proto) {
   CheckEnumValueUniqueness(proto, enm);
 
   if (!enm->options().has_allow_alias() || !enm->options().allow_alias()) {
@@ -7389,7 +7391,7 @@ void DescriptorBuilder::ValidateEnumOptions(const EnumDescriptor* enm,
   }
 }
 
-void DescriptorBuilder::ValidateEnumValueOptions(
+void DescriptorBuilder::ValidateOptions(
     const EnumValueDescriptor* /* enum_value */,
     const EnumValueDescriptorProto& /* proto */) {
   // Nothing to do so far.
@@ -7499,7 +7501,7 @@ void DescriptorBuilder::ValidateExtensionRangeOptions(
 
   for (int i = 0; i < message.extension_range_count(); i++) {
     const auto& range = *message.extension_range(i);
-    if (range.end > max_extension_range + 1) {
+    if (range.end_number() > max_extension_range + 1) {
       AddError(message.full_name(), proto,
                DescriptorPool::ErrorCollector::NUMBER, [&] {
                  return absl::Substitute(
@@ -7530,8 +7532,8 @@ void DescriptorBuilder::ValidateExtensionRangeOptions(
   }
 }
 
-void DescriptorBuilder::ValidateServiceOptions(
-    const ServiceDescriptor* service, const ServiceDescriptorProto& proto) {
+void DescriptorBuilder::ValidateOptions(const ServiceDescriptor* service,
+                                        const ServiceDescriptorProto& proto) {
   if (IsLite(service->file()) &&
       (service->file()->options().cc_generic_services() ||
        service->file()->options().java_generic_services())) {
@@ -7540,11 +7542,9 @@ void DescriptorBuilder::ValidateServiceOptions(
              "unless you set both options cc_generic_services and "
              "java_generic_services to false.");
   }
-
-  VALIDATE_OPTIONS_FROM_ARRAY(service, method, Method);
 }
 
-void DescriptorBuilder::ValidateMethodOptions(
+void DescriptorBuilder::ValidateOptions(
     const MethodDescriptor* /* method */,
     const MethodDescriptorProto& /* proto */) {
   // Nothing to do so far.
@@ -7723,8 +7723,6 @@ void DescriptorBuilder::ValidateJSType(const FieldDescriptor* field,
       break;
   }
 }
-
-#undef VALIDATE_OPTIONS_FROM_ARRAY
 
 // -------------------------------------------------------------------
 

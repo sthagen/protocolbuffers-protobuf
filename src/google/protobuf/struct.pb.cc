@@ -22,6 +22,7 @@ namespace _pbi = ::google::protobuf::internal;
 namespace _fl = ::google::protobuf::internal::field_layout;
 namespace google {
 namespace protobuf {
+      template <typename>
 PROTOBUF_CONSTEXPR Struct_FieldsEntry_DoNotUse::Struct_FieldsEntry_DoNotUse(::_pbi::ConstantInitialized) {}
 struct Struct_FieldsEntry_DoNotUseDefaultTypeInternal {
   PROTOBUF_CONSTEXPR Struct_FieldsEntry_DoNotUseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
@@ -33,6 +34,7 @@ struct Struct_FieldsEntry_DoNotUseDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 Struct_FieldsEntry_DoNotUseDefaultTypeInternal _Struct_FieldsEntry_DoNotUse_default_instance_;
+        template <typename>
 PROTOBUF_CONSTEXPR Struct::Struct(::_pbi::ConstantInitialized)
     : _impl_{
       /* decltype(_impl_.fields_) */ {},
@@ -48,6 +50,7 @@ struct StructDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 StructDefaultTypeInternal _Struct_default_instance_;
+        template <typename>
 PROTOBUF_CONSTEXPR Value::Value(::_pbi::ConstantInitialized)
     : _impl_{
       /*decltype(_impl_.kind_)*/ {},
@@ -64,6 +67,7 @@ struct ValueDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ValueDefaultTypeInternal _Value_default_instance_;
+        template <typename>
 PROTOBUF_CONSTEXPR ListValue::ListValue(::_pbi::ConstantInitialized)
     : _impl_{
       /*decltype(_impl_.values_)*/ {},
@@ -262,14 +266,13 @@ inline void Struct::SharedCtor(::_pb::Arena* arena) {
 }
 Struct::~Struct() {
   // @@protoc_insertion_point(destructor:google.protobuf.Struct)
-  _internal_metadata_.DeleteReturnArena<::google::protobuf::UnknownFieldSet>();
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
 inline void Struct::SharedDtor() {
   ABSL_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.fields_.~MapField();
 }
-
 void Struct::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
@@ -324,10 +327,11 @@ const ::_pbi::TcParseTable<0, 1, 2, 37, 2> Struct::_table_ = {
 };
 
 ::uint8_t* Struct::_InternalSerialize(
-    ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:google.protobuf.Struct)
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   // map<string, .google.protobuf.Value> fields = 1;
   if (!_internal_fields().empty()) {
@@ -355,8 +359,9 @@ const ::_pbi::TcParseTable<0, 1, 2, 37, 2> Struct::_table_ = {
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:google.protobuf.Struct)
   return target;
@@ -375,7 +380,6 @@ const ::_pbi::TcParseTable<0, 1, 2, 37, 2> Struct::_table_ = {
   for (const auto& entry : _internal_fields()) {
     total_size += Struct_FieldsEntry_DoNotUse::Funcs::ByteSizeLong(entry.first, entry.second);
   }
-
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -527,7 +531,7 @@ inline void Value::SharedCtor(::_pb::Arena* arena) {
 }
 Value::~Value() {
   // @@protoc_insertion_point(destructor:google.protobuf.Value)
-  _internal_metadata_.DeleteReturnArena<::google::protobuf::UnknownFieldSet>();
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
 inline void Value::SharedDtor() {
@@ -536,7 +540,6 @@ inline void Value::SharedDtor() {
     clear_kind();
   }
 }
-
 void Value::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
@@ -645,10 +648,11 @@ const ::_pbi::TcParseTable<0, 6, 2, 42, 2> Value::_table_ = {
 };
 
 ::uint8_t* Value::_InternalSerialize(
-    ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:google.protobuf.Value)
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   switch (kind_case()) {
     case kNullValue: {
@@ -688,11 +692,13 @@ const ::_pbi::TcParseTable<0, 6, 2, 42, 2> Value::_table_ = {
           _Internal::list_value(this).GetCachedSize(), target, stream);
       break;
     }
-    default: ;
+    default:
+      break;
   }
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:google.protobuf.Value)
   return target;
@@ -854,14 +860,13 @@ inline void ListValue::SharedCtor(::_pb::Arena* arena) {
 }
 ListValue::~ListValue() {
   // @@protoc_insertion_point(destructor:google.protobuf.ListValue)
-  _internal_metadata_.DeleteReturnArena<::google::protobuf::UnknownFieldSet>();
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
 inline void ListValue::SharedDtor() {
   ABSL_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.values_.~RepeatedPtrField();
 }
-
 void ListValue::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
@@ -914,10 +919,11 @@ const ::_pbi::TcParseTable<0, 1, 1, 0, 2> ListValue::_table_ = {
 };
 
 ::uint8_t* ListValue::_InternalSerialize(
-    ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:google.protobuf.ListValue)
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   // repeated .google.protobuf.Value values = 1;
   for (unsigned i = 0,
@@ -928,8 +934,9 @@ const ::_pbi::TcParseTable<0, 1, 1, 0, 2> ListValue::_table_ = {
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:google.protobuf.ListValue)
   return target;
@@ -949,7 +956,6 @@ const ::_pbi::TcParseTable<0, 1, 1, 0, 2> ListValue::_table_ = {
     total_size +=
       ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
-
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 

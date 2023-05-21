@@ -76,6 +76,7 @@ class PROTOBUF_EXPORT FieldMask final :
  public:
   inline FieldMask() : FieldMask(nullptr) {}
   ~FieldMask() override;
+  template<typename = void>
   explicit PROTOBUF_CONSTEXPR FieldMask(::google::protobuf::internal::ConstantInitialized);
 
   FieldMask(const FieldMask& from);
@@ -263,7 +264,7 @@ class PROTOBUF_EXPORT FieldMask final :
 
 // repeated string paths = 1;
 inline int FieldMask::_internal_paths_size() const {
-  return _impl_.paths_.size();
+  return _internal_paths().size();
 }
 inline int FieldMask::paths_size() const {
   return _internal_paths_size();
