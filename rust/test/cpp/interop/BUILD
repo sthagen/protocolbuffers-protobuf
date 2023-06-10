@@ -15,13 +15,9 @@ cc_library(
 rust_test(
     name = "interop_test",
     srcs = ["main.rs"],
-    tags = [
-        # TODO(b/270274576): Enable testing on arm once we have a Rust Arm toolchain.
-        "not_build:arm",
-    ],
     deps = [
         ":test_utils",
-        "//rust/cpp_kernel:cpp",
+        "//rust:protobuf_cpp",
         "//rust/test:unittest_cc_rust_proto",
     ],
 )

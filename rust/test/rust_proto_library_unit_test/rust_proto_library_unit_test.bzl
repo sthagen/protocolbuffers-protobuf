@@ -57,7 +57,7 @@ def _rust_upb_aspect_test_impl(ctx):
     rustc_action = _find_action_with_mnemonic(actions, "Rustc")
 
     # The action needs to have the Rust runtime as an input
-    _find_rust_lib_input(rustc_action.inputs, "upb")
+    _find_rust_lib_input(rustc_action.inputs, "protobuf")
 
     # The action needs to produce a .rlib artifact (sometimes .rmeta as well, not tested here).
     asserts.true(env, rustc_action.outputs.to_list()[0].path.endswith(".rlib"))
@@ -76,8 +76,6 @@ def _test_upb_aspect():
     rust_upb_aspect_test(
         name = "rust_upb_aspect_test",
         target_under_test = ":child_proto_with_upb_aspect",
-        # TODO(b/270274576): Enable testing on arm once we have a Rust Arm toolchain.
-        tags = ["not_build:arm"],
     )
 
 ####################################################################################################
@@ -88,7 +86,7 @@ def _rust_cc_aspect_test_impl(ctx):
     rustc_action = _find_action_with_mnemonic(actions, "Rustc")
 
     # The action needs to have the Rust runtime as an input
-    _find_rust_lib_input(rustc_action.inputs, "cpp")
+    _find_rust_lib_input(rustc_action.inputs, "protobuf")
 
     # The action needs to produce a .rlib artifact (sometimes .rmeta as well, not tested here).
     asserts.true(env, rustc_action.outputs.to_list()[0].path.endswith(".rlib"))
@@ -107,8 +105,6 @@ def _test_cc_aspect():
     rust_cc_aspect_test(
         name = "rust_cc_aspect_test",
         target_under_test = ":child_proto_with_cc_aspect",
-        # TODO(b/270274576): Enable testing on arm once we have a Rust Arm toolchain.
-        tags = ["not_build:arm"],
     )
 
 ####################################################################################################

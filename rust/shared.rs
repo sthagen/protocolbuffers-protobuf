@@ -1,5 +1,5 @@
 // Protocol Buffers - Google's data interchange format
-// Copyright 2008 Google Inc.  All rights reserved.
+// Copyright 2023 Google Inc.  All rights reserved.
 // https://developers.google.com/protocol-buffers/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,26 +28,45 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "google/protobuf/arena_config.h"
+//! Kernel-agnostic logic for the Rust Protobuf Runtime.
+//!
+//! For kernel-specific logic this crate delegates to the respective __runtime
+//! crate.
 
-#include <atomic>
-#include <cstddef>
+#[cfg(cpp_kernel)]
+#[path = "cpp.rs"]
+pub mod __runtime;
+#[cfg(upb_kernel)]
+#[path = "upb.rs"]
+pub mod __runtime;
 
-// Must be included last.
-#include "google/protobuf/port_def.inc"
+pub use __runtime::SerializedData;
 
-namespace google {
-namespace protobuf {
-namespace internal {
+use std::fmt;
+use std::slice;
 
-PROTOBUF_CONSTINIT const size_t kDefaultDefaultArenaMaxBlockSize = 32 << 10;
+/// Represents error during deserialization.
+#[derive(Debug, Clone)]
+pub struct ParseError;
 
-namespace arena_config_internal {
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Couldn't deserialize given bytes into a proto")
+    }
+}
 
-std::atomic<size_t> default_arena_max_block_size{
-    kDefaultDefaultArenaMaxBlockSize};
+/// Represents an ABI-stable version of &[u8]/string_view (a borrowed slice of
+/// bytes) for FFI use only.
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct PtrAndLen {
+    /// Borrows the memory.
+    pub ptr: *const u8,
+    pub len: usize,
+}
 
-}  // namespace arena_config_internal
-}  // namespace internal
-}  // namespace protobuf
-}  // namespace google
+impl PtrAndLen {
+    pub unsafe fn as_ref<'a>(self) -> &'a [u8] {
+        slice::from_raw_parts(self.ptr, self.len)
+    }
+}
