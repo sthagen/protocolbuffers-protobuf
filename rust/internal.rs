@@ -28,44 +28,44 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// Tests covering accessors for singular bool, int64, and bytes fields.
-use unittest_proto::proto2_unittest::TestAllTypes;
+//! Kernel-agnostic logic for the Rust Protobuf runtime that should not be
+//! exposed to through the `protobuf` path but must be public for use by
+//! generated code.
 
-#[test]
-fn test_optional_int64_accessors() {
-    let mut msg = TestAllTypes::new();
-    assert_eq!(msg.optional_int64(), None);
+use std::slice;
 
-    msg.optional_int64_set(Some(42));
-    assert_eq!(msg.optional_int64(), Some(42));
+/// Represents an ABI-stable version of `NonNull<[u8]>`/`string_view` (a
+/// borrowed slice of bytes) for FFI use only.
+///
+/// Has semantics similar to `std::string_view` in C++ and `&[u8]` in Rust,
+/// but is not ABI-compatible with either.
+///
+/// If `len` is 0, then `ptr` can be null or dangling. C++ considers a dangling
+/// 0-len `std::string_view` to be invalid, and Rust considers a `&[u8]` with a
+/// null data pointer to be invalid.
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct PtrAndLen {
+    /// Pointer to the first byte.
+    /// Borrows the memory.
+    pub ptr: *const u8,
 
-    msg.optional_int64_set(None);
-    assert_eq!(msg.optional_int64(), None);
+    /// Length of the `[u8]` pointed to by `ptr`.
+    pub len: usize,
 }
 
-#[test]
-fn test_optional_bool_accessors() {
-    let mut msg = TestAllTypes::new();
-    assert_eq!(msg.optional_bool(), None);
-
-    msg.optional_bool_set(Some(true));
-    assert_eq!(msg.optional_bool(), Some(true));
-
-    msg.optional_bool_set(None);
-    assert_eq!(msg.optional_bool(), None);
-}
-
-#[test]
-fn test_optional_bytes_accessors() {
-    let mut msg = TestAllTypes::new();
-    assert_eq!(msg.optional_bytes(), None);
-
-    msg.optional_bytes_set(Some(b"accessors_test"));
-    assert_eq!(msg.optional_bytes().unwrap(), b"accessors_test");
-
-    msg.optional_bytes_set(None);
-    assert_eq!(msg.optional_bytes(), None);
-
-    msg.optional_bytes_set(Some(b""));
-    assert_eq!(msg.optional_bytes().unwrap(), b"");
+impl PtrAndLen {
+    /// Unsafely dereference this slice.
+    ///
+    /// # Safety
+    /// - `ptr` must be valid for `len` bytes. It can be null or dangling if
+    ///   `self.len == 0`.
+    pub unsafe fn as_ref<'a>(self) -> &'a [u8] {
+        if self.ptr.is_null() {
+            assert_eq!(self.len, 0, "Non-empty slice with null data pointer");
+            &[]
+        } else {
+            slice::from_raw_parts(self.ptr, self.len)
+        }
+    }
 }

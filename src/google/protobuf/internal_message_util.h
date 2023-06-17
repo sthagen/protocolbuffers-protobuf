@@ -27,45 +27,24 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// This file contains miscellaneous (non-lite) helper code not suitable to
+// generated_message_util.h. This should not be used directly by users.
 
-/// Tests covering accessors for singular bool, int64, and bytes fields.
-use unittest_proto::proto2_unittest::TestAllTypes;
+#ifndef GOOGLE_PROTOBUF_INTERNAL_MESSAGE_UTIL_H__
+#define GOOGLE_PROTOBUF_INTERNAL_MESSAGE_UTIL_H__
 
-#[test]
-fn test_optional_int64_accessors() {
-    let mut msg = TestAllTypes::new();
-    assert_eq!(msg.optional_int64(), None);
+#include "google/protobuf/message.h"
 
-    msg.optional_int64_set(Some(42));
-    assert_eq!(msg.optional_int64(), Some(42));
+namespace google {
+namespace protobuf {
+namespace internal {
 
-    msg.optional_int64_set(None);
-    assert_eq!(msg.optional_int64(), None);
-}
+// Walks the entire message tree and eager parses all lazy fields.
+void EagerParseLazyField(Message& message);
 
-#[test]
-fn test_optional_bool_accessors() {
-    let mut msg = TestAllTypes::new();
-    assert_eq!(msg.optional_bool(), None);
+}  // namespace internal
+}  // namespace protobuf
+}  // namespace google
 
-    msg.optional_bool_set(Some(true));
-    assert_eq!(msg.optional_bool(), Some(true));
-
-    msg.optional_bool_set(None);
-    assert_eq!(msg.optional_bool(), None);
-}
-
-#[test]
-fn test_optional_bytes_accessors() {
-    let mut msg = TestAllTypes::new();
-    assert_eq!(msg.optional_bytes(), None);
-
-    msg.optional_bytes_set(Some(b"accessors_test"));
-    assert_eq!(msg.optional_bytes().unwrap(), b"accessors_test");
-
-    msg.optional_bytes_set(None);
-    assert_eq!(msg.optional_bytes(), None);
-
-    msg.optional_bytes_set(Some(b""));
-    assert_eq!(msg.optional_bytes().unwrap(), b"");
-}
+#endif  // GOOGLE_PROTOBUF_INTERNAL_MESSAGE_UTIL_H__

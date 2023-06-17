@@ -837,6 +837,7 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 #endif
 // TODO(b/280674214): re-enable these macros once failing tests are fixed.
 #if defined(PROTOBUF_TSAN) && false
+#define PROTOBUF_TSAN_DECLARE_MEMBER ::uint32_t _tsan_detect_race = 0
 // TODO(b/285620714): it would be preferable to use __tsan_external_read/
 // __tsan_external_write, but they can cause dlopen issues.
 #define PROTOBUF_TSAN_READ(addr)                                               \
@@ -851,6 +852,7 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
     *reinterpret_cast<char *>(addr) += protobuf_tsan_zero; \
   } while (0)
 #else  // PROTOBUF_TSAN
+#define PROTOBUF_TSAN_DECLARE_MEMBER
 #define PROTOBUF_TSAN_READ(addr)
 #define PROTOBUF_TSAN_WRITE(addr)
 #endif  // PROTOBUF_TSAN
@@ -1035,6 +1037,10 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 // This error has been generally flaky, but we need to disable it specifically
 // to fix https://github.com/protocolbuffers/protobuf/issues/12313
 #pragma clang diagnostic ignored "-Wunused-parameter"
+// -Wshadow means that declaration shadows a variable.
+// for (int i = 0; i < file_->public_dependency_count(); ++i) 
+//   for (int i = 0; i < public_dep->message_type_count(); ++i)
+#pragma clang diagnostic ignored "-Wshadow"
 #endif
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -1058,6 +1064,10 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 // This error has been generally flaky, but we need to disable it specifically
 // to fix https://github.com/protocolbuffers/protobuf/issues/12313
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+// -Wshadow means that declaration shadows a variable.
+// for (int i = 0; i < file_->public_dependency_count(); ++i) 
+//   for (int i = 0; i < public_dep->message_type_count(); ++i)
+#pragma GCC diagnostic ignored "-Wshadow"
 #ifndef __clang__
 // This causes spurious warnings in GCC 13.
 #pragma GCC diagnostic ignored "-Wstringop-overflow"

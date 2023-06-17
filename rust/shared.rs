@@ -30,9 +30,12 @@
 
 //! Kernel-agnostic logic for the Rust Protobuf Runtime.
 //!
-//! For kernel-specific logic this crate delegates to the respective __runtime
+//! For kernel-specific logic this crate delegates to the respective `__runtime`
 //! crate.
 
+/// Everything in `__runtime` is allowed to change without it being considered
+/// a breaking change for the protobuf library. Nothing in here should be
+/// exported in `protobuf.rs`.
 #[cfg(cpp_kernel)]
 #[path = "cpp.rs"]
 pub mod __runtime;
@@ -40,33 +43,24 @@ pub mod __runtime;
 #[path = "upb.rs"]
 pub mod __runtime;
 
-pub use __runtime::SerializedData;
+mod proxied;
+
+pub use proxied::{Mut, MutProxy, Proxied, View, ViewProxy};
+
+/// Everything in `__internal` is allowed to change without it being considered
+/// a breaking change for the protobuf library. Nothing in here should be
+/// exported in `protobuf.rs`.
+#[path = "internal.rs"]
+pub mod __internal;
 
 use std::fmt;
-use std::slice;
 
-/// Represents error during deserialization.
+/// An error that happened during deserialization.
 #[derive(Debug, Clone)]
 pub struct ParseError;
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Couldn't deserialize given bytes into a proto")
-    }
-}
-
-/// Represents an ABI-stable version of &[u8]/string_view (a borrowed slice of
-/// bytes) for FFI use only.
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct PtrAndLen {
-    /// Borrows the memory.
-    pub ptr: *const u8,
-    pub len: usize,
-}
-
-impl PtrAndLen {
-    pub unsafe fn as_ref<'a>(self) -> &'a [u8] {
-        slice::from_raw_parts(self.ptr, self.len)
     }
 }

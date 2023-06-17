@@ -72,6 +72,25 @@ PROTOBUF_EXPORT extern std::atomic<bool> enable_debug_text_detection;
 PROTOBUF_EXPORT extern std::atomic<bool> enable_debug_text_redaction;
 PROTOBUF_EXPORT int64_t GetRedactedFieldCount();
 
+// This enum contains all the APIs that convert protos to human-readable
+// formats. A higher-level API must correspond to a greater number than any
+// lower-level APIs it calls under the hood (e.g kDebugString >
+// kMemberPrintToString > kPrintWithStream).
+PROTOBUF_EXPORT enum class FieldReporterLevel {
+  kNoReport = 0,
+  kPrintMessage = 1,
+  kPrintWithGenerator = 2,
+  kPrintWithStream = 3,
+  kMemberPrintToString = 4,
+  kStaticPrintToString = 5,
+  kAbslStringify = 6,
+  kShortFormat = 7,
+  kUtf8Format = 8,
+  kDebugString = 12,
+  kShortDebugString = 13,
+  kUtf8DebugString = 14
+};
+
 }  // namespace internal
 
 namespace io {
@@ -571,7 +590,7 @@ class PROTOBUF_EXPORT TextFormat {
   // Parse the given text as a single field value and store it into the
   // given field of the given message. If the field is a repeated field,
   // the new value will be added to the end
-  static bool ParseFieldValueFromString(const std::string& input,
+  static bool ParseFieldValueFromString(absl::string_view input,
                                         const FieldDescriptor* field,
                                         Message* message);
 
@@ -688,7 +707,7 @@ class PROTOBUF_EXPORT TextFormat {
     }
 
     // Like TextFormat::ParseFieldValueFromString
-    bool ParseFieldValueFromString(const std::string& input,
+    bool ParseFieldValueFromString(absl::string_view input,
                                    const FieldDescriptor* field,
                                    Message* output);
 
