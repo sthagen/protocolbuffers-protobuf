@@ -1,5 +1,5 @@
 // Protocol Buffers - Google's data interchange format
-// Copyright 2023 Google Inc.  All rights reserved.
+// Copyright 2008 Google Inc.  All rights reserved.
 // https://developers.google.com/protocol-buffers/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,47 +28,36 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-//! Kernel-agnostic logic for the Rust Protobuf runtime that should not be
-//! exposed to through the `protobuf` path but must be public for use by
-//! generated code.
+#ifdef _WIN32
+#include <fcntl.h>
+#else
+#include <unistd.h>
+#endif
 
-use std::slice;
+#include "absl/log/absl_check.h"
+#include "absl/strings/escaping.h"
+#include "google/protobuf/compiler/plugin.pb.h"
+#include "google/protobuf/io/io_win32.h"
 
-/// Used to protect internal-only items from being used accidentally.
-pub struct Private;
+// This fake protoc plugin does nothing but write out the CodeGeneratorRequest
+// in base64. This is not very useful except that it gives us a way to make
+// assertions in tests about the contents of requests that protoc sends to
+// plugins.
+int main(int argc, char* argv[]) {
 
-/// Represents an ABI-stable version of `NonNull<[u8]>`/`string_view` (a
-/// borrowed slice of bytes) for FFI use only.
-///
-/// Has semantics similar to `std::string_view` in C++ and `&[u8]` in Rust,
-/// but is not ABI-compatible with either.
-///
-/// If `len` is 0, then `ptr` can be null or dangling. C++ considers a dangling
-/// 0-len `std::string_view` to be invalid, and Rust considers a `&[u8]` with a
-/// null data pointer to be invalid.
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct PtrAndLen {
-    /// Pointer to the first byte.
-    /// Borrows the memory.
-    pub ptr: *const u8,
+#ifdef _WIN32
+  google::protobuf::io::win32::setmode(STDIN_FILENO, _O_BINARY);
+  google::protobuf::io::win32::setmode(STDOUT_FILENO, _O_BINARY);
+#endif
 
-    /// Length of the `[u8]` pointed to by `ptr`.
-    pub len: usize,
-}
-
-impl PtrAndLen {
-    /// Unsafely dereference this slice.
-    ///
-    /// # Safety
-    /// - `ptr` must be valid for `len` bytes. It can be null or dangling if
-    ///   `self.len == 0`.
-    pub unsafe fn as_ref<'a>(self) -> &'a [u8] {
-        if self.ptr.is_null() {
-            assert_eq!(self.len, 0, "Non-empty slice with null data pointer");
-            &[]
-        } else {
-            slice::from_raw_parts(self.ptr, self.len)
-        }
-    }
+  google::protobuf::compiler::CodeGeneratorRequest request;
+  ABSL_CHECK(request.ParseFromFileDescriptor(STDIN_FILENO));
+  ABSL_CHECK(!request.file_to_generate().empty());
+  google::protobuf::compiler::CodeGeneratorResponse response;
+  response.add_file()->set_name(
+      absl::StrCat(request.file_to_generate(0), ".request"));
+  response.mutable_file(0)->set_content(
+      absl::Base64Escape(request.SerializeAsString()));
+  ABSL_CHECK(response.SerializeToFileDescriptor(STDOUT_FILENO));
+  return 0;
 }

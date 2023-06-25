@@ -358,11 +358,7 @@ bool HasRequiredFields(const Descriptor* descriptor);
 bool IsRealOneof(const FieldDescriptor* descriptor);
 
 inline bool HasHasbit(const FieldDescriptor* descriptor) {
-  // TODO(b/241441075) Replace this with internal::cpp::HasHasbit once Elysium
-  // unblocks this change.
-  return (FieldDescriptorLegacy(descriptor).has_optional_keyword() ||
-          descriptor->is_required()) &&
-         !descriptor->options().weak();
+  return internal::cpp::HasHasbit(descriptor);
 }
 
 // Whether generate classes expose public PARSER instances.
@@ -376,6 +372,7 @@ inline bool ExposePublicParser(const FileDescriptor* descriptor) {
 // but in the message and can be queried using additional getters that return
 // ints.
 inline bool SupportUnknownEnumValue(const FieldDescriptor* field) {
+  // TODO(b/279034699): Check Java legacy_enum_field_treated_as_closed feature.
   return !field->legacy_enum_field_treated_as_closed();
 }
 

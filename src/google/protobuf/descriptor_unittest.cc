@@ -34,6 +34,8 @@
 //
 // This file makes extensive use of RFC 3092.  :)
 
+#include "google/protobuf/descriptor.h"
+
 #include <cstdlib>
 #include <limits>
 #include <memory>
@@ -55,7 +57,6 @@
 #include "google/protobuf/unittest_custom_options.pb.h"
 #include "google/protobuf/stubs/common.h"
 #include "google/protobuf/descriptor.pb.h"
-#include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/dynamic_message.h"
 #include "google/protobuf/text_format.h"
@@ -1408,8 +1409,9 @@ TEST_F(StylizedFieldNamesTest, FindByLowercaseName) {
 }
 
 TEST_F(StylizedFieldNamesTest, FindByCamelcaseName) {
-  EXPECT_THAT(message_->FindFieldByCamelcaseName("fooFoo"),
-              AnyOf(message_->field(0), message_->field(3)));
+  // Conflict (here, foo_foo and fooFoo) always resolves to the field with
+  // the lower field number.
+  EXPECT_EQ(message_->field(0), message_->FindFieldByCamelcaseName("fooFoo"));
   EXPECT_EQ(message_->field(1), message_->FindFieldByCamelcaseName("fooBar"));
   EXPECT_EQ(message_->field(2), message_->FindFieldByCamelcaseName("fooBaz"));
   EXPECT_TRUE(message_->FindFieldByCamelcaseName("foo_foo") == nullptr);
@@ -1417,8 +1419,10 @@ TEST_F(StylizedFieldNamesTest, FindByCamelcaseName) {
   EXPECT_TRUE(message_->FindFieldByCamelcaseName("barFoo") == nullptr);
   EXPECT_TRUE(message_->FindFieldByCamelcaseName("nosuchfield") == nullptr);
 
-  EXPECT_THAT(message_->FindExtensionByCamelcaseName("barFoo"),
-              AnyOf(message_->extension(0), message_->extension(3)));
+  // Conflict (here, bar_foo and barFoo) always resolves to the field with
+  // the lower field number.
+  EXPECT_EQ(message_->extension(0),
+            message_->FindExtensionByCamelcaseName("barFoo"));
   EXPECT_EQ(message_->extension(1),
             message_->FindExtensionByCamelcaseName("barBar"));
   EXPECT_EQ(message_->extension(2),
@@ -1428,8 +1432,9 @@ TEST_F(StylizedFieldNamesTest, FindByCamelcaseName) {
   EXPECT_TRUE(message_->FindExtensionByCamelcaseName("fooFoo") == nullptr);
   EXPECT_TRUE(message_->FindExtensionByCamelcaseName("nosuchfield") == nullptr);
 
-  EXPECT_THAT(file_->FindExtensionByCamelcaseName("bazFoo"),
-              AnyOf(file_->extension(0), file_->extension(3)));
+  // Conflict (here, baz_foo and bazFoo) always resolves to the field with
+  // the lower field number.
+  EXPECT_EQ(file_->extension(0), file_->FindExtensionByCamelcaseName("bazFoo"));
   EXPECT_EQ(file_->extension(1), file_->FindExtensionByCamelcaseName("bazBar"));
   EXPECT_EQ(file_->extension(2), file_->FindExtensionByCamelcaseName("bazBaz"));
   EXPECT_TRUE(file_->FindExtensionByCamelcaseName("baz_foo") == nullptr);

@@ -28,47 +28,65 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-//! Kernel-agnostic logic for the Rust Protobuf runtime that should not be
-//! exposed to through the `protobuf` path but must be public for use by
-//! generated code.
+#include "google/protobuf/compiler/cpp/generator.h"
 
-use std::slice;
+#include <memory>
 
-/// Used to protect internal-only items from being used accidentally.
-pub struct Private;
+#include "google/protobuf/descriptor.pb.h"
+#include <gtest/gtest.h>
+#include "google/protobuf/compiler/command_line_interface_tester.h"
 
-/// Represents an ABI-stable version of `NonNull<[u8]>`/`string_view` (a
-/// borrowed slice of bytes) for FFI use only.
-///
-/// Has semantics similar to `std::string_view` in C++ and `&[u8]` in Rust,
-/// but is not ABI-compatible with either.
-///
-/// If `len` is 0, then `ptr` can be null or dangling. C++ considers a dangling
-/// 0-len `std::string_view` to be invalid, and Rust considers a `&[u8]` with a
-/// null data pointer to be invalid.
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct PtrAndLen {
-    /// Pointer to the first byte.
-    /// Borrows the memory.
-    pub ptr: *const u8,
+namespace google {
+namespace protobuf {
+namespace compiler {
+namespace cpp {
+namespace {
 
-    /// Length of the `[u8]` pointed to by `ptr`.
-    pub len: usize,
+class CppGeneratorTest : public CommandLineInterfaceTester {
+ protected:
+  CppGeneratorTest() {
+    RegisterGenerator("--cpp_out", "--cpp_opt",
+                      std::make_unique<CppGenerator>(), "C++ test generator");
+
+    // Generate built-in protos.
+    CreateTempFile(
+        "net/proto2/proto/descriptor.proto",
+        google::protobuf::DescriptorProto::descriptor()->file()->DebugString());
+  }
+};
+
+TEST_F(CppGeneratorTest, Basic) {
+  CreateTempFile("foo.proto",
+                 R"schema(
+    syntax = "proto2";
+    message Foo {
+      optional int32 bar = 1;
+    })schema");
+
+  RunProtoc(
+      "protocol_compiler --proto_path=$tmpdir --cpp_out=$tmpdir foo.proto");
+
+  ExpectNoErrors();
 }
 
-impl PtrAndLen {
-    /// Unsafely dereference this slice.
-    ///
-    /// # Safety
-    /// - `ptr` must be valid for `len` bytes. It can be null or dangling if
-    ///   `self.len == 0`.
-    pub unsafe fn as_ref<'a>(self) -> &'a [u8] {
-        if self.ptr.is_null() {
-            assert_eq!(self.len, 0, "Non-empty slice with null data pointer");
-            &[]
-        } else {
-            slice::from_raw_parts(self.ptr, self.len)
-        }
-    }
+TEST_F(CppGeneratorTest, BasicError) {
+  CreateTempFile("foo.proto",
+                 R"schema(
+    syntax = "proto2";
+    message Foo {
+      int32 bar = 1;
+    })schema");
+
+  RunProtoc(
+      "protocol_compiler --proto_path=$tmpdir --cpp_out=$tmpdir foo.proto");
+
+  ExpectErrorSubstring(
+      "foo.proto:4:7: Expected \"required\", \"optional\", or \"repeated\"");
 }
+
+
+}  // namespace
+}  // namespace cpp
+}  // namespace compiler
+}  // namespace protobuf
+}  // namespace google

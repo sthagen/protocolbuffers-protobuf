@@ -2520,6 +2520,7 @@ bool CommandLineInterface::GenerateDependencyManifestFile(
     output_filenames.push_back(descriptor_set_out_name_);
   }
 
+  // Create the depfile, even if it will be empty.
   int fd;
   do {
     fd = open(dependency_out_name_.c_str(),
@@ -2531,30 +2532,34 @@ bool CommandLineInterface::GenerateDependencyManifestFile(
     return false;
   }
 
-  io::FileOutputStream out(fd);
-  io::Printer printer(&out, '$');
+  // Only write to the depfile if there is at least one output_filename.
+  // Otherwise, the depfile will be malformed.
+  if (!output_filenames.empty()) {
+    io::FileOutputStream out(fd);
+    io::Printer printer(&out, '$');
 
-  for (int i = 0; i < output_filenames.size(); i++) {
-    printer.Print(output_filenames[i]);
-    if (i == output_filenames.size() - 1) {
-      printer.Print(":");
-    } else {
-      printer.Print(" \\\n");
+    for (size_t i = 0; i < output_filenames.size(); i++) {
+      printer.Print(output_filenames[i]);
+      if (i == output_filenames.size() - 1) {
+        printer.Print(":");
+      } else {
+        printer.Print(" \\\n");
+      }
     }
-  }
 
-  for (int i = 0; i < file_set.file_size(); i++) {
-    const FileDescriptorProto& file = file_set.file(i);
-    const std::string& virtual_file = file.name();
-    std::string disk_file;
-    if (source_tree &&
-        source_tree->VirtualFileToDiskFile(virtual_file, &disk_file)) {
-      printer.Print(" $disk_file$", "disk_file", disk_file);
-      if (i < file_set.file_size() - 1) printer.Print("\\\n");
-    } else {
-      std::cerr << "Unable to identify path for file " << virtual_file
-                << std::endl;
-      return false;
+    for (int i = 0; i < file_set.file_size(); i++) {
+      const FileDescriptorProto& file = file_set.file(i);
+      const std::string& virtual_file = file.name();
+      std::string disk_file;
+      if (source_tree &&
+          source_tree->VirtualFileToDiskFile(virtual_file, &disk_file)) {
+        printer.Print(" $disk_file$", "disk_file", disk_file);
+        if (i < file_set.file_size() - 1) printer.Print("\\\n");
+      } else {
+        std::cerr << "Unable to identify path for file " << virtual_file
+                  << std::endl;
+        return false;
+      }
     }
   }
 
@@ -2577,13 +2582,28 @@ bool CommandLineInterface::GeneratePluginOutput(
 
 
   absl::flat_hash_set<const FileDescriptor*> already_seen;
-  for (int i = 0; i < parsed_files.size(); i++) {
-    request.add_file_to_generate(parsed_files[i]->name());
-    GetTransitiveDependencies(parsed_files[i], &already_seen,
-                              request.mutable_proto_file(),
+  for (const FileDescriptor* file : parsed_files) {
+    request.add_file_to_generate(file->name());
+    GetTransitiveDependencies(file, &already_seen, request.mutable_proto_file(),
                               {/*.include_json_name =*/true,
                                /*.include_source_code_info =*/true,
                                /*.retain_options =*/true});
+  }
+
+  // Populate source_file_descriptors and remove source-retention options from
+  // proto_file.
+  ABSL_CHECK(!parsed_files.empty());
+  const DescriptorPool* pool = parsed_files[0]->pool();
+  absl::flat_hash_set<std::string> files_to_generate(input_files_.begin(),
+                                                     input_files_.end());
+  for (FileDescriptorProto& file_proto : *request.mutable_proto_file()) {
+    if (files_to_generate.contains(file_proto.name())) {
+      const FileDescriptor* file = pool->FindFileByName(file_proto.name());
+      *request.add_source_file_descriptors() = std::move(file_proto);
+      file_proto = StripSourceRetentionOptions(*file);
+      file->CopySourceCodeInfoTo(&file_proto);
+      file->CopyJsonNameTo(&file_proto);
+    }
   }
 
   google::protobuf::compiler::Version* version =

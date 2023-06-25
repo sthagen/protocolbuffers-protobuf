@@ -547,6 +547,7 @@ set(plugin_proto_files
 
 # @//pkg:common_test
 set(common_test_srcs
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/command_line_interface_tester.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/mock_code_generator.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/testing/file.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/testing/googletest.cc
@@ -554,6 +555,7 @@ set(common_test_srcs
 
 # @//pkg:common_test
 set(common_test_hdrs
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/command_line_interface_tester.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/mock_code_generator.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/test_textproto.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/testing/file.h
@@ -691,10 +693,16 @@ set(protobuf_lite_test_protos_files
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_lite.proto
 )
 
+# @//src/google/protobuf/compiler:fake_plugin_srcs
+set(fake_plugin_files
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/fake_plugin.cc
+)
+
 # @//src/google/protobuf/compiler:test_srcs
 set(compiler_test_files
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/command_line_interface_unittest.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/cpp/bootstrap_unittest.cc
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/cpp/generator_unittest.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/cpp/message_size_unittest.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/cpp/metadata_test.cc
   ${protobuf_SOURCE_DIR}/src/google/protobuf/compiler/cpp/move_unittest.cc
