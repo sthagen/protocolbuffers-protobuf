@@ -224,6 +224,10 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
               "Protobuf only supports Abseil version 20230125.3 and newer.");
 
+// Enable editions infrastructure by default.  This should be a no-op without
+// the --experimental_editions protoc flag.
+#define PROTOBUF_FUTURE_EDITIONS 1
+
 // Future versions of protobuf will include breaking changes to some APIs.
 // This macro can be set to enable these API changes ahead of time, so that
 // user code can be updated before upgrading versions of protobuf.
@@ -241,10 +245,6 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 // Used to remove `RepeatedPtrField::GetArena() const`.
 // Owner: ezb@
 #define PROTOBUF_FUTURE_REMOVE_CONST_REPEATEDFIELD_GETARENA_API 1
-
-// Used to remove Protobuf editions feature.
-// Owner: mkruskal@
-#define PROTOBUF_FUTURE_EDITIONS 1
 
 // Used to make ExtensionRange into a fully-fledged descriptor class.
 // Owner: mkruskal@
@@ -863,12 +863,12 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 // TODO(b/280674214): enable these macros in phases. The phases are: repeated
 // fields/maps, enum/primitive fields, string fields, message fields.
 #define PROTOBUF_TSAN_READ_REPEATED(addr) PROTOBUF_TSAN_READ(addr)
-#define PROTOBUF_TSAN_READ_PRIMITIVE(addr)
-#define PROTOBUF_TSAN_READ_STRING(addr)
+#define PROTOBUF_TSAN_READ_PRIMITIVE(addr) PROTOBUF_TSAN_READ(addr)
+#define PROTOBUF_TSAN_READ_STRING(addr) PROTOBUF_TSAN_READ(addr)
 #define PROTOBUF_TSAN_READ_MESSAGE(addr)
 #define PROTOBUF_TSAN_WRITE_REPEATED(addr) PROTOBUF_TSAN_WRITE(addr)
-#define PROTOBUF_TSAN_WRITE_PRIMITIVE(addr)
-#define PROTOBUF_TSAN_WRITE_STRING(addr)
+#define PROTOBUF_TSAN_WRITE_PRIMITIVE(addr) PROTOBUF_TSAN_WRITE(addr)
+#define PROTOBUF_TSAN_WRITE_STRING(addr) PROTOBUF_TSAN_WRITE(addr)
 #define PROTOBUF_TSAN_WRITE_MESSAGE(addr)
 
 #ifdef PROTOBUF_USE_TABLE_PARSER_ON_REFLECTION
@@ -1054,7 +1054,7 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 // to fix https://github.com/protocolbuffers/protobuf/issues/12313
 #pragma clang diagnostic ignored "-Wunused-parameter"
 // -Wshadow means that declaration shadows a variable.
-// for (int i = 0; i < file_->public_dependency_count(); ++i) 
+// for (int i = 0; i < file_->public_dependency_count(); ++i)
 //   for (int i = 0; i < public_dep->message_type_count(); ++i)
 #pragma clang diagnostic ignored "-Wshadow"
 #endif
@@ -1081,7 +1081,7 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 // to fix https://github.com/protocolbuffers/protobuf/issues/12313
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 // -Wshadow means that declaration shadows a variable.
-// for (int i = 0; i < file_->public_dependency_count(); ++i) 
+// for (int i = 0; i < file_->public_dependency_count(); ++i)
 //   for (int i = 0; i < public_dep->message_type_count(); ++i)
 #pragma GCC diagnostic ignored "-Wshadow"
 #ifndef __clang__

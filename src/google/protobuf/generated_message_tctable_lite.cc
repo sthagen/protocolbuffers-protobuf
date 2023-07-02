@@ -38,6 +38,7 @@
 
 #include "absl/base/optimization.h"
 #include "absl/log/absl_check.h"
+#include "absl/numeric/bits.h"
 #include "google/protobuf/generated_message_tctable_decl.h"
 #include "google/protobuf/generated_message_tctable_impl.h"
 #include "google/protobuf/inlined_string_field.h"
@@ -81,7 +82,8 @@ void AlignFail(std::integral_constant<size_t, 8>, std::uintptr_t address) {
 #endif
 
 const char* TcParser::GenericFallbackLite(PROTOBUF_TC_PARAM_DECL) {
-  return GenericFallbackImpl<MessageLite, std::string>(PROTOBUF_TC_PARAM_PASS);
+  PROTOBUF_MUSTTAIL return GenericFallbackImpl<MessageLite, std::string>(
+      PROTOBUF_TC_PARAM_PASS);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -176,18 +178,7 @@ const TcParseTableBase::FieldEntry* TcParser::FindFieldEntry(
     uint32_t skipbit = 1 << adj_fnum;
     if (PROTOBUF_PREDICT_FALSE(skipmap & skipbit)) return nullptr;
     skipmap &= skipbit - 1;
-#if (__GNUC__ || __clang__) && __POPCNT__
-    // Note: here and below, skipmap typically has very few set bits
-    // (31 in the worst case, but usually zero) so a loop isn't that
-    // bad, and a compiler-generated popcount is typically only
-    // worthwhile if the processor itself has hardware popcount support.
-    adj_fnum -= __builtin_popcount(skipmap);
-#else
-    while (skipmap) {
-      --adj_fnum;
-      skipmap &= skipmap - 1;
-    }
-#endif
+    adj_fnum -= absl::popcount(skipmap);
     auto* entry = field_entries + adj_fnum;
     PROTOBUF_ASSUME(entry != nullptr);
     return entry;
@@ -217,14 +208,7 @@ const TcParseTableBase::FieldEntry* TcParser::FindFieldEntry(
       if (PROTOBUF_PREDICT_FALSE(skipmap & skipbit)) return nullptr;
       skipmap &= skipbit - 1;
       adj_fnum += se.field_entry_offset;
-#if (__GNUC__ || __clang__) && __POPCNT__
-      adj_fnum -= __builtin_popcount(skipmap);
-#else
-      while (skipmap) {
-        --adj_fnum;
-        skipmap &= skipmap - 1;
-      }
-#endif
+      adj_fnum -= absl::popcount(skipmap);
       auto* entry = field_entries + adj_fnum;
       PROTOBUF_ASSUME(entry != nullptr);
       return entry;
@@ -667,7 +651,8 @@ PROTOBUF_ALWAYS_INLINE const char* TcParser::RepeatedFixed(
                                 : WireFormatLite::WIRETYPE_FIXED64;
     InvertPacked<fallback_wt>(data);
     if (data.coded_tag<TagType>() == 0) {
-      return PackedFixed<LayoutType, TagType>(PROTOBUF_TC_PARAM_PASS);
+      PROTOBUF_MUSTTAIL return PackedFixed<LayoutType, TagType>(
+          PROTOBUF_TC_PARAM_PASS);
     } else {
       PROTOBUF_MUSTTAIL return MiniParse(PROTOBUF_TC_PARAM_NO_DATA_PASS);
     }
@@ -718,7 +703,8 @@ const char* TcParser::PackedFixed(PROTOBUF_TC_PARAM_DECL) {
         : WireFormatLite::WIRETYPE_FIXED64;
     InvertPacked<fallback_wt>(data);
     if (data.coded_tag<TagType>() == 0) {
-      return RepeatedFixed<LayoutType, TagType>(PROTOBUF_TC_PARAM_PASS);
+      PROTOBUF_MUSTTAIL return RepeatedFixed<LayoutType, TagType>(
+          PROTOBUF_TC_PARAM_PASS);
     } else {
       PROTOBUF_MUSTTAIL return MiniParse(PROTOBUF_TC_PARAM_NO_DATA_PASS);
     }
@@ -1009,7 +995,8 @@ PROTOBUF_ALWAYS_INLINE const char* TcParser::RepeatedVarint(
     // Try parsing as non-packed repeated:
     InvertPacked<WireFormatLite::WIRETYPE_VARINT>(data);
     if (data.coded_tag<TagType>() == 0) {
-      return PackedVarint<FieldType, TagType, zigzag>(PROTOBUF_TC_PARAM_PASS);
+      PROTOBUF_MUSTTAIL return PackedVarint<FieldType, TagType, zigzag>(
+          PROTOBUF_TC_PARAM_PASS);
     } else {
       PROTOBUF_MUSTTAIL return MiniParse(PROTOBUF_TC_PARAM_NO_DATA_PASS);
     }
@@ -1082,7 +1069,8 @@ const char* TcParser::PackedVarint(PROTOBUF_TC_PARAM_DECL) {
   if (PROTOBUF_PREDICT_FALSE(data.coded_tag<TagType>() != 0)) {
     InvertPacked<WireFormatLite::WIRETYPE_VARINT>(data);
     if (data.coded_tag<TagType>() == 0) {
-      return RepeatedVarint<FieldType, TagType, zigzag>(PROTOBUF_TC_PARAM_PASS);
+      PROTOBUF_MUSTTAIL return RepeatedVarint<FieldType, TagType, zigzag>(
+          PROTOBUF_TC_PARAM_PASS);
     } else {
       PROTOBUF_MUSTTAIL return MiniParse(PROTOBUF_TC_PARAM_NO_DATA_PASS);
     }
