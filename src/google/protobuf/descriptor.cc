@@ -3875,19 +3875,18 @@ bool FieldDescriptor::is_packed() const {
   }
 }
 
-static bool FieldEnforceUtf8(const FieldDescriptor* field) {
-  return
+static bool IsStrictUtf8(const FieldDescriptor* field) {
 #ifdef PROTOBUF_FUTURE_EDITIONS
-      internal::InternalFeatureHelper::GetFeatures(*field)
-              .string_field_validation() == FeatureSet::MANDATORY;
+  return internal::InternalFeatureHelper::GetFeatures(*field)
+             .string_field_validation() == FeatureSet::MANDATORY;
 #else   // PROTOBUF_FUTURE_EDITIONS
-      FileDescriptorLegacy(field->file()).syntax() ==
-      FileDescriptorLegacy::Syntax::SYNTAX_PROTO3;
+  return FileDescriptorLegacy(field->file()).syntax() ==
+         FileDescriptorLegacy::Syntax::SYNTAX_PROTO3;
 #endif  // PROTOBUF_FUTURE_EDITIONS
 }
 
 bool FieldDescriptor::requires_utf8_validation() const {
-  return type() == TYPE_STRING && FieldEnforceUtf8(this);
+  return type() == TYPE_STRING && IsStrictUtf8(this);
 }
 
 bool FieldDescriptor::has_presence() const {
@@ -7962,6 +7961,17 @@ void DescriptorBuilder::ValidateOptions(const FieldDescriptor* field,
 
 }
 
+static bool IsStringMapType(const FieldDescriptor* field) {
+  if (!field->is_map()) return false;
+  for (int i = 0; i < field->message_type()->field_count(); ++i) {
+    if (field->message_type()->field(i)->type() ==
+        FieldDescriptor::TYPE_STRING) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void DescriptorBuilder::ValidateFieldFeatures(
     const FieldDescriptor* field, const FieldDescriptorProto& proto) {
 #ifdef PROTOBUF_FUTURE_EDITIONS
@@ -7986,28 +7996,37 @@ void DescriptorBuilder::ValidateFieldFeatures(
              "Extensions can't be required.");
   }
 
+  if (field->containing_type() != nullptr &&
+      field->containing_type()->options().map_entry()) {
+    // Skip validation of explicit features on generated map fields.  These will
+    // be blindly propagated from the original map field, and may violate a lot
+    // of these conditions.  Note: we do still validate the user-specified map
+    // field.
+    return;
+  }
+
   // Validate explicitly specified features on the field proto.
   if ((field->containing_oneof() != nullptr || field->is_repeated() ||
        field->message_type() != nullptr) &&
-      proto.options().features().field_presence() == FeatureSet::IMPLICIT) {
+      field->proto_features_->field_presence() == FeatureSet::IMPLICIT) {
     AddError(
         field->full_name(), proto, DescriptorPool::ErrorCollector::NAME,
         "Only singular scalar fields can specify implicit field presence.");
   }
   if ((field->containing_oneof() != nullptr || field->is_repeated()) &&
-      proto.options().features().field_presence() ==
-          FeatureSet::LEGACY_REQUIRED) {
+      field->proto_features_->field_presence() == FeatureSet::LEGACY_REQUIRED) {
     AddError(
         field->full_name(), proto, DescriptorPool::ErrorCollector::NAME,
         "Only singular scalar fields can specify required field presence.");
   }
   if (field->type() != FieldDescriptor::TYPE_STRING &&
-      proto.options().features().has_string_field_validation()) {
+      !IsStringMapType(field) &&
+      field->proto_features_->has_string_field_validation()) {
     AddError(field->full_name(), proto, DescriptorPool::ErrorCollector::NAME,
              "Only string fields can specify `string_field_validation`.");
   }
   if (!field->is_repeated() &&
-      proto.options().features().has_repeated_field_encoding()) {
+      field->proto_features_->has_repeated_field_encoding()) {
     AddError(field->full_name(), proto, DescriptorPool::ErrorCollector::NAME,
              "Only repeated fields can specify `repeated_field_encoding`.");
   }
@@ -8192,9 +8211,8 @@ void DescriptorBuilder::ValidateExtensionRangeOptions(
           range_options.verification() == ExtensionRangeOptions::UNVERIFIED) {
         AddError(message.full_name(), proto.extension_range(i),
                  DescriptorPool::ErrorCollector::EXTENDEE, [&] {
-                   return absl::Substitute(
-                       "Cannot mark the extension range as UNVERIFIED when it "
-                       "has extension(s) declared.");
+                   return "Cannot mark the extension range as UNVERIFIED when "
+                          "it has extension(s) declared.";
                  });
         return;
       }
@@ -9547,15 +9565,16 @@ bool HasHasbit(const FieldDescriptor* field) {
          !field->options().weak();
 }
 
-static bool FileUtf8Verification(const FileDescriptor* file) {
+static bool IsVerifyUtf8(const FieldDescriptor* field, bool is_lite) {
+  if (is_lite) return false;
   return true;
 }
 
 // Which level of UTF-8 enforcemant is placed on this file.
 Utf8CheckMode GetUtf8CheckMode(const FieldDescriptor* field, bool is_lite) {
-  if (FieldEnforceUtf8(field)) {
+  if (IsStrictUtf8(field)) {
     return Utf8CheckMode::kStrict;
-  } else if (!is_lite && FileUtf8Verification(field->file())) {
+  } else if (IsVerifyUtf8(field, is_lite)) {
     return Utf8CheckMode::kVerify;
   } else {
     return Utf8CheckMode::kNone;

@@ -1,5 +1,5 @@
 // Protocol Buffers - Google's data interchange format
-// Copyright 2008 Google Inc.  All rights reserved.
+// Copyright 2023 Google Inc.  All rights reserved.
 // https://developers.google.com/protocol-buffers/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,47 +27,24 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#ifndef GOOGLE_PROTOBUF_INTERNAL_VISIBILITY_FOR_TESTING_H__
+#define GOOGLE_PROTOBUF_INTERNAL_VISIBILITY_FOR_TESTING_H__
 
-edition = "2023";
+#include "google/protobuf/internal_visibility.h"
 
-package proto3_preserve_unknown_enum_unittest;
+namespace google {
+namespace protobuf {
+namespace internal {
 
-// Treat all fields as implicit present by default (proto3 behavior).
-option features.field_presence = IMPLICIT;
-option objc_class_prefix = "UnknownEnums";
-option csharp_namespace = "Google.Protobuf.TestProtos";
-
-enum MyEnum {
-  FOO = 0;
-  BAR = 1;
-  BAZ = 2;
-}
-
-enum MyEnumPlusExtra {
-  E_FOO = 0;
-  E_BAR = 1;
-  E_BAZ = 2;
-  E_EXTRA = 3;
-}
-
-message MyMessage {
-  MyEnum e = 1;
-  repeated MyEnum repeated_e = 2;
-  repeated MyEnum repeated_packed_e = 3;
-  repeated MyEnumPlusExtra repeated_packed_unexpected_e = 4;  // not packed
-  oneof o {
-    MyEnum oneof_e_1 = 5;
-    MyEnum oneof_e_2 = 6;
+class InternalVisibilityForTesting {
+ public:
+  operator InternalVisibility() const {  // NOLINT
+    return InternalVisibility{};
   }
-}
+};
 
-message MyMessagePlusExtra {
-  MyEnumPlusExtra e = 1;
-  repeated MyEnumPlusExtra repeated_e = 2;
-  repeated MyEnumPlusExtra repeated_packed_e = 3;
-  repeated MyEnumPlusExtra repeated_packed_unexpected_e = 4;
-  oneof o {
-    MyEnumPlusExtra oneof_e_1 = 5;
-    MyEnumPlusExtra oneof_e_2 = 6;
-  }
-}
+}  // namespace internal
+}  // namespace protobuf
+}  // namespace google
+
+#endif  // GOOGLE_PROTOBUF_INTERNAL_VISIBILITY_FOR_TESTING_H__

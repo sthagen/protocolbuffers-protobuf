@@ -1,5 +1,5 @@
 // Protocol Buffers - Google's data interchange format
-// Copyright 2008 Google Inc.  All rights reserved.
+// Copyright 2023 Google Inc.  All rights reserved.
 // https://developers.google.com/protocol-buffers/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,47 +27,37 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#ifndef GOOGLE_PROTOBUF_INTERNAL_VISIBILITY_H__
+#define GOOGLE_PROTOBUF_INTERNAL_VISIBILITY_H__
 
-edition = "2023";
+namespace google {
+namespace protobuf {
 
-package proto3_preserve_unknown_enum_unittest;
+class Message;
+class MessageLite;
 
-// Treat all fields as implicit present by default (proto3 behavior).
-option features.field_presence = IMPLICIT;
-option objc_class_prefix = "UnknownEnums";
-option csharp_namespace = "Google.Protobuf.TestProtos";
+namespace internal {
 
-enum MyEnum {
-  FOO = 0;
-  BAR = 1;
-  BAZ = 2;
-}
+class InternalVisibilityForTesting;
 
-enum MyEnumPlusExtra {
-  E_FOO = 0;
-  E_BAR = 1;
-  E_BAZ = 2;
-  E_EXTRA = 3;
-}
+// Empty class to use as a mandatory 'internal token' for functions that have to
+// be public, such as arena constructors, but that are for internal use only.
+class InternalVisibility {
+ private:
+  // Note: we don't use `InternalVisibility() = default` here, but default the
+  // ctor outside of the class to force a private ctor instance.
+  explicit InternalVisibility();
 
-message MyMessage {
-  MyEnum e = 1;
-  repeated MyEnum repeated_e = 2;
-  repeated MyEnum repeated_packed_e = 3;
-  repeated MyEnumPlusExtra repeated_packed_unexpected_e = 4;  // not packed
-  oneof o {
-    MyEnum oneof_e_1 = 5;
-    MyEnum oneof_e_2 = 6;
-  }
-}
+  friend class ::google::protobuf::Message;
+  friend class ::google::protobuf::MessageLite;
 
-message MyMessagePlusExtra {
-  MyEnumPlusExtra e = 1;
-  repeated MyEnumPlusExtra repeated_e = 2;
-  repeated MyEnumPlusExtra repeated_packed_e = 3;
-  repeated MyEnumPlusExtra repeated_packed_unexpected_e = 4;
-  oneof o {
-    MyEnumPlusExtra oneof_e_1 = 5;
-    MyEnumPlusExtra oneof_e_2 = 6;
-  }
-}
+  friend class InternalVisibilityForTesting;
+};
+
+inline InternalVisibility::InternalVisibility() = default;
+
+}  // namespace internal
+}  // namespace protobuf
+}  // namespace google
+
+#endif  // GOOGLE_PROTOBUF_INTERNAL_VISIBILITY_H__

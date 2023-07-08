@@ -706,7 +706,7 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 // constant-initializing weak default instance pointers. Versions 12.0 and
 // higher seem to work, except that XCode 12.5.1 shows the error even though it
 // uses Clang 12.0.5.
-# elif !defined(__CYGWIN__) && \
+# elif !defined(__CYGWIN__) && !defined(__MINGW32__) && \
     __has_cpp_attribute(clang::require_constant_initialization) && \
         ((defined(__APPLE__) && PROTOBUF_CLANG_MIN(13, 0)) ||             \
      (!defined(__APPLE__) && PROTOBUF_CLANG_MIN(12, 0)))
@@ -860,16 +860,15 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 #define PROTOBUF_TSAN_DECLARE_MEMBER
 #endif
 
-// TODO(b/280674214): enable these macros in phases. The phases are: repeated
-// fields/maps, enum/primitive fields, string fields, message fields.
+// TODO(b/280674214): cleanup these macros.
 #define PROTOBUF_TSAN_READ_REPEATED(addr) PROTOBUF_TSAN_READ(addr)
 #define PROTOBUF_TSAN_READ_PRIMITIVE(addr) PROTOBUF_TSAN_READ(addr)
 #define PROTOBUF_TSAN_READ_STRING(addr) PROTOBUF_TSAN_READ(addr)
-#define PROTOBUF_TSAN_READ_MESSAGE(addr)
+#define PROTOBUF_TSAN_READ_MESSAGE(addr) PROTOBUF_TSAN_READ(addr)
 #define PROTOBUF_TSAN_WRITE_REPEATED(addr) PROTOBUF_TSAN_WRITE(addr)
 #define PROTOBUF_TSAN_WRITE_PRIMITIVE(addr) PROTOBUF_TSAN_WRITE(addr)
 #define PROTOBUF_TSAN_WRITE_STRING(addr) PROTOBUF_TSAN_WRITE(addr)
-#define PROTOBUF_TSAN_WRITE_MESSAGE(addr)
+#define PROTOBUF_TSAN_WRITE_MESSAGE(addr) PROTOBUF_TSAN_WRITE(addr)
 
 #ifdef PROTOBUF_USE_TABLE_PARSER_ON_REFLECTION
 #error PROTOBUF_USE_TABLE_PARSER_ON_REFLECTION was previously defined
