@@ -106,14 +106,6 @@
 #undef PROTOBUF_TSAN_DECLARE_MEMBER
 #undef PROTOBUF_TSAN_READ
 #undef PROTOBUF_TSAN_WRITE
-#undef PROTOBUF_TSAN_READ_REPEATED
-#undef PROTOBUF_TSAN_READ_PRIMITIVE
-#undef PROTOBUF_TSAN_READ_STRING
-#undef PROTOBUF_TSAN_READ_MESSAGE
-#undef PROTOBUF_TSAN_WRITE_REPEATED
-#undef PROTOBUF_TSAN_WRITE_PRIMITIVE
-#undef PROTOBUF_TSAN_WRITE_STRING
-#undef PROTOBUF_TSAN_WRITE_MESSAGE
 #undef PROTOBUF_USE_TABLE_PARSER_ON_REFLECTION
 #undef PROTOBUF_TC_PARAM_DECL
 #undef PROTOBUF_EXCLUSIVE_LOCKS_REQUIRED
@@ -191,6 +183,13 @@
 #pragma pop_macro("GID_MAX")
 #pragma pop_macro("TYPE_BOOL")
 #endif  // __APPLE__
+
+#ifdef __FreeBSD__
+#pragma pop_macro("TRUE")
+#pragma pop_macro("FALSE")
+#pragma pop_macro("UID_MAX")
+#pragma pop_macro("GID_MAX")
+#endif  // __FreeBSD__
 
 #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
 #pragma pop_macro("DEBUG")

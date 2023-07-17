@@ -114,6 +114,18 @@ absl::string_view PrimitiveRsTypeName(Context<FieldDescriptor> field) {
       return "i32";
     case FieldDescriptor::TYPE_INT64:
       return "i64";
+    case FieldDescriptor::TYPE_SINT32:
+      return "i32";
+    case FieldDescriptor::TYPE_SINT64:
+      return "i64";
+    case FieldDescriptor::TYPE_UINT32:
+      return "u32";
+    case FieldDescriptor::TYPE_UINT64:
+      return "u64";
+    case FieldDescriptor::TYPE_FLOAT:
+      return "f32";
+    case FieldDescriptor::TYPE_DOUBLE:
+      return "f64";
     case FieldDescriptor::TYPE_BYTES:
       return "&[u8]";
     default:
@@ -131,6 +143,12 @@ bool IsSupportedFieldType(Context<FieldDescriptor> field) {
          (field.desc().type() == FieldDescriptor::TYPE_BOOL ||
           field.desc().type() == FieldDescriptor::TYPE_INT32 ||
           field.desc().type() == FieldDescriptor::TYPE_INT64 ||
+          field.desc().type() == FieldDescriptor::TYPE_SINT32 ||
+          field.desc().type() == FieldDescriptor::TYPE_SINT64 ||
+          field.desc().type() == FieldDescriptor::TYPE_UINT32 ||
+          field.desc().type() == FieldDescriptor::TYPE_UINT64 ||
+          field.desc().type() == FieldDescriptor::TYPE_FLOAT ||
+          field.desc().type() == FieldDescriptor::TYPE_DOUBLE ||
           field.desc().type() == FieldDescriptor::TYPE_BYTES);
 }
 

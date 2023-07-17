@@ -219,7 +219,10 @@ class PROTOBUF_EXPORT CppFeatures final :
   class _Internal;
 
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<0, 1, 0, 0, 2> _table_;
+  static const ::google::protobuf::internal::TcParseTable<
+      0, 1, 0,
+      0, 2>
+      _table_;
   template <typename T> friend class ::google::protobuf::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
@@ -271,11 +274,11 @@ inline void CppFeatures::set_legacy_closed_enum(bool value) {
   // @@protoc_insertion_point(field_set:pb.CppFeatures.legacy_closed_enum)
 }
 inline bool CppFeatures::_internal_legacy_closed_enum() const {
-  PROTOBUF_TSAN_READ_PRIMITIVE(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
   return _impl_.legacy_closed_enum_;
 }
 inline void CppFeatures::_internal_set_legacy_closed_enum(bool value) {
-  PROTOBUF_TSAN_WRITE_PRIMITIVE(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_._has_bits_[0] |= 0x00000001u;
   _impl_.legacy_closed_enum_ = value;
 }

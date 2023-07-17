@@ -227,7 +227,10 @@ class PROTOBUF_EXPORT Duration final :
   class _Internal;
 
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<1, 2, 0, 0, 2> _table_;
+  static const ::google::protobuf::internal::TcParseTable<
+      1, 2, 0,
+      0, 2>
+      _table_;
   template <typename T> friend class ::google::protobuf::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
@@ -270,11 +273,11 @@ inline void Duration::set_seconds(::int64_t value) {
   // @@protoc_insertion_point(field_set:google.protobuf.Duration.seconds)
 }
 inline ::int64_t Duration::_internal_seconds() const {
-  PROTOBUF_TSAN_READ_PRIMITIVE(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
   return _impl_.seconds_;
 }
 inline void Duration::_internal_set_seconds(::int64_t value) {
-  PROTOBUF_TSAN_WRITE_PRIMITIVE(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ;
   _impl_.seconds_ = value;
 }
@@ -292,11 +295,11 @@ inline void Duration::set_nanos(::int32_t value) {
   // @@protoc_insertion_point(field_set:google.protobuf.Duration.nanos)
 }
 inline ::int32_t Duration::_internal_nanos() const {
-  PROTOBUF_TSAN_READ_PRIMITIVE(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
   return _impl_.nanos_;
 }
 inline void Duration::_internal_set_nanos(::int32_t value) {
-  PROTOBUF_TSAN_WRITE_PRIMITIVE(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ;
   _impl_.nanos_ = value;
 }

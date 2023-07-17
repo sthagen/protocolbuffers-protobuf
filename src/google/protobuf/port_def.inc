@@ -224,10 +224,6 @@ static_assert(PROTOBUF_CPLUSPLUS_MIN(201402L), "Protobuf only supports C++14 and
 static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
               "Protobuf only supports Abseil version 20230125.3 and newer.");
 
-// Enable editions infrastructure by default.  This should be a no-op without
-// the --experimental_editions protoc flag.
-#define PROTOBUF_FUTURE_EDITIONS 1
-
 // Future versions of protobuf will include breaking changes to some APIs.
 // This macro can be set to enable these API changes ahead of time, so that
 // user code can be updated before upgrading versions of protobuf.
@@ -860,16 +856,6 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 #define PROTOBUF_TSAN_DECLARE_MEMBER
 #endif
 
-// TODO(b/280674214): cleanup these macros.
-#define PROTOBUF_TSAN_READ_REPEATED(addr) PROTOBUF_TSAN_READ(addr)
-#define PROTOBUF_TSAN_READ_PRIMITIVE(addr) PROTOBUF_TSAN_READ(addr)
-#define PROTOBUF_TSAN_READ_STRING(addr) PROTOBUF_TSAN_READ(addr)
-#define PROTOBUF_TSAN_READ_MESSAGE(addr) PROTOBUF_TSAN_READ(addr)
-#define PROTOBUF_TSAN_WRITE_REPEATED(addr) PROTOBUF_TSAN_WRITE(addr)
-#define PROTOBUF_TSAN_WRITE_PRIMITIVE(addr) PROTOBUF_TSAN_WRITE(addr)
-#define PROTOBUF_TSAN_WRITE_STRING(addr) PROTOBUF_TSAN_WRITE(addr)
-#define PROTOBUF_TSAN_WRITE_MESSAGE(addr) PROTOBUF_TSAN_WRITE(addr)
-
 #ifdef PROTOBUF_USE_TABLE_PARSER_ON_REFLECTION
 #error PROTOBUF_USE_TABLE_PARSER_ON_REFLECTION was previously defined
 #endif
@@ -1029,6 +1015,19 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 #pragma push_macro("TYPE_BOOL")
 #undef TYPE_BOOL
 #endif  // __APPLE__
+
+#ifdef __FreeBSD__
+// Inconvenient macro names from /usr/include/sys/param.h.
+#pragma push_macro("TRUE")
+#undef TRUE
+#pragma push_macro("FALSE")
+#undef FALSE
+// Inconvenient macro names from /usr/include/sys/limits.h.
+#pragma push_macro("UID_MAX")
+#undef UID_MAX
+#pragma push_macro("GID_MAX")
+#undef GID_MAX
+#endif  // __FreeBSD__
 
 #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
 // Don't let Objective-C Macros interfere with proto identifiers with the same

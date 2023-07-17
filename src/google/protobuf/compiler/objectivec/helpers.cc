@@ -341,9 +341,8 @@ std::string ObjCClassDeclaration(absl::string_view class_name) {
   return absl::StrCat("GPBObjCClassDeclaration(", class_name, ");");
 }
 
-namespace {
-
-std::vector<std::string> ExtractAndEscapeLines(const SourceLocation& location) {
+void EmitCommentsString(io::Printer* printer, const SourceLocation& location,
+                        CommentStringFlags flags) {
   absl::string_view comments = location.leading_comments.empty()
                                    ? location.trailing_comments
                                    : location.leading_comments;
@@ -353,14 +352,21 @@ std::vector<std::string> ExtractAndEscapeLines(const SourceLocation& location) {
     raw_lines.pop_back();
   }
   if (raw_lines.empty()) {
-    return {};
+    return;
   }
 
   std::vector<std::string> lines;
   lines.reserve(raw_lines.size());
   for (absl::string_view l : raw_lines) {
     lines.push_back(absl::StrReplaceAll(
-        absl::StripPrefix(l, " "),
+        // Strip any trailing whitespace to avoid any warnings on the generated
+        // code; but only stip one leading white space as that tends to be
+        // carried over from the .proto file, and we don't want extra spaces,
+        // the formatting below will ensure there is a space.
+        // NOTE: There could be >1 leading whitespace if the .proto file has
+        // formatted comments (see the WKTs), so we maintain any additional
+        // leading whitespace.
+        absl::StripTrailingAsciiWhitespace(absl::StripPrefix(l, " ")),
         {// HeaderDoc and appledoc use '\' and '@' for markers; escape them.
          {"\\", "\\\\"},
          {"@", "\\@"},
@@ -368,46 +374,12 @@ std::vector<std::string> ExtractAndEscapeLines(const SourceLocation& location) {
          {"/*", "/\\*"},
          {"*/", "*\\/"}}));
   }
-  return lines;
-}
 
-}  // namespace
-
-std::string BuildCommentsString(const SourceLocation& location,
-                                bool prefer_single_line) {
-  std::vector<std::string> lines(ExtractAndEscapeLines(location));
-  if (lines.empty()) {
-    return "";
-  }
-
-  if (prefer_single_line && lines.size() == 1) {
-    return absl::StrCat("/** ", lines[0], " */\n");
-  }
-
-  std::string collector("/**\n");
-  for (size_t i = 0; i < lines.size(); i++) {
-    auto& line = lines[i];
-    if (line.empty()) {
-      absl::StrAppend(&collector, " *\n");
-    } else {
-      absl::StrAppend(&collector, " * ", line, "\n");
-    }
-  }
-  return absl::StrCat(collector, " **/\n");
-}
-
-void EmitCommentsString(io::Printer* printer, const SourceLocation& location,
-                        bool prefer_single_line, bool add_leading_newilne) {
-  std::vector<std::string> lines(ExtractAndEscapeLines(location));
-  if (lines.empty()) {
-    return;
-  }
-
-  if (add_leading_newilne) {
+  if (flags & CommentStringFlags::kAddLeadingNewline) {
     printer->Emit("\n");
   }
 
-  if (prefer_single_line && lines.size() == 1) {
+  if ((flags & CommentStringFlags::kForceMultiline) == 0 && lines.size() == 1) {
     printer->Emit({{"text", lines[0]}}, R"(
       /** $text$ */
     )");
@@ -419,7 +391,7 @@ void EmitCommentsString(io::Printer* printer, const SourceLocation& location,
           {"lines",
            [&] {
              for (absl::string_view line : lines) {
-               printer->Emit({{"text", absl::StripAsciiWhitespace(line)}}, R"(
+               printer->Emit({{"text", line}}, R"(
                 *$ text$
               )");
              }

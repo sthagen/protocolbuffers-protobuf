@@ -234,7 +234,10 @@ class PROTOBUF_EXPORT FieldMask final :
   class _Internal;
 
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<0, 1, 0, 39, 2> _table_;
+  static const ::google::protobuf::internal::TcParseTable<
+      0, 1, 0,
+      39, 2>
+      _table_;
   template <typename T> friend class ::google::protobuf::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
@@ -274,7 +277,7 @@ inline void FieldMask::clear_paths() {
   _internal_mutable_paths()->Clear();
 }
 inline std::string* FieldMask::add_paths() {
-  PROTOBUF_TSAN_WRITE_REPEATED(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   std::string* _s = _internal_mutable_paths()->Add();
   // @@protoc_insertion_point(field_add_mutable:google.protobuf.FieldMask.paths)
   return _s;
@@ -312,29 +315,29 @@ inline void FieldMask::set_paths(int index, absl::string_view value) {
   // @@protoc_insertion_point(field_set_string_piece:google.protobuf.FieldMask.paths)
 }
 inline void FieldMask::add_paths(const std::string& value) {
-  PROTOBUF_TSAN_WRITE_REPEATED(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _internal_mutable_paths()->Add()->assign(value);
   // @@protoc_insertion_point(field_add:google.protobuf.FieldMask.paths)
 }
 inline void FieldMask::add_paths(std::string&& value) {
-  PROTOBUF_TSAN_WRITE_REPEATED(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _internal_mutable_paths()->Add(std::move(value));
   // @@protoc_insertion_point(field_add:google.protobuf.FieldMask.paths)
 }
 inline void FieldMask::add_paths(const char* value) {
   ABSL_DCHECK(value != nullptr);
-  PROTOBUF_TSAN_WRITE_REPEATED(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _internal_mutable_paths()->Add()->assign(value);
   // @@protoc_insertion_point(field_add_char:google.protobuf.FieldMask.paths)
 }
 inline void FieldMask::add_paths(const char* value, std::size_t size) {
-  PROTOBUF_TSAN_WRITE_REPEATED(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _internal_mutable_paths()->Add()->assign(
       reinterpret_cast<const char*>(value), size);
   // @@protoc_insertion_point(field_add_pointer:google.protobuf.FieldMask.paths)
 }
 inline void FieldMask::add_paths(absl::string_view value) {
-  PROTOBUF_TSAN_WRITE_REPEATED(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _internal_mutable_paths()->Add()->assign(value.data(), value.size());
   // @@protoc_insertion_point(field_add_string_piece:google.protobuf.FieldMask.paths)
 }
@@ -345,17 +348,17 @@ FieldMask::paths() const {
 }
 inline ::google::protobuf::RepeatedPtrField<std::string>* FieldMask::mutable_paths() {
   // @@protoc_insertion_point(field_mutable_list:google.protobuf.FieldMask.paths)
-  PROTOBUF_TSAN_WRITE_REPEATED(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   return _internal_mutable_paths();
 }
 inline const ::google::protobuf::RepeatedPtrField<std::string>&
 FieldMask::_internal_paths() const {
-  PROTOBUF_TSAN_READ_REPEATED(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
   return _impl_.paths_;
 }
 inline ::google::protobuf::RepeatedPtrField<std::string>*
 FieldMask::_internal_mutable_paths() {
-  PROTOBUF_TSAN_READ_REPEATED(&_impl_._tsan_detect_race);
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
   return &_impl_.paths_;
 }
 
