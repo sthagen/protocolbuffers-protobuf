@@ -30,6 +30,7 @@
 
 //! UPB FFI wrapper code for use by Rust Protobuf.
 
+use crate::__internal::RawArena;
 use std::alloc;
 use std::alloc::Layout;
 use std::cell::UnsafeCell;
@@ -43,15 +44,6 @@ use std::slice;
 /// See `upb/port/def.inc`.
 const UPB_MALLOC_ALIGN: usize = 8;
 
-/// A UPB-managed pointer to a raw arena.
-pub type RawArena = NonNull<RawArenaData>;
-
-/// The data behind a [`RawArena`]. Do not use this type.
-#[repr(C)]
-pub struct RawArenaData {
-    _data: [u8; 0],
-}
-
 /// A wrapper over a `upb_Arena`.
 ///
 /// This is not a safe wrapper per se, because the allocation functions still
@@ -61,6 +53,7 @@ pub struct RawArenaData {
 /// dropped.
 ///
 /// Note that this type is neither `Sync` nor `Send`.
+#[derive(Debug)]
 pub struct Arena {
     // Safety invariant: this must always be a valid arena
     raw: RawArena,

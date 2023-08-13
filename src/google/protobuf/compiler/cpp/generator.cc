@@ -189,8 +189,6 @@ bool CppGenerator::Generate(const FileDescriptor* file,
               .emplace(value.substr(pos, next_pos - pos));
         pos = next_pos + 1;
       } while (pos < value.size());
-    } else if (key == "unverified_lazy_message_sets") {
-      file_options.unverified_lazy_message_sets = true;
     } else if (key == "force_eagerly_verified_lazy") {
       file_options.force_eagerly_verified_lazy = true;
     } else if (key == "experimental_tail_call_table_mode") {
@@ -381,6 +379,22 @@ absl::Status CppGenerator::ValidateFeatures(const FileDescriptor* file) const {
           absl::StrCat("Field ", field.full_name(),
                        " has a closed enum type with implicit presence."));
     }
+#ifdef PROTOBUF_FUTURE_REMOVE_WRONG_CTYPE
+    if (field.options().has_ctype()) {
+      if (field.cpp_type() != FieldDescriptor::CPPTYPE_STRING) {
+        status = absl::FailedPreconditionError(absl::StrCat(
+            "Field ", field.full_name(),
+            " specifies ctype, but is not a string nor bytes field."));
+      }
+      if (field.options().ctype() == FieldOptions::CORD) {
+        if (field.is_extension()) {
+          status = absl::FailedPreconditionError(absl::StrCat(
+              "Extension ", field.full_name(),
+              " specifies ctype=CORD which is not supported for extensions."));
+        }
+      }
+    }
+#endif  // !PROTOBUF_FUTURE_REMOVE_WRONG_CTYPE
   });
   return status;
 }
