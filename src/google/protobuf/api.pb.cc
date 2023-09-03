@@ -256,9 +256,11 @@ const ::google::protobuf::SourceContext& Api::_Internal::source_context(const Ap
   return *msg->_impl_.source_context_;
 }
 void Api::clear_options() {
-  _internal_mutable_options()->Clear();
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.options_.Clear();
 }
 void Api::clear_source_context() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   if (_impl_.source_context_ != nullptr) _impl_.source_context_->Clear();
   _impl_._has_bits_[0] &= ~0x00000001u;
 }
@@ -340,19 +342,17 @@ inline void Api::SharedDtor() {
   _impl_.version_.Destroy();
   if (this != internal_default_instance()) delete _impl_.source_context_;
 }
-void Api::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void Api::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.Api)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _internal_mutable_methods()->Clear();
-  _internal_mutable_options()->Clear();
-  _internal_mutable_mixins()->Clear();
+  _impl_.methods_.Clear();
+  _impl_.options_.Clear();
+  _impl_.mixins_.Clear();
   _impl_.name_.ClearToEmpty();
   _impl_.version_.ClearToEmpty();
   cached_has_bits = _impl_._has_bits_[0];
@@ -620,6 +620,9 @@ PROTOBUF_NOINLINE bool Api::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* Api::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void Api::InternalSwap(Api* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
@@ -653,7 +656,8 @@ class Method::_Internal {
 };
 
 void Method::clear_options() {
-  _internal_mutable_options()->Clear();
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.options_.Clear();
 }
 Method::Method(::google::protobuf::Arena* arena)
     : ::google::protobuf::Message(arena) {
@@ -739,17 +743,15 @@ inline void Method::SharedDtor() {
   _impl_.request_type_url_.Destroy();
   _impl_.response_type_url_.Destroy();
 }
-void Method::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void Method::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.Method)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _internal_mutable_options()->Clear();
+  _impl_.options_.Clear();
   _impl_.name_.ClearToEmpty();
   _impl_.request_type_url_.ClearToEmpty();
   _impl_.response_type_url_.ClearToEmpty();
@@ -1007,6 +1009,9 @@ PROTOBUF_NOINLINE bool Method::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* Method::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void Method::InternalSwap(Method* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
@@ -1096,12 +1101,10 @@ inline void Mixin::SharedDtor() {
   _impl_.name_.Destroy();
   _impl_.root_.Destroy();
 }
-void Mixin::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void Mixin::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.Mixin)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -1248,6 +1251,9 @@ PROTOBUF_NOINLINE bool Mixin::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* Mixin::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void Mixin::InternalSwap(Mixin* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();

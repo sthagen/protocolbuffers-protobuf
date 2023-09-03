@@ -107,6 +107,10 @@ class PROTOBUF_EXPORT UInt64Value final :
     *this = ::std::move(from);
   }
 
+  inline UInt64Value(::google::protobuf::Arena* arena, const UInt64Value& from)
+    : UInt64Value(arena) {
+    MergeFrom(from);
+  }
   inline UInt64Value& operator=(const UInt64Value& from) {
     CopyFrom(from);
     return *this;
@@ -125,10 +129,12 @@ class PROTOBUF_EXPORT UInt64Value final :
     return *this;
   }
 
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
   }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
   }
 
@@ -194,12 +200,12 @@ class PROTOBUF_EXPORT UInt64Value final :
   const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
   ::uint8_t* _InternalSerialize(
       ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
 
   private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
   void SharedCtor(::google::protobuf::Arena* arena);
   void SharedDtor();
-  void SetCachedSize(int size) const final;
   void InternalSwap(UInt64Value* other);
 
   private:
@@ -248,7 +254,7 @@ class PROTOBUF_EXPORT UInt64Value final :
   struct Impl_ {
     ::uint64_t value_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
-    PROTOBUF_TSAN_DECLARE_MEMBER;
+    PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_google_2fprotobuf_2fwrappers_2eproto;
@@ -268,6 +274,10 @@ class PROTOBUF_EXPORT UInt32Value final :
     *this = ::std::move(from);
   }
 
+  inline UInt32Value(::google::protobuf::Arena* arena, const UInt32Value& from)
+    : UInt32Value(arena) {
+    MergeFrom(from);
+  }
   inline UInt32Value& operator=(const UInt32Value& from) {
     CopyFrom(from);
     return *this;
@@ -286,10 +296,12 @@ class PROTOBUF_EXPORT UInt32Value final :
     return *this;
   }
 
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
   }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
   }
 
@@ -355,12 +367,12 @@ class PROTOBUF_EXPORT UInt32Value final :
   const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
   ::uint8_t* _InternalSerialize(
       ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
 
   private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
   void SharedCtor(::google::protobuf::Arena* arena);
   void SharedDtor();
-  void SetCachedSize(int size) const final;
   void InternalSwap(UInt32Value* other);
 
   private:
@@ -409,7 +421,7 @@ class PROTOBUF_EXPORT UInt32Value final :
   struct Impl_ {
     ::uint32_t value_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
-    PROTOBUF_TSAN_DECLARE_MEMBER;
+    PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_google_2fprotobuf_2fwrappers_2eproto;
@@ -429,6 +441,10 @@ class PROTOBUF_EXPORT StringValue final :
     *this = ::std::move(from);
   }
 
+  inline StringValue(::google::protobuf::Arena* arena, const StringValue& from)
+    : StringValue(arena) {
+    MergeFrom(from);
+  }
   inline StringValue& operator=(const StringValue& from) {
     CopyFrom(from);
     return *this;
@@ -447,10 +463,12 @@ class PROTOBUF_EXPORT StringValue final :
     return *this;
   }
 
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
   }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
   }
 
@@ -516,12 +534,12 @@ class PROTOBUF_EXPORT StringValue final :
   const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
   ::uint8_t* _InternalSerialize(
       ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
 
   private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
   void SharedCtor(::google::protobuf::Arena* arena);
   void SharedDtor();
-  void SetCachedSize(int size) const final;
   void InternalSwap(StringValue* other);
 
   private:
@@ -576,7 +594,7 @@ class PROTOBUF_EXPORT StringValue final :
   struct Impl_ {
     ::google::protobuf::internal::ArenaStringPtr value_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
-    PROTOBUF_TSAN_DECLARE_MEMBER;
+    PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_google_2fprotobuf_2fwrappers_2eproto;
@@ -596,6 +614,10 @@ class PROTOBUF_EXPORT Int64Value final :
     *this = ::std::move(from);
   }
 
+  inline Int64Value(::google::protobuf::Arena* arena, const Int64Value& from)
+    : Int64Value(arena) {
+    MergeFrom(from);
+  }
   inline Int64Value& operator=(const Int64Value& from) {
     CopyFrom(from);
     return *this;
@@ -614,10 +636,12 @@ class PROTOBUF_EXPORT Int64Value final :
     return *this;
   }
 
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
   }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
   }
 
@@ -683,12 +707,12 @@ class PROTOBUF_EXPORT Int64Value final :
   const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
   ::uint8_t* _InternalSerialize(
       ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
 
   private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
   void SharedCtor(::google::protobuf::Arena* arena);
   void SharedDtor();
-  void SetCachedSize(int size) const final;
   void InternalSwap(Int64Value* other);
 
   private:
@@ -737,7 +761,7 @@ class PROTOBUF_EXPORT Int64Value final :
   struct Impl_ {
     ::int64_t value_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
-    PROTOBUF_TSAN_DECLARE_MEMBER;
+    PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_google_2fprotobuf_2fwrappers_2eproto;
@@ -757,6 +781,10 @@ class PROTOBUF_EXPORT Int32Value final :
     *this = ::std::move(from);
   }
 
+  inline Int32Value(::google::protobuf::Arena* arena, const Int32Value& from)
+    : Int32Value(arena) {
+    MergeFrom(from);
+  }
   inline Int32Value& operator=(const Int32Value& from) {
     CopyFrom(from);
     return *this;
@@ -775,10 +803,12 @@ class PROTOBUF_EXPORT Int32Value final :
     return *this;
   }
 
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
   }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
   }
 
@@ -844,12 +874,12 @@ class PROTOBUF_EXPORT Int32Value final :
   const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
   ::uint8_t* _InternalSerialize(
       ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
 
   private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
   void SharedCtor(::google::protobuf::Arena* arena);
   void SharedDtor();
-  void SetCachedSize(int size) const final;
   void InternalSwap(Int32Value* other);
 
   private:
@@ -898,7 +928,7 @@ class PROTOBUF_EXPORT Int32Value final :
   struct Impl_ {
     ::int32_t value_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
-    PROTOBUF_TSAN_DECLARE_MEMBER;
+    PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_google_2fprotobuf_2fwrappers_2eproto;
@@ -918,6 +948,10 @@ class PROTOBUF_EXPORT FloatValue final :
     *this = ::std::move(from);
   }
 
+  inline FloatValue(::google::protobuf::Arena* arena, const FloatValue& from)
+    : FloatValue(arena) {
+    MergeFrom(from);
+  }
   inline FloatValue& operator=(const FloatValue& from) {
     CopyFrom(from);
     return *this;
@@ -936,10 +970,12 @@ class PROTOBUF_EXPORT FloatValue final :
     return *this;
   }
 
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
   }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
   }
 
@@ -1005,12 +1041,12 @@ class PROTOBUF_EXPORT FloatValue final :
   const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
   ::uint8_t* _InternalSerialize(
       ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
 
   private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
   void SharedCtor(::google::protobuf::Arena* arena);
   void SharedDtor();
-  void SetCachedSize(int size) const final;
   void InternalSwap(FloatValue* other);
 
   private:
@@ -1059,7 +1095,7 @@ class PROTOBUF_EXPORT FloatValue final :
   struct Impl_ {
     float value_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
-    PROTOBUF_TSAN_DECLARE_MEMBER;
+    PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_google_2fprotobuf_2fwrappers_2eproto;
@@ -1079,6 +1115,10 @@ class PROTOBUF_EXPORT DoubleValue final :
     *this = ::std::move(from);
   }
 
+  inline DoubleValue(::google::protobuf::Arena* arena, const DoubleValue& from)
+    : DoubleValue(arena) {
+    MergeFrom(from);
+  }
   inline DoubleValue& operator=(const DoubleValue& from) {
     CopyFrom(from);
     return *this;
@@ -1097,10 +1137,12 @@ class PROTOBUF_EXPORT DoubleValue final :
     return *this;
   }
 
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
   }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
   }
 
@@ -1166,12 +1208,12 @@ class PROTOBUF_EXPORT DoubleValue final :
   const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
   ::uint8_t* _InternalSerialize(
       ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
 
   private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
   void SharedCtor(::google::protobuf::Arena* arena);
   void SharedDtor();
-  void SetCachedSize(int size) const final;
   void InternalSwap(DoubleValue* other);
 
   private:
@@ -1220,7 +1262,7 @@ class PROTOBUF_EXPORT DoubleValue final :
   struct Impl_ {
     double value_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
-    PROTOBUF_TSAN_DECLARE_MEMBER;
+    PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_google_2fprotobuf_2fwrappers_2eproto;
@@ -1240,6 +1282,10 @@ class PROTOBUF_EXPORT BytesValue final :
     *this = ::std::move(from);
   }
 
+  inline BytesValue(::google::protobuf::Arena* arena, const BytesValue& from)
+    : BytesValue(arena) {
+    MergeFrom(from);
+  }
   inline BytesValue& operator=(const BytesValue& from) {
     CopyFrom(from);
     return *this;
@@ -1258,10 +1304,12 @@ class PROTOBUF_EXPORT BytesValue final :
     return *this;
   }
 
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
   }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
   }
 
@@ -1327,12 +1375,12 @@ class PROTOBUF_EXPORT BytesValue final :
   const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
   ::uint8_t* _InternalSerialize(
       ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
 
   private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
   void SharedCtor(::google::protobuf::Arena* arena);
   void SharedDtor();
-  void SetCachedSize(int size) const final;
   void InternalSwap(BytesValue* other);
 
   private:
@@ -1387,7 +1435,7 @@ class PROTOBUF_EXPORT BytesValue final :
   struct Impl_ {
     ::google::protobuf::internal::ArenaStringPtr value_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
-    PROTOBUF_TSAN_DECLARE_MEMBER;
+    PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_google_2fprotobuf_2fwrappers_2eproto;
@@ -1407,6 +1455,10 @@ class PROTOBUF_EXPORT BoolValue final :
     *this = ::std::move(from);
   }
 
+  inline BoolValue(::google::protobuf::Arena* arena, const BoolValue& from)
+    : BoolValue(arena) {
+    MergeFrom(from);
+  }
   inline BoolValue& operator=(const BoolValue& from) {
     CopyFrom(from);
     return *this;
@@ -1425,10 +1477,12 @@ class PROTOBUF_EXPORT BoolValue final :
     return *this;
   }
 
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
   }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
   }
 
@@ -1494,12 +1548,12 @@ class PROTOBUF_EXPORT BoolValue final :
   const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
   ::uint8_t* _InternalSerialize(
       ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
 
   private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
   void SharedCtor(::google::protobuf::Arena* arena);
   void SharedDtor();
-  void SetCachedSize(int size) const final;
   void InternalSwap(BoolValue* other);
 
   private:
@@ -1548,7 +1602,7 @@ class PROTOBUF_EXPORT BoolValue final :
   struct Impl_ {
     bool value_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
-    PROTOBUF_TSAN_DECLARE_MEMBER;
+    PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_google_2fprotobuf_2fwrappers_2eproto;
@@ -1572,6 +1626,7 @@ class PROTOBUF_EXPORT BoolValue final :
 
 // double value = 1;
 inline void DoubleValue::clear_value() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.value_ = 0;
 }
 inline double DoubleValue::value() const {
@@ -1598,6 +1653,7 @@ inline void DoubleValue::_internal_set_value(double value) {
 
 // float value = 1;
 inline void FloatValue::clear_value() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.value_ = 0;
 }
 inline float FloatValue::value() const {
@@ -1624,6 +1680,7 @@ inline void FloatValue::_internal_set_value(float value) {
 
 // int64 value = 1;
 inline void Int64Value::clear_value() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.value_ = ::int64_t{0};
 }
 inline ::int64_t Int64Value::value() const {
@@ -1650,6 +1707,7 @@ inline void Int64Value::_internal_set_value(::int64_t value) {
 
 // uint64 value = 1;
 inline void UInt64Value::clear_value() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.value_ = ::uint64_t{0u};
 }
 inline ::uint64_t UInt64Value::value() const {
@@ -1676,6 +1734,7 @@ inline void UInt64Value::_internal_set_value(::uint64_t value) {
 
 // int32 value = 1;
 inline void Int32Value::clear_value() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.value_ = 0;
 }
 inline ::int32_t Int32Value::value() const {
@@ -1702,6 +1761,7 @@ inline void Int32Value::_internal_set_value(::int32_t value) {
 
 // uint32 value = 1;
 inline void UInt32Value::clear_value() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.value_ = 0u;
 }
 inline ::uint32_t UInt32Value::value() const {
@@ -1728,6 +1788,7 @@ inline void UInt32Value::_internal_set_value(::uint32_t value) {
 
 // bool value = 1;
 inline void BoolValue::clear_value() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.value_ = false;
 }
 inline bool BoolValue::value() const {
@@ -1754,9 +1815,11 @@ inline void BoolValue::_internal_set_value(bool value) {
 
 // string value = 1;
 inline void StringValue::clear_value() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.value_.ClearToEmpty();
 }
-inline const std::string& StringValue::value() const {
+inline const std::string& StringValue::value() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
   // @@protoc_insertion_point(field_get:google.protobuf.StringValue.value)
   return _internal_value();
 }
@@ -1768,7 +1831,7 @@ inline PROTOBUF_ALWAYS_INLINE void StringValue::set_value(Arg_&& arg,
   _impl_.value_.Set(static_cast<Arg_&&>(arg), args..., GetArenaForAllocation());
   // @@protoc_insertion_point(field_set:google.protobuf.StringValue.value)
 }
-inline std::string* StringValue::mutable_value() {
+inline std::string* StringValue::mutable_value() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_value();
   // @@protoc_insertion_point(field_mutable:google.protobuf.StringValue.value)
   return _s;
@@ -1809,9 +1872,11 @@ inline void StringValue::set_allocated_value(std::string* value) {
 
 // bytes value = 1;
 inline void BytesValue::clear_value() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.value_.ClearToEmpty();
 }
-inline const std::string& BytesValue::value() const {
+inline const std::string& BytesValue::value() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
   // @@protoc_insertion_point(field_get:google.protobuf.BytesValue.value)
   return _internal_value();
 }
@@ -1823,7 +1888,7 @@ inline PROTOBUF_ALWAYS_INLINE void BytesValue::set_value(Arg_&& arg,
   _impl_.value_.SetBytes(static_cast<Arg_&&>(arg), args..., GetArenaForAllocation());
   // @@protoc_insertion_point(field_set:google.protobuf.BytesValue.value)
 }
-inline std::string* BytesValue::mutable_value() {
+inline std::string* BytesValue::mutable_value() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_value();
   // @@protoc_insertion_point(field_mutable:google.protobuf.BytesValue.value)
   return _s;

@@ -282,15 +282,10 @@ const ::google::protobuf::EnumDescriptor* CodeGeneratorResponse_Feature_descript
   ::google::protobuf::internal::AssignDescriptors(&descriptor_table_google_2fprotobuf_2fcompiler_2fplugin_2eproto);
   return file_level_enum_descriptors_google_2fprotobuf_2fcompiler_2fplugin_2eproto[0];
 }
+PROTOBUF_CONSTINIT const uint32_t CodeGeneratorResponse_Feature_internal_data_[] = {
+    196608u, 0u, };
 bool CodeGeneratorResponse_Feature_IsValid(int value) {
-  switch (value) {
-    case 0:
-    case 1:
-    case 2:
-      return true;
-    default:
-      return false;
-  }
+  return 0 <= value && value <= 2;
 }
 #if (__cplusplus < 201703) && \
   (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
@@ -380,12 +375,10 @@ inline void Version::SharedDtor() {
   ABSL_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.suffix_.Destroy();
 }
-void Version::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void Version::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.compiler.Version)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -590,6 +583,9 @@ PROTOBUF_NOINLINE bool Version::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* Version::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void Version::InternalSwap(Version* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
@@ -631,10 +627,12 @@ const ::google::protobuf::compiler::Version& CodeGeneratorRequest::_Internal::co
   return *msg->_impl_.compiler_version_;
 }
 void CodeGeneratorRequest::clear_proto_file() {
-  _internal_mutable_proto_file()->Clear();
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.proto_file_.Clear();
 }
 void CodeGeneratorRequest::clear_source_file_descriptors() {
-  _internal_mutable_source_file_descriptors()->Clear();
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.source_file_descriptors_.Clear();
 }
 CodeGeneratorRequest::CodeGeneratorRequest(::google::protobuf::Arena* arena)
     : ::google::protobuf::Message(arena) {
@@ -697,19 +695,17 @@ inline void CodeGeneratorRequest::SharedDtor() {
   _impl_.parameter_.Destroy();
   if (this != internal_default_instance()) delete _impl_.compiler_version_;
 }
-void CodeGeneratorRequest::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void CodeGeneratorRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.compiler.CodeGeneratorRequest)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _internal_mutable_file_to_generate()->Clear();
-  _internal_mutable_proto_file()->Clear();
-  _internal_mutable_source_file_descriptors()->Clear();
+  _impl_.file_to_generate_.Clear();
+  _impl_.proto_file_.Clear();
+  _impl_.source_file_descriptors_.Clear();
   cached_has_bits = _impl_._has_bits_[0];
   if (cached_has_bits & 0x00000003u) {
     if (cached_has_bits & 0x00000001u) {
@@ -941,6 +937,9 @@ PROTOBUF_NOINLINE bool CodeGeneratorRequest::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* CodeGeneratorRequest::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void CodeGeneratorRequest::InternalSwap(CodeGeneratorRequest* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
@@ -986,6 +985,7 @@ const ::google::protobuf::GeneratedCodeInfo& CodeGeneratorResponse_File::_Intern
   return *msg->_impl_.generated_code_info_;
 }
 void CodeGeneratorResponse_File::clear_generated_code_info() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   if (_impl_.generated_code_info_ != nullptr) _impl_.generated_code_info_->Clear();
   _impl_._has_bits_[0] &= ~0x00000008u;
 }
@@ -1069,12 +1069,10 @@ inline void CodeGeneratorResponse_File::SharedDtor() {
   _impl_.content_.Destroy();
   if (this != internal_default_instance()) delete _impl_.generated_code_info_;
 }
-void CodeGeneratorResponse_File::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void CodeGeneratorResponse_File::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.compiler.CodeGeneratorResponse.File)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -1291,6 +1289,9 @@ PROTOBUF_NOINLINE bool CodeGeneratorResponse_File::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* CodeGeneratorResponse_File::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void CodeGeneratorResponse_File::InternalSwap(CodeGeneratorResponse_File* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
@@ -1378,17 +1379,15 @@ inline void CodeGeneratorResponse::SharedDtor() {
   _impl_.file_.~RepeatedPtrField();
   _impl_.error_.Destroy();
 }
-void CodeGeneratorResponse::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void CodeGeneratorResponse::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.compiler.CodeGeneratorResponse)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _internal_mutable_file()->Clear();
+  _impl_.file_.Clear();
   cached_has_bits = _impl_._has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
     _impl_.error_.ClearNonDefaultToEmpty();
@@ -1564,6 +1563,9 @@ PROTOBUF_NOINLINE bool CodeGeneratorResponse::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* CodeGeneratorResponse::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void CodeGeneratorResponse::InternalSwap(CodeGeneratorResponse* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();

@@ -147,12 +147,10 @@ Timestamp::~Timestamp() {
 inline void Timestamp::SharedDtor() {
   ABSL_DCHECK(GetArenaForAllocation() == nullptr);
 }
-void Timestamp::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void Timestamp::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.Timestamp)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -294,6 +292,9 @@ PROTOBUF_NOINLINE bool Timestamp::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* Timestamp::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void Timestamp::InternalSwap(Timestamp* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);

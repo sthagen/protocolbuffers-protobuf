@@ -151,17 +151,15 @@ inline void FieldMask::SharedDtor() {
   ABSL_DCHECK(GetArenaForAllocation() == nullptr);
   _internal_mutable_paths()->~RepeatedPtrField();
 }
-void FieldMask::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void FieldMask::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.FieldMask)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _internal_mutable_paths()->Clear();
+  _impl_.paths_.Clear();
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
@@ -276,6 +274,9 @@ PROTOBUF_NOINLINE bool FieldMask::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* FieldMask::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void FieldMask::InternalSwap(FieldMask* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);

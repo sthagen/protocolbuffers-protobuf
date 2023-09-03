@@ -42,7 +42,6 @@
 
 #include "google/protobuf/any.pb.h"
 #include "google/protobuf/descriptor.pb.h"
-#include "google/protobuf/text_format.h"
 #include "google/protobuf/testing/googletest.h"
 #include <gtest/gtest.h>
 #include "absl/container/flat_hash_map.h"
@@ -52,6 +51,7 @@
 #include "absl/strings/substitute.h"
 #include "google/protobuf/compiler/retention.h"
 #include "google/protobuf/test_util2.h"
+#include "google/protobuf/text_format.h"
 #include "google/protobuf/unittest.pb.h"
 #include "google/protobuf/unittest_custom_options.pb.h"
 #include "google/protobuf/unittest_import.pb.h"
@@ -171,6 +171,8 @@ class ParserTest : public testing::Test {
   // input.
   void ExpectHasEarlyExitErrors(const char* text, const char* expected_errors) {
     SetupParser(text);
+    SourceLocationTable source_locations;
+    parser_->RecordSourceLocationsTo(&source_locations);
     FileDescriptorProto file;
     EXPECT_FALSE(parser_->Parse(input_.get(), &file));
     EXPECT_EQ(expected_errors, error_collector_.text_);
@@ -1130,6 +1132,19 @@ TEST_F(ParseMessageTest, ExplicitOptionalLabelProto3) {
       "  oneof_decl { name:\"_foo\" } "
       "  oneof_decl { name:\"X_foo\" } "
       "}");
+}
+
+TEST_F(ParseMessageTest, CanHandleErrorOnFirstToken) {
+  require_syntax_identifier_ = false;
+  ExpectHasEarlyExitErrors(
+      "/", "0:0: Expected top-level statement (e.g. \"message\").\n");
+
+  require_syntax_identifier_ = true;
+  ExpectHasEarlyExitErrors(
+      "/",
+      "0:0: Expected top-level statement (e.g. \"message\").\n"
+      "0:0: File must begin with a syntax statement, e.g. 'syntax = "
+      "\"proto2\";'.\n");
 }
 
 // ===================================================================
@@ -2135,6 +2150,22 @@ TEST_F(ParserValidationErrorTest, ExtensionRangeNumberError) {
       "1:13: Suggested field numbers for Foo: 1\n");
 }
 
+TEST_F(ParserValidationErrorTest, ExtensionRangeNumberOrderError) {
+  ExpectHasValidationErrors(
+      "message Foo {\n"
+      "  extensions 2 to 1;\n"
+      "}\n",
+      "1:13: Extension range end number must be greater than start number.\n");
+}
+
+TEST_F(ParserValidationErrorTest, ReservedRangeError) {
+  ExpectHasValidationErrors(
+      "message Foo {\n"
+      "  reserved 2 to 1;\n"
+      "}\n",
+      "1:11: Reserved range end number must be greater than start number.\n");
+}
+
 TEST_F(ParserValidationErrorTest, Proto3ExtensionError) {
   ExpectHasValidationErrors(
       "syntax = 'proto3';\n"
@@ -2331,8 +2362,17 @@ TEST_F(ParserValidationErrorTest, EnumValueAliasError) {
       "definition. The next available enum value is 2.\n");
 }
 
-TEST_F(ParserValidationErrorTest, ExplicitlyMapEntryError) {
+TEST_F(ParserValidationErrorTest, EnumReservedRangeError) {
   ExpectHasValidationErrors(
+      "enum Foo {\n"
+      "  BAR = 1;\n"
+      "  reserved 2 to 1;\n"
+      "}\n",
+      "2:11: Reserved range end number must be greater than start number.\n");
+}
+
+TEST_F(ParserValidationErrorTest, ExplicitlyMapEntryError) {
+  ExpectHasErrors(
       "message Foo {\n"
       "  message ValueEntry {\n"
       "    option map_entry = true;\n"
@@ -2340,9 +2380,8 @@ TEST_F(ParserValidationErrorTest, ExplicitlyMapEntryError) {
       "    optional int32 value = 2;\n"
       "    extensions 99 to 999;\n"
       "  }\n"
-      "  repeated ValueEntry value = 1;\n"
       "}",
-      "7:11: map_entry should not be set explicitly. Use "
+      "2:11: map_entry should not be set explicitly. Use "
       "map<KeyType, ValueType> instead.\n");
 }
 
@@ -3047,7 +3086,7 @@ class SourceInfoTest : public ParserTest {
       }
     }
 
-      return false;
+    return false;
   }
 
  private:
@@ -4217,7 +4256,7 @@ TEST_F(ParseEditionsTest, InvalidMerge) {
           string foo = 1 [
             default = "hello",
             features.field_presence = FIELD_PRESENCE_UNKNOWN,
-            features.string_field_validation = STRING_FIELD_VALIDATION_UNKNOWN
+            features.enum_type = ENUM_TYPE_UNKNOWN
           ];
         })schema",
       "5:17: Feature field google.protobuf.FeatureSet.field_presence must resolve to a "
@@ -4238,7 +4277,6 @@ TEST_F(ParseEditionsTest, FeaturesWithoutEditions) {
       "1:8: Features are only valid under editions.\n"
       "4:17: Features are only valid under editions.\n");
 }
-
 
 
 }  // anonymous namespace

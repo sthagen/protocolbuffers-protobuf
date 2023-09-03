@@ -314,9 +314,11 @@ class RepeatedPrimitive final : public FieldGeneratorBase {
   std::vector<Sub> MakeVars() const override { return Vars(field_, *opts_); }
 
   void GenerateClearingCode(io::Printer* p) const override {
-    p->Emit(R"cc(
-      _internal_mutable_$name$()->Clear();
-    )cc");
+    if (should_split()) {
+      p->Emit("$field_$.ClearIfNotDefault();\n");
+    } else {
+      p->Emit("$field_$.Clear();\n");
+    }
   }
 
   void GenerateMergingCode(io::Printer* p) const override {
@@ -351,9 +353,11 @@ class RepeatedPrimitive final : public FieldGeneratorBase {
         $field_$.DeleteIfNotDefault();
       )cc");
     } else {
+#ifndef PROTOBUF_EXPLICIT_CONSTRUCTORS
       p->Emit(R"cc(
         $field_$.~RepeatedField();
       )cc");
+#endif  // !PROTOBUF_EXPLICIT_CONSTRUCTORS
     }
   }
 
@@ -390,6 +394,31 @@ class RepeatedPrimitive final : public FieldGeneratorBase {
       decltype($field_$){from.$field_$},
     )cc");
     GenerateCacheSizeInitializer(p);
+  }
+
+  void GenerateMemberConstexprConstructor(io::Printer* p) const override {
+    p->Emit("$name$_{}");
+    if (HasCachedSize()) {
+      p->Emit(",\n_$name$_cached_byte_size_{0}");
+    }
+  }
+
+  void GenerateMemberConstructor(io::Printer* p) const override {
+    p->Emit("$name$_{visibility, arena}");
+    if (HasCachedSize()) {
+      p->Emit(",\n_$name$_cached_byte_size_{0}");
+    }
+  }
+
+  void GenerateMemberCopyConstructor(io::Printer* p) const override {
+    p->Emit("$name$_{visibility, arena, from.$name$_}");
+    if (HasCachedSize()) {
+      p->Emit(",\n_$name$_cached_byte_size_{0}");
+    }
+  }
+
+  void GenerateOneofCopyConstruct(io::Printer* p) const override {
+    ABSL_LOG(FATAL) << "Not supported";
   }
 
   void GeneratePrivateMembers(io::Printer* p) const override;

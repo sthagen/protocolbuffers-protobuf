@@ -358,31 +358,10 @@ const ::google::protobuf::EnumDescriptor* Field_Kind_descriptor() {
   ::google::protobuf::internal::AssignDescriptors(&descriptor_table_google_2fprotobuf_2ftype_2eproto);
   return file_level_enum_descriptors_google_2fprotobuf_2ftype_2eproto[0];
 }
+PROTOBUF_CONSTINIT const uint32_t Field_Kind_internal_data_[] = {
+    1245184u, 0u, };
 bool Field_Kind_IsValid(int value) {
-  switch (value) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-    case 9:
-    case 10:
-    case 11:
-    case 12:
-    case 13:
-    case 14:
-    case 15:
-    case 16:
-    case 17:
-    case 18:
-      return true;
-    default:
-      return false;
-  }
+  return 0 <= value && value <= 18;
 }
 #if (__cplusplus < 201703) && \
   (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
@@ -416,16 +395,10 @@ const ::google::protobuf::EnumDescriptor* Field_Cardinality_descriptor() {
   ::google::protobuf::internal::AssignDescriptors(&descriptor_table_google_2fprotobuf_2ftype_2eproto);
   return file_level_enum_descriptors_google_2fprotobuf_2ftype_2eproto[1];
 }
+PROTOBUF_CONSTINIT const uint32_t Field_Cardinality_internal_data_[] = {
+    262144u, 0u, };
 bool Field_Cardinality_IsValid(int value) {
-  switch (value) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-      return true;
-    default:
-      return false;
-  }
+  return 0 <= value && value <= 3;
 }
 #if (__cplusplus < 201703) && \
   (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
@@ -444,15 +417,10 @@ const ::google::protobuf::EnumDescriptor* Syntax_descriptor() {
   ::google::protobuf::internal::AssignDescriptors(&descriptor_table_google_2fprotobuf_2ftype_2eproto);
   return file_level_enum_descriptors_google_2fprotobuf_2ftype_2eproto[2];
 }
+PROTOBUF_CONSTINIT const uint32_t Syntax_internal_data_[] = {
+    196608u, 0u, };
 bool Syntax_IsValid(int value) {
-  switch (value) {
-    case 0:
-    case 1:
-    case 2:
-      return true;
-    default:
-      return false;
-  }
+  return 0 <= value && value <= 2;
 }
 // ===================================================================
 
@@ -471,6 +439,7 @@ const ::google::protobuf::SourceContext& Type::_Internal::source_context(const T
   return *msg->_impl_.source_context_;
 }
 void Type::clear_source_context() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   if (_impl_.source_context_ != nullptr) _impl_.source_context_->Clear();
   _impl_._has_bits_[0] &= ~0x00000001u;
 }
@@ -552,19 +521,17 @@ inline void Type::SharedDtor() {
   _impl_.edition_.Destroy();
   if (this != internal_default_instance()) delete _impl_.source_context_;
 }
-void Type::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void Type::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.Type)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _internal_mutable_fields()->Clear();
-  _internal_mutable_oneofs()->Clear();
-  _internal_mutable_options()->Clear();
+  _impl_.fields_.Clear();
+  _impl_.oneofs_.Clear();
+  _impl_.options_.Clear();
   _impl_.name_.ClearToEmpty();
   _impl_.edition_.ClearToEmpty();
   cached_has_bits = _impl_._has_bits_[0];
@@ -831,6 +798,9 @@ PROTOBUF_NOINLINE bool Type::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* Type::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void Type::InternalSwap(Type* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
@@ -965,17 +935,15 @@ inline void Field::SharedDtor() {
   _impl_.json_name_.Destroy();
   _impl_.default_value_.Destroy();
 }
-void Field::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void Field::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.Field)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _internal_mutable_options()->Clear();
+  _impl_.options_.Clear();
   _impl_.name_.ClearToEmpty();
   _impl_.type_url_.ClearToEmpty();
   _impl_.json_name_.ClearToEmpty();
@@ -1308,6 +1276,9 @@ PROTOBUF_NOINLINE bool Field::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* Field::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void Field::InternalSwap(Field* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
@@ -1352,6 +1323,7 @@ const ::google::protobuf::SourceContext& Enum::_Internal::source_context(const E
   return *msg->_impl_.source_context_;
 }
 void Enum::clear_source_context() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   if (_impl_.source_context_ != nullptr) _impl_.source_context_->Clear();
   _impl_._has_bits_[0] &= ~0x00000001u;
 }
@@ -1430,18 +1402,16 @@ inline void Enum::SharedDtor() {
   _impl_.edition_.Destroy();
   if (this != internal_default_instance()) delete _impl_.source_context_;
 }
-void Enum::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void Enum::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.Enum)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _internal_mutable_enumvalue()->Clear();
-  _internal_mutable_options()->Clear();
+  _impl_.enumvalue_.Clear();
+  _impl_.options_.Clear();
   _impl_.name_.ClearToEmpty();
   _impl_.edition_.ClearToEmpty();
   cached_has_bits = _impl_._has_bits_[0];
@@ -1687,6 +1657,9 @@ PROTOBUF_NOINLINE bool Enum::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* Enum::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void Enum::InternalSwap(Enum* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
@@ -1768,17 +1741,15 @@ inline void EnumValue::SharedDtor() {
   _impl_.options_.~RepeatedPtrField();
   _impl_.name_.Destroy();
 }
-void EnumValue::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void EnumValue::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.EnumValue)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _internal_mutable_options()->Clear();
+  _impl_.options_.Clear();
   _impl_.name_.ClearToEmpty();
   _impl_.number_ = 0;
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
@@ -1942,6 +1913,9 @@ PROTOBUF_NOINLINE bool EnumValue::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* EnumValue::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void EnumValue::InternalSwap(EnumValue* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
@@ -1975,6 +1949,7 @@ const ::google::protobuf::Any& Option::_Internal::value(const Option* msg) {
   return *msg->_impl_.value_;
 }
 void Option::clear_value() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   if (_impl_.value_ != nullptr) _impl_.value_->Clear();
   _impl_._has_bits_[0] &= ~0x00000001u;
 }
@@ -2030,12 +2005,10 @@ inline void Option::SharedDtor() {
   _impl_.name_.Destroy();
   if (this != internal_default_instance()) delete _impl_.value_;
 }
-void Option::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void Option::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.Option)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -2189,6 +2162,9 @@ PROTOBUF_NOINLINE bool Option::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* Option::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void Option::InternalSwap(Option* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();

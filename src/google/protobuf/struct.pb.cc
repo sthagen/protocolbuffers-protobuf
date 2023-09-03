@@ -212,13 +212,10 @@ const ::google::protobuf::EnumDescriptor* NullValue_descriptor() {
   ::google::protobuf::internal::AssignDescriptors(&descriptor_table_google_2fprotobuf_2fstruct_2eproto);
   return file_level_enum_descriptors_google_2fprotobuf_2fstruct_2eproto[0];
 }
+PROTOBUF_CONSTINIT const uint32_t NullValue_internal_data_[] = {
+    65536u, 0u, };
 bool NullValue_IsValid(int value) {
-  switch (value) {
-    case 0:
-      return true;
-    default:
-      return false;
-  }
+  return 0 <= value && value <= 0;
 }
 // ===================================================================
 
@@ -273,12 +270,10 @@ inline void Struct::SharedDtor() {
   ABSL_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.fields_.~MapField();
 }
-void Struct::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void Struct::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.Struct)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -317,7 +312,10 @@ const ::_pbi::TcParseTable<0, 1, 2, 37, 2> Struct::_table_ = {
     {PROTOBUF_FIELD_OFFSET(Struct, _impl_.fields_), 0, 0,
     (0 | ::_fl::kFcRepeated | ::_fl::kMap)},
   }}, {{
-    {::_pbi::TcParser::GetMapAuxInfo<decltype(Struct()._impl_.fields_)>(1, 0, 0)},
+    {::_pbi::TcParser::GetMapAuxInfo<
+        decltype(Struct()._impl_.fields_)>(
+        1, 0, 0, 9,
+        11)},
     {::_pbi::TcParser::CreateInArenaStorageCb<::google::protobuf::Value>},
   }}, {{
     "\26\6\0\0\0\0\0\0"
@@ -336,7 +334,9 @@ const ::_pbi::TcParseTable<0, 1, 2, 37, 2> Struct::_table_ = {
   // map<string, .google.protobuf.Value> fields = 1;
   if (!_internal_fields().empty()) {
     using MapType = ::google::protobuf::Map<std::string, ::google::protobuf::Value>;
-    using WireHelper = Struct_FieldsEntry_DoNotUse::Funcs;
+    using WireHelper = _pbi::MapEntryFuncs<std::string, ::google::protobuf::Value,
+                                   _pbi::WireFormatLite::TYPE_STRING,
+                                   _pbi::WireFormatLite::TYPE_MESSAGE>;
     const auto& field = _internal_fields();
 
     if (stream->IsSerializationDeterministic() && field.size() > 1) {
@@ -378,7 +378,9 @@ const ::_pbi::TcParseTable<0, 1, 2, 37, 2> Struct::_table_ = {
   // map<string, .google.protobuf.Value> fields = 1;
   total_size += 1 * ::google::protobuf::internal::FromIntSize(_internal_fields_size());
   for (const auto& entry : _internal_fields()) {
-    total_size += Struct_FieldsEntry_DoNotUse::Funcs::ByteSizeLong(entry.first, entry.second);
+    total_size += _pbi::MapEntryFuncs<std::string, ::google::protobuf::Value,
+                                   _pbi::WireFormatLite::TYPE_STRING,
+                                   _pbi::WireFormatLite::TYPE_MESSAGE>::ByteSizeLong(entry.first, entry.second);
   }
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
@@ -413,6 +415,9 @@ PROTOBUF_NOINLINE bool Struct::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* Struct::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void Struct::InternalSwap(Struct* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
@@ -445,10 +450,9 @@ void Value::set_allocated_struct_value(::google::protobuf::Struct* struct_value)
   clear_kind();
   if (struct_value) {
     ::google::protobuf::Arena* submessage_arena =
-      ::google::protobuf::Arena::InternalGetOwningArena(struct_value);
+        ::google::protobuf::Arena::InternalGetOwningArena(struct_value);
     if (message_arena != submessage_arena) {
-      struct_value = ::google::protobuf::internal::GetOwnedMessage(
-          message_arena, struct_value, submessage_arena);
+      struct_value = ::google::protobuf::internal::GetOwnedMessage(message_arena, struct_value, submessage_arena);
     }
     set_has_struct_value();
     _impl_.kind_.struct_value_ = struct_value;
@@ -460,10 +464,9 @@ void Value::set_allocated_list_value(::google::protobuf::ListValue* list_value) 
   clear_kind();
   if (list_value) {
     ::google::protobuf::Arena* submessage_arena =
-      ::google::protobuf::Arena::InternalGetOwningArena(list_value);
+        ::google::protobuf::Arena::InternalGetOwningArena(list_value);
     if (message_arena != submessage_arena) {
-      list_value = ::google::protobuf::internal::GetOwnedMessage(
-          message_arena, list_value, submessage_arena);
+      list_value = ::google::protobuf::internal::GetOwnedMessage(message_arena, list_value, submessage_arena);
     }
     set_has_list_value();
     _impl_.kind_.list_value_ = list_value;
@@ -540,12 +543,10 @@ inline void Value::SharedDtor() {
     clear_kind();
   }
 }
-void Value::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 void Value::clear_kind() {
 // @@protoc_insertion_point(one_of_clear_start:google.protobuf.Value)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   switch (kind_case()) {
     case kNullValue: {
       // No need to clear
@@ -585,6 +586,7 @@ void Value::clear_kind() {
 
 PROTOBUF_NOINLINE void Value::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.Value)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -816,6 +818,9 @@ PROTOBUF_NOINLINE bool Value::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* Value::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void Value::InternalSwap(Value* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
@@ -867,17 +872,15 @@ inline void ListValue::SharedDtor() {
   ABSL_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.values_.~RepeatedPtrField();
 }
-void ListValue::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void ListValue::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.ListValue)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _internal_mutable_values()->Clear();
+  _impl_.values_.Clear();
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
@@ -990,6 +993,9 @@ PROTOBUF_NOINLINE bool ListValue::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* ListValue::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void ListValue::InternalSwap(ListValue* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);

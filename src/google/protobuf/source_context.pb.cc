@@ -165,12 +165,10 @@ inline void SourceContext::SharedDtor() {
   ABSL_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.file_name_.Destroy();
 }
-void SourceContext::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
 
 PROTOBUF_NOINLINE void SourceContext::Clear() {
 // @@protoc_insertion_point(message_clear_start:google.protobuf.SourceContext)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -292,6 +290,9 @@ PROTOBUF_NOINLINE bool SourceContext::IsInitialized() const {
   return true;
 }
 
+::_pbi::CachedSize* SourceContext::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
 void SourceContext::InternalSwap(SourceContext* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();

@@ -36,18 +36,12 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <functional>
 #include <limits>
 #include <memory>
-#include <queue>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "google/protobuf/stubs/common.h"
-#include "google/protobuf/compiler/scc.h"
-#include "google/protobuf/descriptor.h"
-#include "google/protobuf/dynamic_message.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/absl_check.h"
@@ -57,13 +51,14 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
-#include "absl/strings/strip.h"
 #include "absl/strings/substitute.h"
 #include "absl/synchronization/mutex.h"
 #include "google/protobuf/compiler/cpp/names.h"
 #include "google/protobuf/compiler/cpp/options.h"
+#include "google/protobuf/compiler/scc.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor.pb.h"
+#include "google/protobuf/dynamic_message.h"
 #include "google/protobuf/io/printer.h"
 #include "google/protobuf/io/strtod.h"
 #include "google/protobuf/wire_format.h"
@@ -323,6 +318,11 @@ const char kThinSeparator[] =
 bool CanInitializeByZeroing(const FieldDescriptor* field,
                             const Options& options,
                             MessageSCCAnalyzer* scc_analyzer) {
+  static_assert(
+      std::numeric_limits<float>::is_iec559 &&
+          std::numeric_limits<double>::is_iec559,
+      "proto / abseil requires iec559, which has zero initialized floats.");
+
   if (field->is_repeated() || field->is_extension()) return false;
   switch (field->cpp_type()) {
     case FieldDescriptor::CPPTYPE_ENUM:
@@ -931,9 +931,17 @@ bool IsRarelyPresent(const FieldDescriptor* field, const Options& options) {
   return false;
 }
 
+bool IsLikelyPresent(const FieldDescriptor* field, const Options& options) {
+  return false;
+}
+
 float GetPresenceProbability(const FieldDescriptor* field,
                              const Options& options) {
   return 1.f;
+}
+
+bool IsStringInliningEnabled(const Options& options) {
+  return options.force_inline_string || IsProfileDriven(options);
 }
 
 bool IsStringInlined(const FieldDescriptor* field, const Options& options) {
@@ -1593,13 +1601,13 @@ static bool HasExtensionFromFile(const Message& msg, const FileDescriptor* file,
 static bool HasBootstrapProblem(const FileDescriptor* file,
                                 const Options& options,
                                 bool* has_opt_codesize_extension) {
-  struct BoostrapGlobals {
+  struct BootstrapGlobals {
     absl::Mutex mutex;
     absl::flat_hash_set<const FileDescriptor*> cached ABSL_GUARDED_BY(mutex);
     absl::flat_hash_set<const FileDescriptor*> non_cached
         ABSL_GUARDED_BY(mutex);
   };
-  static auto& bootstrap_cache = *new BoostrapGlobals();
+  static auto& bootstrap_cache = *new BootstrapGlobals();
 
   absl::MutexLock lock(&bootstrap_cache.mutex);
   if (bootstrap_cache.cached.contains(file)) return true;
@@ -1718,6 +1726,11 @@ bool IsFileDescriptorProto(const FileDescriptor* file, const Options& options) {
     if (file->message_type(i)->name() == "FileDescriptorProto") return true;
   }
   return false;
+}
+
+bool ShouldGenerateClass(const Descriptor* descriptor, const Options& options) {
+  return !IsMapEntryMessage(descriptor) ||
+         HasDescriptorMethods(descriptor->file(), options);
 }
 
 }  // namespace cpp

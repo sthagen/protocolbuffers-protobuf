@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "absl/log/absl_check.h"
+#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/substitute.h"
 #include "google/protobuf/compiler/cpp/field.h"
@@ -265,9 +266,11 @@ class RepeatedEnum : public FieldGeneratorBase {
   }
 
   void GenerateClearingCode(io::Printer* p) const override {
-    p->Emit(R"cc(
-      _internal_mutable_$name$()->Clear();
-    )cc");
+    if (should_split()) {
+      p->Emit("$field_$.ClearIfNotDefault();\n");
+    } else {
+      p->Emit("$field_$.Clear();\n");
+    }
   }
 
   void GenerateMergingCode(io::Printer* p) const override {
@@ -302,9 +305,11 @@ class RepeatedEnum : public FieldGeneratorBase {
         $field_$.DeleteIfNotDefault();
       )cc");
     } else {
+#ifndef PROTOBUF_EXPLICIT_CONSTRUCTORS
       p->Emit(R"cc(
         _internal_mutable_$name$()->~RepeatedField();
       )cc");
+#endif  // !PROTOBUF_EXPLICIT_CONSTRUCTORS
     }
   }
 
@@ -342,6 +347,31 @@ class RepeatedEnum : public FieldGeneratorBase {
         /*decltype($cached_size_$)*/ {0},
       )cc");
     }
+  }
+
+  void GenerateMemberConstexprConstructor(io::Printer* p) const override {
+    p->Emit("$name$_{}");
+    if (has_cached_size_) {
+      p->Emit(",\n_$name$_cached_byte_size_{0}");
+    }
+  }
+
+  void GenerateMemberConstructor(io::Printer* p) const override {
+    p->Emit("$name$_{visibility, arena}");
+    if (has_cached_size_) {
+      p->Emit(",\n_$name$_cached_byte_size_{0}");
+    }
+  }
+
+  void GenerateMemberCopyConstructor(io::Printer* p) const override {
+    p->Emit("$name$_{visibility, arena, from.$name$_}");
+    if (has_cached_size_) {
+      p->Emit(",\n_$name$_cached_byte_size_{0}");
+    }
+  }
+
+  void GenerateOneofCopyConstruct(io::Printer* p) const override {
+    ABSL_LOG(FATAL) << "Not supported";
   }
 
   void GenerateCopyConstructorCode(io::Printer* p) const override {

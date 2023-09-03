@@ -101,6 +101,17 @@ absl::flat_hash_map<absl::string_view, std::string> CommonVars(
   };
 }
 
+static bool IsStringMapType(const FieldDescriptor& field) {
+  if (!field.is_map()) return false;
+  for (int i = 0; i < field.message_type()->field_count(); ++i) {
+    if (field.message_type()->field(i)->type() ==
+        FieldDescriptor::TYPE_STRING) {
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace
 
 bool CppGenerator::Generate(const FileDescriptor* file,
@@ -191,16 +202,6 @@ bool CppGenerator::Generate(const FileDescriptor* file,
       } while (pos < value.size());
     } else if (key == "force_eagerly_verified_lazy") {
       file_options.force_eagerly_verified_lazy = true;
-    } else if (key == "experimental_tail_call_table_mode") {
-      if (value == "never") {
-        file_options.tctable_mode = Options::kTCTableNever;
-      } else if (value == "always") {
-        file_options.tctable_mode = Options::kTCTableAlways;
-      } else {
-        *error = absl::StrCat(
-            "Unknown value for experimental_tail_call_table_mode: ", value);
-        return false;
-      }
     } else if (key == "experimental_strip_nonfunctional_codegen") {
       file_options.strip_nonfunctional_codegen = true;
     } else {
@@ -364,21 +365,48 @@ bool CppGenerator::Generate(const FileDescriptor* file,
 absl::Status CppGenerator::ValidateFeatures(const FileDescriptor* file) const {
   absl::Status status = absl::OkStatus();
   google::protobuf::internal::VisitDescriptors(*file, [&](const FieldDescriptor& field) {
-    const FeatureSet& source_features = GetSourceFeatures(field);
-    const FeatureSet& raw_features = GetSourceRawFeatures(field);
-    if (raw_features.GetExtension(::pb::cpp).has_legacy_closed_enum() &&
-        field.cpp_type() != FieldDescriptor::CPPTYPE_ENUM) {
-      status = absl::FailedPreconditionError(absl::StrCat(
-          "Field ", field.full_name(),
-          " specifies the legacy_closed_enum feature but has non-enum type."));
-    }
+    const FeatureSet& resolved_features = GetResolvedSourceFeatures(field);
+    const pb::CppFeatures& unresolved_features =
+        GetUnresolvedSourceFeatures(field, pb::cpp);
     if (field.enum_type() != nullptr &&
-        source_features.GetExtension(::pb::cpp).legacy_closed_enum() &&
-        source_features.field_presence() == FeatureSet::IMPLICIT) {
+        resolved_features.GetExtension(::pb::cpp).legacy_closed_enum() &&
+        resolved_features.field_presence() == FeatureSet::IMPLICIT) {
       status = absl::FailedPreconditionError(
           absl::StrCat("Field ", field.full_name(),
                        " has a closed enum type with implicit presence."));
     }
+    if (resolved_features.GetExtension(::pb::cpp).utf8_validation() ==
+        pb::CppFeatures::UTF8_VALIDATION_UNKNOWN) {
+      status = absl::FailedPreconditionError(absl::StrCat(
+          "Field ", field.full_name(),
+          " has an unknown value for the utf8_validation feature. ",
+          resolved_features.DebugString(),
+          "\nRawFeatures: ", unresolved_features));
+    }
+
+    if (field.containing_type() == nullptr ||
+        !field.containing_type()->options().map_entry()) {
+      // Skip validation of explicit features on generated map fields.  These
+      // will be blindly propagated from the original map field, and may violate
+      // a lot of these conditions.  Note: we do still validate the
+      // user-specified map field.
+      if (unresolved_features.has_legacy_closed_enum() &&
+          field.cpp_type() != FieldDescriptor::CPPTYPE_ENUM) {
+        status = absl::FailedPreconditionError(
+            absl::StrCat("Field ", field.full_name(),
+                         " specifies the legacy_closed_enum feature but has "
+                         "non-enum type."));
+      }
+      if (field.type() != FieldDescriptor::TYPE_STRING &&
+          !IsStringMapType(field) &&
+          unresolved_features.has_utf8_validation()) {
+        status = absl::FailedPreconditionError(
+            absl::StrCat("Field ", field.full_name(),
+                         " specifies the utf8_validation feature but is not of "
+                         "string type."));
+      }
+    }
+
 #ifdef PROTOBUF_FUTURE_REMOVE_WRONG_CTYPE
     if (field.options().has_ctype()) {
       if (field.cpp_type() != FieldDescriptor::CPPTYPE_STRING) {

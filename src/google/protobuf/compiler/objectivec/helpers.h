@@ -36,6 +36,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/io/printer.h"
@@ -47,6 +49,10 @@ namespace objectivec {
 
 // Escape C++ trigraphs by escaping question marks to "\?".
 std::string EscapeTrigraphs(absl::string_view to_escape);
+
+// Returns true if the extension field is a custom option.
+// https://protobuf.dev/programming-guides/proto2/#customoptions
+bool ExtensionIsCustomOption(const FieldDescriptor* extension_field);
 
 enum ObjectiveCType {
   OBJECTIVECTYPE_INT32,

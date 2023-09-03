@@ -83,6 +83,10 @@ class PROTOBUF_EXPORT Timestamp final :
     *this = ::std::move(from);
   }
 
+  inline Timestamp(::google::protobuf::Arena* arena, const Timestamp& from)
+    : Timestamp(arena) {
+    MergeFrom(from);
+  }
   inline Timestamp& operator=(const Timestamp& from) {
     CopyFrom(from);
     return *this;
@@ -101,10 +105,12 @@ class PROTOBUF_EXPORT Timestamp final :
     return *this;
   }
 
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
   }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
   }
 
@@ -170,12 +176,12 @@ class PROTOBUF_EXPORT Timestamp final :
   const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
   ::uint8_t* _InternalSerialize(
       ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
 
   private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
   void SharedCtor(::google::protobuf::Arena* arena);
   void SharedDtor();
-  void SetCachedSize(int size) const final;
   void InternalSwap(Timestamp* other);
 
   private:
@@ -236,7 +242,7 @@ class PROTOBUF_EXPORT Timestamp final :
     ::int64_t seconds_;
     ::int32_t nanos_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
-    PROTOBUF_TSAN_DECLARE_MEMBER;
+    PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_google_2fprotobuf_2ftimestamp_2eproto;
@@ -260,6 +266,7 @@ class PROTOBUF_EXPORT Timestamp final :
 
 // int64 seconds = 1;
 inline void Timestamp::clear_seconds() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.seconds_ = ::int64_t{0};
 }
 inline ::int64_t Timestamp::seconds() const {
@@ -282,6 +289,7 @@ inline void Timestamp::_internal_set_seconds(::int64_t value) {
 
 // int32 nanos = 2;
 inline void Timestamp::clear_nanos() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.nanos_ = 0;
 }
 inline ::int32_t Timestamp::nanos() const {

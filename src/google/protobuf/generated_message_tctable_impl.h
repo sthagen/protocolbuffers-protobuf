@@ -37,13 +37,13 @@
 #include <type_traits>
 #include <utility>
 
-#include "google/protobuf/port.h"
 #include "google/protobuf/extension_set.h"
 #include "google/protobuf/generated_message_tctable_decl.h"
 #include "google/protobuf/map.h"
 #include "google/protobuf/message_lite.h"
 #include "google/protobuf/metadata_lite.h"
 #include "google/protobuf/parse_context.h"
+#include "google/protobuf/port.h"
 #include "google/protobuf/raw_ptr.h"
 #include "google/protobuf/repeated_field.h"
 #include "google/protobuf/repeated_ptr_field.h"
@@ -167,7 +167,7 @@ enum TransformValidation : uint16_t {
 
   // Varint fields:
   kTvZigZag    = 1 << kTvShift,
-  kTvEnum      = 2 << kTvShift,  // validate using generated _IsValid()
+  kTvEnum      = 2 << kTvShift,  // validate using ValidateEnum()
   kTvRange     = 3 << kTvShift,  // validate using FieldAux::enum_range
   // String fields:
   kTvUtf8Debug = 1 << kTvShift,  // proto2
@@ -493,7 +493,7 @@ class PROTOBUF_EXPORT TcParser final {
 
   // Functions referenced by generated fast tables (closed enum):
   //   E: closed enum (N.B.: open enums use V32, above)
-  //   r: enum range  v: enum validator (_IsValid function)
+  //   r: enum range  v: enum validator (ValidateEnum function)
   //   S: singular   R: repeated   P: packed
   //   1/2: tag length (bytes)
   static const char* FastErS1(PROTOBUF_TC_PARAM_DECL);
@@ -580,10 +580,15 @@ class PROTOBUF_EXPORT TcParser final {
   static const char* FastMlS1(PROTOBUF_TC_PARAM_DECL);
   static const char* FastMlS2(PROTOBUF_TC_PARAM_DECL);
 
+  // NOTE: Do not dedup RefAt by having one call the other with a const_cast. It
+  // causes ICEs of gcc 7.5.
+  // https://github.com/protocolbuffers/protobuf/issues/13715
   template <typename T>
   static inline T& RefAt(void* x, size_t offset) {
     T* target = reinterpret_cast<T*>(static_cast<char*>(x) + offset);
-#ifndef NDEBUG
+#if !defined(NDEBUG) && !(defined(_MSC_VER) && defined(_M_IX86))
+    // Check the alignment in debug mode, except in 32-bit msvc because it does
+    // not respect the alignment as expressed by `alignof(T)`
     if (PROTOBUF_PREDICT_FALSE(
             reinterpret_cast<uintptr_t>(target) % alignof(T) != 0)) {
       AlignFail(std::integral_constant<size_t, alignof(T)>(),
@@ -599,7 +604,9 @@ class PROTOBUF_EXPORT TcParser final {
   static inline const T& RefAt(const void* x, size_t offset) {
     const T* target =
         reinterpret_cast<const T*>(static_cast<const char*>(x) + offset);
-#ifndef NDEBUG
+#if !defined(NDEBUG) && !(defined(_MSC_VER) && defined(_M_IX86))
+    // Check the alignment in debug mode, except in 32-bit msvc because it does
+    // not respect the alignment as expressed by `alignof(T)`
     if (PROTOBUF_PREDICT_FALSE(
             reinterpret_cast<uintptr_t>(target) % alignof(T) != 0)) {
       AlignFail(std::integral_constant<size_t, alignof(T)>(),
@@ -660,15 +667,16 @@ class PROTOBUF_EXPORT TcParser final {
   template <typename MapField>
   static constexpr MapAuxInfo GetMapAuxInfo(bool fail_on_utf8_failure,
                                             bool log_debug_utf8_failure,
-                                            bool validated_enum_value) {
+                                            bool validated_enum_value,
+                                            int key_type, int value_type) {
     using MapType = typename MapField::MapType;
     using Node = typename MapType::Node;
     static_assert(alignof(Node) == alignof(NodeBase), "");
     // Verify the assumption made in MpMap, guaranteed by Map<>.
     assert(PROTOBUF_FIELD_OFFSET(Node, kv.first) == sizeof(NodeBase));
     return {
-        MakeMapTypeCard(MapField::kKeyFieldType),
-        MakeMapTypeCard(MapField::kValueFieldType),
+        MakeMapTypeCard(static_cast<WireFormatLite::FieldType>(key_type)),
+        MakeMapTypeCard(static_cast<WireFormatLite::FieldType>(value_type)),
         true,
         !std::is_base_of<MapFieldBaseForParse, MapField>::value,
         fail_on_utf8_failure,

@@ -83,6 +83,10 @@ class PROTOBUF_EXPORT Empty final :
     *this = ::std::move(from);
   }
 
+  inline Empty(::google::protobuf::Arena* arena, const Empty& from)
+    : Empty(arena) {
+    MergeFrom(from);
+  }
   inline Empty& operator=(const Empty& from) {
     CopyFrom(from);
     return *this;
@@ -101,10 +105,12 @@ class PROTOBUF_EXPORT Empty final :
     return *this;
   }
 
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
   }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
   }
 
@@ -190,7 +196,7 @@ class PROTOBUF_EXPORT Empty final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    PROTOBUF_TSAN_DECLARE_MEMBER;
+    PROTOBUF_TSAN_DECLARE_MEMBER
   };
   friend struct ::TableStruct_google_2fprotobuf_2fempty_2eproto;
 };

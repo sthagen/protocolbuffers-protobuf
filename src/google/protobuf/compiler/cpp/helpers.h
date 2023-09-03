@@ -35,8 +35,6 @@
 #ifndef GOOGLE_PROTOBUF_COMPILER_CPP_HELPERS_H__
 #define GOOGLE_PROTOBUF_COMPILER_CPP_HELPERS_H__
 
-#include <algorithm>
-#include <cstdint>
 #include <iterator>
 #include <string>
 #include <tuple>
@@ -372,8 +370,13 @@ bool IsProfileDriven(const Options& options);
 // Returns true if `field` is unlikely to be present based on PDProto profile.
 bool IsRarelyPresent(const FieldDescriptor* field, const Options& options);
 
+// Returns true if `field` is likely to be present based on PDProto profile.
+bool IsLikelyPresent(const FieldDescriptor* field, const Options& options);
+
 float GetPresenceProbability(const FieldDescriptor* field,
                              const Options& options);
+
+bool IsStringInliningEnabled(const Options& options);
 
 // Returns true if `field` should be inlined based on PDProto profile.
 bool IsStringInlined(const FieldDescriptor* field, const Options& options);
@@ -834,10 +837,6 @@ class PROTOC_EXPORT Formatter {
     vars_[key] = ToString(value);
   }
 
-  void AddMap(const absl::flat_hash_map<absl::string_view, std::string>& vars) {
-    for (const auto& keyval : vars) vars_[keyval.first] = keyval.second;
-  }
-
   template <typename... Args>
   void operator()(const char* format, const Args&... args) const {
     printer_->FormatInternal({ToString(args)...}, vars_, format);
@@ -867,17 +866,6 @@ class PROTOC_EXPORT Formatter {
     (*this)(format, static_cast<Args&&>(args)...);
     return ScopedIndenter(this);
   }
-
-  class PROTOC_EXPORT SaveState {
-   public:
-    explicit SaveState(Formatter* format)
-        : format_(format), vars_(format->vars_) {}
-    ~SaveState() { format_->vars_.swap(vars_); }
-
-   private:
-    Formatter* format_;
-    absl::flat_hash_map<absl::string_view, std::string> vars_;
-  };
 
  private:
   io::Printer* printer_;
@@ -1094,6 +1082,11 @@ std::vector<io::Printer::Sub> AnnotatedAccessors(
 // friends. This file needs special handling because it must be usable during
 // dynamic initialization.
 bool IsFileDescriptorProto(const FileDescriptor* file, const Options& options);
+
+// Determine if we should generate a class for the descriptor.
+// Some descriptors, like some map entries, are not represented as a generated
+// class.
+bool ShouldGenerateClass(const Descriptor* descriptor, const Options& options);
 
 }  // namespace cpp
 }  // namespace compiler
