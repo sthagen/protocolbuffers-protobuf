@@ -275,12 +275,12 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 #ifdef PROTOBUF_MINIMUM_EDITION
 #error PROTOBUF_MINIMUM_EDITION was previously defined
 #endif
-#define PROTOBUF_MINIMUM_EDITION "2023"
+#define PROTOBUF_MINIMUM_EDITION EDITION_2023
 
 #ifdef PROTOBUF_MAXIMUM_EDITION
 #error PROTOBUF_MAXIMUM_EDITION was previously defined
 #endif
-#define PROTOBUF_MAXIMUM_EDITION "2023"
+#define PROTOBUF_MAXIMUM_EDITION EDITION_2023
 
 #ifdef PROTOBUF_ALWAYS_INLINE
 #error PROTOBUF_ALWAYS_INLINE was previously defined
@@ -606,6 +606,14 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 // have harder-to-rely-on address stability.
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
 #error PROTOBUF_FORCE_COPY_DEFAULT_STRING was previously defined
+#endif
+
+// Set (and leave set) PROTOBUF_EXPLICIT_CONSTRUCTORS
+// This flag changes the internal implementation class and its uses from using
+// aggregate initialization to using explicit constructor based initialization.
+// TODO(b/290029568): remove this flag and make the code permanent.
+#ifndef PROTOBUF_EXPLICIT_CONSTRUCTORS
+#define PROTOBUF_EXPLICIT_CONSTRUCTORS
 #endif
 
 #ifdef PROTOBUF_FORCE_ALLOCATION_ON_CONSTRUCTION
@@ -1082,6 +1090,7 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 // for (int i = 0; i < file_->public_dependency_count(); ++i)
 //   for (int i = 0; i < public_dep->message_type_count(); ++i)
 #pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wextra-semi"
 #endif
 #ifdef __GNUC__
 #pragma GCC diagnostic push

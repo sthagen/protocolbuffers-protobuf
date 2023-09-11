@@ -387,9 +387,8 @@ class PROTOBUF_EXPORT Message : public MessageLite {
 
   struct ClassData {
     // Note: The order of arguments (to, then from) is chosen so that the ABI
-    // of this function is the same as the CopyFrom method.  That is, the
+    // of this function is the same as the MergeFrom method.  That is, the
     // hidden "this" parameter comes first.
-    void (*copy_to_from)(Message& to, const Message& from_msg);
     void (*merge_to_from)(Message& to, const Message& from_msg);
   };
   // GetClassData() returns a pointer to a ClassData struct which
@@ -411,9 +410,6 @@ class PROTOBUF_EXPORT Message : public MessageLite {
   size_t MaybeComputeUnknownFieldsSize(size_t total_size,
                                        internal::CachedSize* cached_size) const;
 
-
- protected:
-  static uint64_t GetInvariantPerBuild(uint64_t salt);
 };
 
 namespace internal {

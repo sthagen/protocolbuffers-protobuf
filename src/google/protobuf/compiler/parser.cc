@@ -1,32 +1,9 @@
 // Protocol Buffers - Google's data interchange format
 // Copyright 2008 Google Inc.  All rights reserved.
-// https://developers.google.com/protocol-buffers/
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
-//     * Neither the name of Google Inc. nor the names of its
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file or at
+// https://developers.google.com/open-source/licenses/bsd
 
 // Author: kenton@google.com (Kenton Varda)
 //  Based on original Protocol Buffers design by
@@ -38,6 +15,7 @@
 
 #include <float.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -555,14 +533,15 @@ void Parser::SkipStatement() {
 }
 
 void Parser::SkipRestOfBlock() {
+  size_t block_count = 1;
   while (true) {
     if (AtEnd()) {
       return;
     } else if (LookingAtType(io::Tokenizer::TYPE_SYMBOL)) {
       if (TryConsumeEndOfDeclaration("}", nullptr)) {
-        return;
+        if (--block_count == 0) break;
       } else if (TryConsume("{")) {
-        SkipRestOfBlock();
+        ++block_count;
       }
     }
     input_->Next();
@@ -692,7 +671,7 @@ bool Parser::Parse(io::Tokenizer* input, FileDescriptorProto* file) {
       if (file != nullptr) {
         file->set_syntax(syntax_identifier_);
         if (syntax_identifier_ == "editions") {
-          file->set_edition(edition_);
+          file->set_edition_enum(edition_);
         }
       }
     } else if (!stop_after_syntax_identifier_) {
@@ -750,17 +729,17 @@ bool Parser::ParseSyntaxIdentifier(const FileDescriptorProto* file,
   DO(ConsumeString(&syntax, "Expected syntax identifier."));
   DO(ConsumeEndOfDeclaration(";", &syntax_location));
 
-  (has_edition ? edition_ : syntax_identifier_) = syntax;
   if (has_edition) {
-    if (syntax.empty()) {
+    if (!Edition_Parse(absl::StrCat("EDITION_", syntax), &edition_) ||
+        edition_ == Edition::EDITION_UNKNOWN) {
       RecordError(syntax_token.line, syntax_token.column,
-                  "A file's edition must be a nonempty string.");
+                  absl::StrCat("Unknown edition \"", syntax, "\"."));
       return false;
     }
-    edition_ = syntax;
     syntax_identifier_ = "editions";
     return true;
   }
+
   syntax_identifier_ = syntax;
   if (syntax != "proto2" && syntax != "proto3" &&
       !stop_after_syntax_identifier_) {

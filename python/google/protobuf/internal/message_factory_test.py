@@ -1,32 +1,9 @@
 # Protocol Buffers - Google's data interchange format
 # Copyright 2008 Google Inc.  All rights reserved.
-# https://developers.google.com/protocol-buffers/
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#
-#     * Redistributions of source code must retain the above copyright
-# notice, this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above
-# copyright notice, this list of conditions and the following disclaimer
-# in the documentation and/or other materials provided with the
-# distribution.
-#     * Neither the name of Google Inc. nor the names of its
-# contributors may be used to endorse or promote products derived from
-# this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
 
 """Tests for google.protobuf.message_factory."""
 
@@ -42,7 +19,7 @@ from google.protobuf.internal import testing_refleaks
 from google.protobuf import descriptor_database
 from google.protobuf import descriptor_pool
 from google.protobuf import message_factory
-
+from google.protobuf import descriptor
 
 @testing_refleaks.TestCase
 class MessageFactoryTest(unittest.TestCase):
@@ -296,6 +273,25 @@ class MessageFactoryTest(unittest.TestCase):
     self.assertEqual(234, m.Extensions[ext1].setting)
     self.assertEqual(345, m.Extensions[ext2].setting)
 
+  def testDescriptorKeepConcreteClass(self):
+    def loadFile():
+      f= descriptor_pb2.FileDescriptorProto(
+        name='google/protobuf/internal/meta_class.proto',
+        package='google.protobuf.python.internal')
+      msg_proto = f.message_type.add(name='Empty')
+      msg_proto.nested_type.add(name='Nested')
+      msg_proto.field.add(name='nested_field',
+                          number=1,
+                          label=descriptor.FieldDescriptor.LABEL_REPEATED,
+                          type=descriptor.FieldDescriptor.TYPE_MESSAGE,
+                          type_name='Nested')
+      return message_factory.GetMessages([f])
+
+    messages = loadFile()
+    for des, meta_class in messages.items():
+      message = meta_class()
+      nested_des = message.DESCRIPTOR.nested_types_by_name['Nested']
+      nested_msg = nested_des._concrete_class()
 
 if __name__ == '__main__':
   unittest.main()

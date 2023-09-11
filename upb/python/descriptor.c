@@ -46,9 +46,10 @@
 
 typedef struct {
   PyObject_HEAD;
-  PyObject* pool;     // We own a ref.
-  const void* def;    // Type depends on the class. Kept alive by "pool".
-  PyObject* options;  // NULL if not present or not cached.
+  PyObject* pool;          // We own a ref.
+  const void* def;         // Type depends on the class. Kept alive by "pool".
+  PyObject* options;       // NULL if not present or not cached.
+  PyObject* message_meta;  // We own a ref.
 } PyUpb_DescriptorBase;
 
 PyObject* PyUpb_AnyDescriptor_GetPool(PyObject* desc) {
@@ -71,6 +72,7 @@ static PyUpb_DescriptorBase* PyUpb_DescriptorBase_DoCreate(
   base->pool = PyUpb_DescriptorPool_Get(upb_FileDef_Pool(file));
   base->def = def;
   base->options = NULL;
+  base->message_meta = NULL;
 
   PyUpb_ObjCache_Add(def, &base->ob_base);
   return base;
@@ -194,9 +196,21 @@ static PyObject* PyUpb_DescriptorBase_CopyToProto(PyObject* _self,
 
 static void PyUpb_DescriptorBase_Dealloc(PyUpb_DescriptorBase* base) {
   PyUpb_ObjCache_Delete(base->def);
+  Py_XDECREF(base->message_meta);
   Py_DECREF(base->pool);
   Py_XDECREF(base->options);
   PyUpb_Dealloc(base);
+}
+
+static int PyUpb_Descriptor_Traverse(PyUpb_DescriptorBase* base,
+                                     visitproc visit, void* arg) {
+  Py_VISIT(base->message_meta);
+  return 0;
+}
+
+static int PyUpb_Descriptor_Clear(PyUpb_DescriptorBase* base) {
+  Py_CLEAR(base->message_meta);
+  return 0;
 }
 
 #define DESCRIPTOR_BASE_SLOTS                           \
@@ -217,6 +231,13 @@ PyObject* PyUpb_Descriptor_Get(const upb_MessageDef* m) {
 PyObject* PyUpb_Descriptor_GetClass(const upb_MessageDef* m) {
   PyObject* ret = PyUpb_ObjCache_Get(upb_MessageDef_MiniTable(m));
   return ret;
+}
+
+void PyUpb_Descriptor_SetClass(PyObject* py_descriptor, PyObject* meta) {
+  PyUpb_DescriptorBase* base = (PyUpb_DescriptorBase*)py_descriptor;
+  Py_XDECREF(base->message_meta);
+  base->message_meta = meta;
+  Py_INCREF(meta);
 }
 
 // The LookupNested*() functions provide name lookup for entities nested inside
@@ -618,7 +639,13 @@ static PyGetSetDef PyUpb_Descriptor_Getters[] = {
      "Containing type"},
     {"is_extendable", PyUpb_Descriptor_GetIsExtendable, NULL},
     {"has_options", PyUpb_Descriptor_GetHasOptions, NULL, "Has Options"},
+    // begin:github_only
     {"syntax", &PyUpb_Descriptor_GetSyntax, NULL, "Syntax"},
+    // end:github_only
+    // begin:google_only
+//     // TODO(b/271287872) Use this to open-source syntax deprecation.
+//     {"deprecated_syntax", &PyUpb_Descriptor_GetSyntax, NULL, "Syntax"},
+    // end:google_only
     {NULL}};
 
 static PyMethodDef PyUpb_Descriptor_Methods[] = {
@@ -631,13 +658,15 @@ static PyType_Slot PyUpb_Descriptor_Slots[] = {
     DESCRIPTOR_BASE_SLOTS,
     {Py_tp_methods, PyUpb_Descriptor_Methods},
     {Py_tp_getset, PyUpb_Descriptor_Getters},
+    {Py_tp_traverse, PyUpb_Descriptor_Traverse},
+    {Py_tp_clear, PyUpb_Descriptor_Clear},
     {0, NULL}};
 
 static PyType_Spec PyUpb_Descriptor_Spec = {
     PYUPB_MODULE_NAME ".Descriptor",  // tp_name
     sizeof(PyUpb_DescriptorBase),     // tp_basicsize
     0,                                // tp_itemsize
-    Py_TPFLAGS_DEFAULT,               // tp_flags
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, // tp_flags
     PyUpb_Descriptor_Slots,
 };
 
@@ -1305,7 +1334,14 @@ static PyGetSetDef PyUpb_FileDescriptor_Getters[] = {
     {"public_dependencies", PyUpb_FileDescriptor_GetPublicDependencies, NULL,
      "Dependencies"},
     {"has_options", PyUpb_FileDescriptor_GetHasOptions, NULL, "Has Options"},
+    // begin:github_only
     {"syntax", PyUpb_FileDescriptor_GetSyntax, (setter)NULL, "Syntax"},
+    // end:github_only
+    // begin:google_only
+//     // TODO(b/271287872) Use this to open-source syntax deprecation.
+//     {"deprecated_syntax", PyUpb_FileDescriptor_GetSyntax, (setter)NULL,
+//      "Syntax"},
+    // end:google_only
     {NULL},
 };
 

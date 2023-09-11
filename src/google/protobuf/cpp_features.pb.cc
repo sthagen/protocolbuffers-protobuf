@@ -21,14 +21,16 @@ namespace _pb = ::google::protobuf;
 namespace _pbi = ::google::protobuf::internal;
 namespace _fl = ::google::protobuf::internal::field_layout;
 namespace pb {
-        template <typename>
+
+inline constexpr CppFeatures::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        legacy_closed_enum_{false},
+        utf8_validation_{static_cast< ::pb::CppFeatures_Utf8Validation >(0)} {}
+
+template <typename>
 PROTOBUF_CONSTEXPR CppFeatures::CppFeatures(::_pbi::ConstantInitialized)
-    : _impl_{
-      /*decltype(_impl_._has_bits_)*/ {},
-      /*decltype(_impl_._cached_size_)*/ {},
-      /*decltype(_impl_.legacy_closed_enum_)*/ false,
-      /*decltype(_impl_.utf8_validation_)*/ 0,
-    } {}
+    : _impl_(::_pbi::ConstantInitialized()) {}
 struct CppFeaturesDefaultTypeInternal {
   PROTOBUF_CONSTEXPR CppFeaturesDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~CppFeaturesDefaultTypeInternal() {}
@@ -70,15 +72,15 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 const char descriptor_table_protodef_google_2fprotobuf_2fcpp_5ffeatures_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
     "\n\"google/protobuf/cpp_features.proto\022\002pb"
-    "\032 google/protobuf/descriptor.proto\"\201\002\n\013C"
-    "ppFeatures\0228\n\022legacy_closed_enum\030\001 \001(\010B\034"
-    "\210\001\001\230\001\004\230\001\001\242\001\020\n\0042023\022\005false\030\350\007\022\\\n\017utf8_val"
-    "idation\030\002 \001(\0162\036.pb.CppFeatures.Utf8Valid"
-    "ationB#\210\001\001\230\001\004\230\001\001\242\001\027\n\0042023\022\014VERIFY_PARSE\030"
-    "\350\007\"Z\n\016Utf8Validation\022\033\n\027UTF8_VALIDATION_"
-    "UNKNOWN\020\000\022\020\n\014VERIFY_PARSE\020\001\022\017\n\013VERIFY_DL"
-    "OG\020\002\022\010\n\004NONE\020\003::\n\003cpp\022\033.google.protobuf."
-    "FeatureSet\030\350\007 \001(\0132\017.pb.CppFeatures"
+    "\032 google/protobuf/descriptor.proto\"\365\001\n\013C"
+    "ppFeatures\0222\n\022legacy_closed_enum\030\001 \001(\010B\026"
+    "\210\001\001\230\001\004\230\001\001\242\001\n\022\005false\030\350\007\022V\n\017utf8_validatio"
+    "n\030\002 \001(\0162\036.pb.CppFeatures.Utf8ValidationB"
+    "\035\210\001\001\230\001\004\230\001\001\242\001\021\022\014VERIFY_PARSE\030\350\007\"Z\n\016Utf8Va"
+    "lidation\022\033\n\027UTF8_VALIDATION_UNKNOWN\020\000\022\020\n"
+    "\014VERIFY_PARSE\020\001\022\017\n\013VERIFY_DLOG\020\002\022\010\n\004NONE"
+    "\020\003::\n\003cpp\022\033.google.protobuf.FeatureSet\030\350"
+    "\007 \001(\0132\017.pb.CppFeatures"
 };
 static const ::_pbi::DescriptorTable* const descriptor_table_google_2fprotobuf_2fcpp_5ffeatures_2eproto_deps[1] =
     {
@@ -88,7 +90,7 @@ static ::absl::once_flag descriptor_table_google_2fprotobuf_2fcpp_5ffeatures_2ep
 const ::_pbi::DescriptorTable descriptor_table_google_2fprotobuf_2fcpp_5ffeatures_2eproto = {
     false,
     false,
-    394,
+    382,
     descriptor_table_protodef_google_2fprotobuf_2fcpp_5ffeatures_2eproto,
     "google/protobuf/cpp_features.proto",
     &descriptor_table_google_2fprotobuf_2fcpp_5ffeatures_2eproto_once,
@@ -160,20 +162,24 @@ CppFeatures::CppFeatures(::google::protobuf::Arena* arena)
   SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:pb.CppFeatures)
 }
-CppFeatures::CppFeatures(const CppFeatures& from)
-    : ::google::protobuf::Message(), _impl_(from._impl_) {
-  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
-      from._internal_metadata_);
-  // @@protoc_insertion_point(copy_constructor:pb.CppFeatures)
+CppFeatures::CppFeatures(
+    ::google::protobuf::Arena* arena, const CppFeatures& from)
+    : CppFeatures(arena) {
+  MergeFrom(from);
 }
+inline PROTOBUF_NDEBUG_INLINE CppFeatures::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0} {}
+
 inline void CppFeatures::SharedCtor(::_pb::Arena* arena) {
-  (void)arena;
-  new (&_impl_) Impl_{
-      decltype(_impl_._has_bits_){},
-      /*decltype(_impl_._cached_size_)*/ {},
-      decltype(_impl_.legacy_closed_enum_){false},
-      decltype(_impl_.utf8_validation_){0},
-  };
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, legacy_closed_enum_),
+           0,
+           offsetof(Impl_, utf8_validation_) -
+               offsetof(Impl_, legacy_closed_enum_) +
+               sizeof(Impl_::utf8_validation_));
 }
 CppFeatures::~CppFeatures() {
   // @@protoc_insertion_point(destructor:pb.CppFeatures)
@@ -182,6 +188,7 @@ CppFeatures::~CppFeatures() {
 }
 inline void CppFeatures::SharedDtor() {
   ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.~Impl_();
 }
 
 PROTOBUF_NOINLINE void CppFeatures::Clear() {
@@ -301,11 +308,11 @@ const ::_pbi::TcParseTable<1, 2, 1, 0, 2> CppFeatures::_table_ = {
 }
 
 const ::google::protobuf::Message::ClassData CppFeatures::_class_data_ = {
-    ::google::protobuf::Message::CopyWithSourceCheck,
-    CppFeatures::MergeImpl
+    CppFeatures::MergeImpl,
 };
-const ::google::protobuf::Message::ClassData*CppFeatures::GetClassData() const { return &_class_data_; }
-
+const ::google::protobuf::Message::ClassData* CppFeatures::GetClassData() const {
+  return &_class_data_;
+}
 
 void CppFeatures::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<CppFeatures*>(&to_msg);
@@ -342,7 +349,7 @@ PROTOBUF_NOINLINE bool CppFeatures::IsInitialized() const {
 ::_pbi::CachedSize* CppFeatures::AccessCachedSize() const {
   return &_impl_._cached_size_;
 }
-void CppFeatures::InternalSwap(CppFeatures* other) {
+void CppFeatures::InternalSwap(CppFeatures* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
