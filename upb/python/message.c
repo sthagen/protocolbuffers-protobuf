@@ -28,18 +28,18 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "python/message.h"
+#include "upb/python/message.h"
 
-#include "python/convert.h"
-#include "python/descriptor.h"
-#include "python/extension_dict.h"
-#include "python/map.h"
-#include "python/repeated.h"
-#include "upb/message/copy.h"
-#include "upb/reflection/def.h"
-#include "upb/reflection/message.h"
-#include "upb/text/encode.h"
-#include "upb/util/required_fields.h"
+#include "upb/python/convert.h"
+#include "upb/python/descriptor.h"
+#include "upb/python/extension_dict.h"
+#include "upb/python/map.h"
+#include "upb/python/repeated.h"
+#include "upb/upb/message/copy.h"
+#include "upb/upb/reflection/def.h"
+#include "upb/upb/reflection/message.h"
+#include "upb/upb/text/encode.h"
+#include "upb/upb/util/required_fields.h"
 
 static const upb_MessageDef* PyUpb_MessageMeta_GetMsgdef(PyObject* cls);
 static PyObject* PyUpb_MessageMeta_GetAttr(PyObject* self, PyObject* name);
@@ -1297,9 +1297,8 @@ PyObject* PyUpb_Message_MergeFromString(PyObject* _self, PyObject* arg) {
   const upb_MiniTable* layout = upb_MessageDef_MiniTable(msgdef);
   upb_Arena* arena = PyUpb_Arena_Get(self->arena);
   PyUpb_ModuleState* state = PyUpb_ModuleState_Get();
-  int options = upb_DecodeOptions_MaxDepth(
-      state->allow_oversize_protos ? UINT16_MAX
-                                   : kUpb_WireFormat_DefaultDepthLimit);
+  int options =
+      upb_DecodeOptions_MaxDepth(state->allow_oversize_protos ? UINT16_MAX : 0);
   upb_DecodeStatus status =
       upb_Decode(buf, size, self->ptr.msg, layout, extreg, options, arena);
   Py_XDECREF(bytes);

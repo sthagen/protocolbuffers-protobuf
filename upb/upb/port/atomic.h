@@ -31,12 +31,14 @@
 #ifndef UPB_PORT_ATOMIC_H_
 #define UPB_PORT_ATOMIC_H_
 
-#include "upb/port/def.inc"
+#include "upb/upb/port/def.inc"
 
 #ifdef UPB_USE_C11_ATOMICS
 
+// IWYU pragma: begin_exports
 #include <stdatomic.h>
 #include <stdbool.h>
+// IWYU pragma: end_exports
 
 #define upb_Atomic_Init(addr, val) atomic_init(addr, val)
 #define upb_Atomic_Load(addr, order) atomic_load_explicit(addr, order)
@@ -99,6 +101,6 @@ UPB_INLINE bool _upb_NonAtomic_CompareExchangeStrongP(void* addr,
 
 #endif
 
-#include "upb/port/undef.inc"
+#include "upb/upb/port/undef.inc"
 
 #endif  // UPB_PORT_ATOMIC_H_

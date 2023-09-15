@@ -5,7 +5,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library", "cc_test")
 load("@rules_pkg//:mappings.bzl", "pkg_files", "strip_prefix")
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("@upb//cmake:build_defs.bzl", "staleness_test")
+load("//upb/cmake:build_defs.bzl", "staleness_test")
 load("//build_defs:cpp_opts.bzl", "COPTS", "LINK_OPTS")
 
 package(
@@ -331,6 +331,7 @@ cc_library(
         ":arena_cleanup",
         ":string_block",
         "//src/google/protobuf/stubs:lite",
+        "@com_google_absl//absl/base:prefetch",
         "@com_google_absl//absl/container:layout",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/log:absl_log",
@@ -636,7 +637,6 @@ filegroup(
     ],
     visibility = [
         "//:__subpackages__",
-        "@upb//:__subpackages__",
     ],
 )
 
@@ -786,7 +786,7 @@ proto_library(
     visibility = [
         "//:__pkg__",
         "//conformance:__pkg__",
-        "@upb//:__subpackages__",
+        "//upb:__subpackages__",
     ],
 )
 
@@ -797,7 +797,7 @@ proto_library(
     visibility = [
         "//:__pkg__",
         "//conformance:__pkg__",
-        "@upb//:__subpackages__",
+        "//upb:__subpackages__",
     ],
     deps = [
         ":any_proto",

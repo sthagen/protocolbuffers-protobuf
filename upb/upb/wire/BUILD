@@ -5,7 +5,7 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
-load("//bazel:build_defs.bzl", "UPB_DEFAULT_COPTS")
+load("//upb/bazel:build_defs.bzl", "UPB_DEFAULT_COPTS")
 
 cc_library(
     name = "wire",
@@ -20,10 +20,10 @@ cc_library(
     deps = [
         ":internal",
         ":types",
-        "//:mem",
-        "//:message",
-        "//:mini_table",
-        "//:port",
+        "//upb:mem",
+        "//upb:message",
+        "//upb:mini_table",
+        "//upb:port",
     ],
 )
 
@@ -38,7 +38,7 @@ cc_library(
     ],
     hdrs = [
         "decode_fast.h",
-        "internal/common.h",
+        "internal/constants.h",
         "internal/decode.h",
         "internal/swap.h",
     ],
@@ -48,16 +48,20 @@ cc_library(
         ":eps_copy_input_stream",
         ":reader",
         ":types",
-        "//:base",
-        "//:collections_internal",
-        "//:mem",
-        "//:mem_internal",
-        "//:message",
-        "//:message_accessors_internal",
-        "//:message_internal",
-        "//:message_internal_types",
-        "//:mini_table",
-        "//:port",
+        "//upb:base",
+        "//upb:collections",
+        "//upb:collections_internal",
+        "//upb:hash",
+        "//upb:mem",
+        "//upb:mem_internal",
+        "//upb:message",
+        "//upb:message_accessors_internal",
+        "//upb:message_internal",
+        "//upb:message_internal_types",
+        "//upb:message_tagged_ptr",
+        "//upb:mini_table",
+        "//upb:mini_table_internal",
+        "//upb:port",
         "@utf8_range",
     ],
 )
@@ -73,7 +77,7 @@ cc_library(
     deps = [
         ":eps_copy_input_stream",
         ":types",
-        "//:port",
+        "//upb:port",
     ],
 )
 
@@ -89,8 +93,8 @@ cc_library(
     hdrs = ["eps_copy_input_stream.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//:mem",
-        "//:port",
+        "//upb:mem",
+        "//upb:port",
     ],
 )
 
@@ -99,7 +103,7 @@ cc_test(
     srcs = ["eps_copy_input_stream_test.cc"],
     deps = [
         ":eps_copy_input_stream",
-        "//:mem",
+        "//upb:mem",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -114,8 +118,8 @@ filegroup(
         ],
     ),
     visibility = [
-        "//cmake:__pkg__",
-        "//python/dist:__pkg__",
+        "//upb/cmake:__pkg__",
+        "//upb/python/dist:__pkg__",
     ]
 )
 # end:github_only

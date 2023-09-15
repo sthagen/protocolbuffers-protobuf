@@ -873,12 +873,15 @@ void ImmutableMapFieldGenerator::GenerateMessageMapBuilderMembers(
       "  java.util.Map<$boxed_key_type$, $value_interface_type$> builderMap = "
       "internalGetMutable$capitalized_name$().ensureBuilderMap();\n"
       "  $value_interface_type$ entry = builderMap.get(key);\n"
-      "  if (entry == null) { entry = "
-      "builderMap.put(key, $value_type$.newBuilder()); }\n"
-      "  if (entry instanceof $value_builder_type$) { return "
-      "($value_builder_type$) entry; }\n"
-      "  return ($value_builder_type$) builderMap.put(key, "
-      "(($value_type$) entry).toBuilder());\n"
+      "  if (entry == null) {\n"
+      "    entry = $value_type$.newBuilder();\n"
+      "    builderMap.put(key, entry);\n"
+      "  }\n"
+      "  if (entry instanceof $value_type$) {\n"
+      "    entry = (($value_type$) entry).toBuilder();\n"
+      "    builderMap.put(key, entry);\n"
+      "  }\n"
+      "  return ($value_builder_type$) entry;\n"
       "}\n");
   printer->Annotate("{", "}", descriptor_, Semantic::kSet);
 }

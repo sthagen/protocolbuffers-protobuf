@@ -1,32 +1,9 @@
 // Protocol Buffers - Google's data interchange format
 // Copyright 2023 Google LLC.  All rights reserved.
-// https://developers.google.com/protocol-buffers/
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
-//     * Neither the name of Google LLC nor the names of its
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file or at
+// https://developers.google.com/open-source/licenses/bsd
 
 /*
  * upb_table
@@ -52,11 +29,11 @@
 
 #include <string.h>
 
-#include "upb/base/string_view.h"
-#include "upb/mem/arena.h"
+#include "upb/upb/base/string_view.h"
+#include "upb/upb/mem/arena.h"
 
 // Must be last.
-#include "upb/port/def.inc"
+#include "upb/upb/port/def.inc"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,10 +45,6 @@ typedef struct {
   uint64_t val;
 } upb_value;
 
-/* Variant that works with a length-delimited rather than NULL-delimited string,
- * as supported by strtable. */
-char* upb_strdup2(const char* s, size_t len, upb_Arena* a);
-
 UPB_INLINE void _upb_value_setval(upb_value* v, uint64_t val) { v->val = val; }
 
 /* For each value ctype, define the following set of functions:
@@ -82,7 +55,7 @@ UPB_INLINE void _upb_value_setval(upb_value* v, uint64_t val) { v->val = val; }
  *
  * // Construct a new upb_value from an int32.
  * upb_value upb_value_int32(int32_t val); */
-#define FUNCS(name, membername, type_t, converter, proto_type)       \
+#define FUNCS(name, membername, type_t, converter)                   \
   UPB_INLINE void upb_value_set##name(upb_value* val, type_t cval) { \
     val->val = (converter)cval;                                      \
   }                                                                  \
@@ -95,15 +68,15 @@ UPB_INLINE void _upb_value_setval(upb_value* v, uint64_t val) { v->val = val; }
     return (type_t)(converter)val.val;                               \
   }
 
-FUNCS(int32, int32, int32_t, int32_t, UPB_CTYPE_INT32)
-FUNCS(int64, int64, int64_t, int64_t, UPB_CTYPE_INT64)
-FUNCS(uint32, uint32, uint32_t, uint32_t, UPB_CTYPE_UINT32)
-FUNCS(uint64, uint64, uint64_t, uint64_t, UPB_CTYPE_UINT64)
-FUNCS(bool, _bool, bool, bool, UPB_CTYPE_BOOL)
-FUNCS(cstr, cstr, char*, uintptr_t, UPB_CTYPE_CSTR)
-FUNCS(uintptr, uptr, uintptr_t, uintptr_t, UPB_CTYPE_UPTR)
-FUNCS(ptr, ptr, void*, uintptr_t, UPB_CTYPE_PTR)
-FUNCS(constptr, constptr, const void*, uintptr_t, UPB_CTYPE_CONSTPTR)
+FUNCS(int32, int32, int32_t, int32_t)
+FUNCS(int64, int64, int64_t, int64_t)
+FUNCS(uint32, uint32, uint32_t, uint32_t)
+FUNCS(uint64, uint64, uint64_t, uint64_t)
+FUNCS(bool, _bool, bool, bool)
+FUNCS(cstr, cstr, char*, uintptr_t)
+FUNCS(uintptr, uptr, uintptr_t, uintptr_t)
+FUNCS(ptr, ptr, void*, uintptr_t)
+FUNCS(constptr, constptr, const void*, uintptr_t)
 
 #undef FUNCS
 
@@ -126,8 +99,6 @@ UPB_INLINE upb_value upb_value_double(double cval) {
   upb_value_setdouble(&ret, cval);
   return ret;
 }
-
-#undef SET_TYPE
 
 /* upb_tabkey *****************************************************************/
 
@@ -198,6 +169,6 @@ uint32_t _upb_Hash(const void* p, size_t n, uint64_t seed);
 } /* extern "C" */
 #endif
 
-#include "upb/port/undef.inc"
+#include "upb/upb/port/undef.inc"
 
 #endif /* UPB_HASH_COMMON_H_ */

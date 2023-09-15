@@ -34,25 +34,25 @@
  * accessed through reflective APIs exposed through mini table accessors.
  */
 
-#include "upb/message/promote.h"
+#include "upb/upb/message/promote.h"
 
 #include <string>
 
 #include "gtest/gtest.h"
 #include "google/protobuf/test_messages_proto2.upb.h"
 #include "google/protobuf/test_messages_proto3.upb.h"
-#include "upb/base/string_view.h"
-#include "upb/collections/array.h"
-#include "upb/mem/arena.hpp"
-#include "upb/message/accessors.h"
-#include "upb/message/copy.h"
-#include "upb/mini_descriptor/internal/encode.hpp"
-#include "upb/mini_descriptor/internal/modifiers.h"
-#include "upb/test/test.upb.h"
-#include "upb/wire/decode.h"
+#include "upb/upb/base/string_view.h"
+#include "upb/upb/collections/array.h"
+#include "upb/upb/mem/arena.hpp"
+#include "upb/upb/message/accessors.h"
+#include "upb/upb/message/copy.h"
+#include "upb/upb/mini_descriptor/internal/encode.hpp"
+#include "upb/upb/mini_descriptor/internal/modifiers.h"
+#include "upb/upb/test/test.upb.h"
+#include "upb/upb/wire/decode.h"
 
 // Must be last
-#include "upb/port/def.inc"
+#include "upb/upb/port/def.inc"
 
 namespace {
 
@@ -78,13 +78,11 @@ TEST(GeneratedCode, FindUnknown) {
                                                 arena);
 
   upb_FindUnknownRet result = upb_MiniTable_FindUnknown(
-      base_msg, upb_test_ModelExtension1_model_ext_ext.field.number,
-      kUpb_WireFormat_DefaultDepthLimit);
+      base_msg, upb_test_ModelExtension1_model_ext_ext.field.number, 0);
   EXPECT_EQ(kUpb_FindUnknown_Ok, result.status);
 
   result = upb_MiniTable_FindUnknown(
-      base_msg, upb_test_ModelExtension2_model_ext_ext.field.number,
-      kUpb_WireFormat_DefaultDepthLimit);
+      base_msg, upb_test_ModelExtension2_model_ext_ext.field.number, 0);
   EXPECT_EQ(kUpb_FindUnknown_NotPresent, result.status);
 
   upb_Arena_Free(arena);
@@ -376,8 +374,8 @@ TEST(GeneratedCode, PromoteUnknownMessage) {
       upb_MiniTable_SetSubMessage(mini_table, (upb_MiniTableField*)submsg_field,
                                   &upb_test_ModelWithExtensions_msg_init));
 
-  const int decode_options = upb_DecodeOptions_MaxDepth(
-      kUpb_WireFormat_DefaultDepthLimit);  // UPB_DECODE_ALIAS disabled.
+  const int decode_options =
+      upb_DecodeOptions_MaxDepth(0);  // UPB_DECODE_ALIAS disabled.
   upb_test_ModelWithExtensions* promoted;
   upb_DecodeStatus promote_result =
       upb_Message_PromoteMessage(msg, mini_table, submsg_field, decode_options,
@@ -424,8 +422,8 @@ TEST(GeneratedCode, ReparseUnlinked) {
       upb_MiniTable_SetSubMessage(mini_table, (upb_MiniTableField*)submsg_field,
                                   &upb_test_ModelWithExtensions_msg_init));
 
-  const int decode_options = upb_DecodeOptions_MaxDepth(
-      kUpb_WireFormat_DefaultDepthLimit);  // UPB_DECODE_ALIAS disabled.
+  const int decode_options =
+      upb_DecodeOptions_MaxDepth(0);  // UPB_DECODE_ALIAS disabled.
   upb_test_ModelWithExtensions* promoted;
   upb_DecodeStatus promote_result =
       upb_Message_PromoteMessage(msg, mini_table, submsg_field, decode_options,
@@ -552,8 +550,8 @@ TEST(GeneratedCode, PromoteUnknownRepeatedMessage) {
   EXPECT_TRUE(upb_MiniTable_SetSubMessage(
       mini_table, (upb_MiniTableField*)repeated_field,
       &upb_test_ModelWithExtensions_msg_init));
-  const int decode_options = upb_DecodeOptions_MaxDepth(
-      kUpb_WireFormat_DefaultDepthLimit);  // UPB_DECODE_ALIAS disabled.
+  const int decode_options =
+      upb_DecodeOptions_MaxDepth(0);  // UPB_DECODE_ALIAS disabled.
   upb_DecodeStatus promote_result =
       upb_Array_PromoteMessages(array, &upb_test_ModelWithExtensions_msg_init,
                                 decode_options, arena.ptr());
@@ -726,15 +724,14 @@ TEST(GeneratedCode, PromoteUnknownMessageOld) {
   int32_t val = upb_Message_GetInt32(
       msg, upb_MiniTable_FindFieldByNumber(mini_table, 4), 0);
   EXPECT_EQ(val, 11);
-  upb_FindUnknownRet unknown =
-      upb_MiniTable_FindUnknown(msg, 5, kUpb_WireFormat_DefaultDepthLimit);
+  upb_FindUnknownRet unknown = upb_MiniTable_FindUnknown(msg, 5, 0);
   EXPECT_EQ(unknown.status, kUpb_FindUnknown_Ok);
   // Update mini table and promote unknown to a message.
   EXPECT_TRUE(upb_MiniTable_SetSubMessage(
       mini_table, (upb_MiniTableField*)&mini_table->fields[1],
       &upb_test_ModelWithExtensions_msg_init));
-  const int decode_options = upb_DecodeOptions_MaxDepth(
-      kUpb_WireFormat_DefaultDepthLimit);  // UPB_DECODE_ALIAS disabled.
+  const int decode_options =
+      upb_DecodeOptions_MaxDepth(0);  // UPB_DECODE_ALIAS disabled.
   upb_UnknownToMessageRet promote_result =
       upb_MiniTable_PromoteUnknownToMessage(
           msg, mini_table, &mini_table->fields[1],
@@ -775,16 +772,15 @@ TEST(GeneratedCode, PromoteUnknownRepeatedMessageOld) {
   EXPECT_EQ(val, 123);
 
   // Check that we have repeated field data in an unknown.
-  upb_FindUnknownRet unknown =
-      upb_MiniTable_FindUnknown(msg, 6, kUpb_WireFormat_DefaultDepthLimit);
+  upb_FindUnknownRet unknown = upb_MiniTable_FindUnknown(msg, 6, 0);
   EXPECT_EQ(unknown.status, kUpb_FindUnknown_Ok);
 
   // Update mini table and promote unknown to a message.
   EXPECT_TRUE(upb_MiniTable_SetSubMessage(
       mini_table, (upb_MiniTableField*)&mini_table->fields[2],
       &upb_test_ModelWithExtensions_msg_init));
-  const int decode_options = upb_DecodeOptions_MaxDepth(
-      kUpb_WireFormat_DefaultDepthLimit);  // UPB_DECODE_ALIAS disabled.
+  const int decode_options =
+      upb_DecodeOptions_MaxDepth(0);  // UPB_DECODE_ALIAS disabled.
   upb_UnknownToMessage_Status promote_result =
       upb_MiniTable_PromoteUnknownToMessageArray(
           msg, &mini_table->fields[2], &upb_test_ModelWithExtensions_msg_init,
@@ -824,8 +820,7 @@ TEST(GeneratedCode, PromoteUnknownToMapOld) {
       CreateMiniTableWithEmptySubTablesForMapsOld(arena);
   upb_MiniTable* map_entry_mini_table = CreateMapEntryMiniTableOld(arena);
   upb_Message* msg = _upb_Message_New(mini_table, arena);
-  const int decode_options =
-      upb_DecodeOptions_MaxDepth(kUpb_WireFormat_DefaultDepthLimit);
+  const int decode_options = upb_DecodeOptions_MaxDepth(0);
   upb_DecodeStatus decode_status =
       upb_Decode(serialized, serialized_size, msg, mini_table, nullptr,
                  decode_options, arena);
@@ -835,8 +830,7 @@ TEST(GeneratedCode, PromoteUnknownToMapOld) {
   EXPECT_EQ(val, 123);
 
   // Check that we have map data in an unknown.
-  upb_FindUnknownRet unknown =
-      upb_MiniTable_FindUnknown(msg, 3, kUpb_WireFormat_DefaultDepthLimit);
+  upb_FindUnknownRet unknown = upb_MiniTable_FindUnknown(msg, 3, 0);
   EXPECT_EQ(unknown.status, kUpb_FindUnknown_Ok);
 
   // Update mini table and promote unknown to a message.

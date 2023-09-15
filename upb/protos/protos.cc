@@ -28,7 +28,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "protos/protos.h"
+#include "upb/protos/protos.h"
 
 #include <atomic>
 #include <cstddef>
@@ -37,18 +37,17 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "protos/protos_extension_lock.h"
-#include "upb/mem/arena.h"
-#include "upb/message/copy.h"
-#include "upb/message/internal/extension.h"
-#include "upb/message/promote.h"
-#include "upb/message/types.h"
-#include "upb/mini_table/extension.h"
-#include "upb/mini_table/extension_registry.h"
-#include "upb/mini_table/message.h"
-#include "upb/wire/decode.h"
-#include "upb/wire/encode.h"
-#include "upb/wire/types.h"
+#include "upb/protos/protos_extension_lock.h"
+#include "upb/upb/mem/arena.h"
+#include "upb/upb/message/copy.h"
+#include "upb/upb/message/internal/extension.h"
+#include "upb/upb/message/promote.h"
+#include "upb/upb/message/types.h"
+#include "upb/upb/mini_table/extension.h"
+#include "upb/upb/mini_table/extension_registry.h"
+#include "upb/upb/mini_table/message.h"
+#include "upb/upb/wire/decode.h"
+#include "upb/upb/wire/encode.h"
 
 namespace protos {
 
@@ -139,9 +138,8 @@ bool HasExtensionOrUnknown(const upb_Message* msg,
                            const upb_MiniTableExtension* eid) {
   MessageLock msg_lock(msg);
   return _upb_Message_Getext(msg, eid) != nullptr ||
-         upb_MiniTable_FindUnknown(msg, eid->field.number,
-                                   kUpb_WireFormat_DefaultDepthLimit)
-                 .status == kUpb_FindUnknown_Ok;
+         upb_MiniTable_FindUnknown(msg, eid->field.number, 0).status ==
+             kUpb_FindUnknown_Ok;
 }
 
 const upb_Message_Extension* GetOrPromoteExtension(
@@ -150,7 +148,7 @@ const upb_Message_Extension* GetOrPromoteExtension(
   const upb_Message_Extension* ext = _upb_Message_Getext(msg, eid);
   if (ext == nullptr) {
     upb_GetExtension_Status ext_status = upb_MiniTable_GetOrPromoteExtension(
-        (upb_Message*)msg, eid, kUpb_WireFormat_DefaultDepthLimit, arena, &ext);
+        (upb_Message*)msg, eid, 0, arena, &ext);
     if (ext_status != kUpb_GetExtension_Ok) {
       ext = nullptr;
     }

@@ -1,32 +1,9 @@
 // Protocol Buffers - Google's data interchange format
 // Copyright 2008 Google Inc.  All rights reserved.
-// https://developers.google.com/protocol-buffers/
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
-//     * Neither the name of Google Inc. nor the names of its
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file or at
+// https://developers.google.com/open-source/licenses/bsd
 
 // Authors: wink@google.com (Wink Saville),
 //          kenton@google.com (Kenton Varda)
@@ -234,7 +211,7 @@ class PROTOBUF_EXPORT MessageLite {
   // Basic Operations ------------------------------------------------
 
   // Get the name of this message type, e.g. "foo.bar.BazProto".
-  virtual std::string GetTypeName() const = 0;
+  std::string GetTypeName() const;
 
   // Construct a new instance of the same type.  Ownership is passed to the
   // caller.
@@ -515,7 +492,7 @@ class PROTOBUF_EXPORT MessageLite {
     return nullptr;
   }
 
-  virtual void OnDemandRegisterArenaDtor(Arena* /*arena*/) {}
+  void OnDemandRegisterArenaDtor(Arena* arena);
 
  protected:
   // Message implementations require access to internally visible API.
@@ -547,6 +524,26 @@ class PROTOBUF_EXPORT MessageLite {
   // Returns the arena, used for allocating internal objects(e.g., child
   // messages, etc), or owning incoming objects (e.g., set allocated).
   Arena* GetArenaForAllocation() const { return _internal_metadata_.arena(); }
+
+  struct ClassData {
+    // Note: The order of arguments in the functions is chosen so that it has
+    // the same ABI as the member function that calls them. Eg the `this`
+    // pointer becomes the first argument in the free function.
+    void (*merge_to_from)(Message& to, const Message& from_msg);
+    void (*on_demand_register_arena_dtor)(MessageLite& msg, Arena& arena);
+    // LITE objects (ie !has_descriptor_methods) collocate their name as a
+    // char[] just beyond the ClassData.
+    bool has_descriptor_methods;
+  };
+
+  // GetClassData() returns a pointer to a ClassData struct which
+  // exists in global memory and is unique to each subclass.  This uniqueness
+  // property is used in order to quickly determine whether two messages are
+  // of the same type.
+  //
+  // This is a work in progress. Currently only LITE/SPEED messages return an
+  // instance. In the future all message types will return one.
+  virtual const ClassData* GetClassData() const;
 
   internal::InternalMetadata _internal_metadata_;
 
@@ -688,6 +685,13 @@ T* OnShutdownDelete(T* p) {
   OnShutdownRun([](const void* pp) { delete static_cast<const T*>(pp); }, p);
   return p;
 }
+
+// We inject a single vtable for the descriptor based methods that we use from
+// MessageLite to avoid having to put these pointers on each message's tables.
+struct DescriptorMethods {
+  std::atomic<std::string (*)(const MessageLite&)> get_type_name;
+};
+extern DescriptorMethods descriptor_methods;
 
 }  // namespace internal
 

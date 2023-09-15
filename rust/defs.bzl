@@ -13,6 +13,7 @@ load(
 
 visibility([
     "//experimental/...",
+    "//src/google/protobuf/...",
     "//rust/...",
 ])
 

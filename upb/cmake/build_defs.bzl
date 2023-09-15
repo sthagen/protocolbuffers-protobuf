@@ -27,11 +27,11 @@ def staleness_test(name, outs, generated_pattern, target_files = None, tags = []
     """
 
     script_name = name + ".py"
-    script_src = Label("//cmake:staleness_test.py")
+    script_src = Label("//upb/cmake:staleness_test.py")
 
     # Filter out non-existing rules so Blaze doesn't error out before we even
     # run the test.
-    existing_outs = native.glob(include = outs)
+    existing_outs = native.glob(include = outs, allow_empty = True)
 
     # The file list contains a few extra bits of information at the end.
     # These get unpacked by the Config class in staleness_test_lib.py.
@@ -52,7 +52,7 @@ def staleness_test(name, outs, generated_pattern, target_files = None, tags = []
         data = existing_outs + [generated_pattern % file for file in outs],
         python_version = "PY3",
         deps = [
-            Label("//cmake:staleness_test_lib"),
+            Label("//upb/cmake:staleness_test_lib"),
         ],
         tags = ["staleness_test"] + tags,
         **kwargs

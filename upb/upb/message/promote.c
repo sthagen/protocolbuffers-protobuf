@@ -28,21 +28,34 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "upb/message/promote.h"
+#include "upb/upb/message/promote.h"
 
-#include "upb/collections/array.h"
-#include "upb/collections/internal/array.h"
-#include "upb/collections/map.h"
-#include "upb/message/accessors.h"
-#include "upb/message/message.h"
-#include "upb/mini_table/field.h"
-#include "upb/wire/decode.h"
-#include "upb/wire/encode.h"
-#include "upb/wire/eps_copy_input_stream.h"
-#include "upb/wire/reader.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+
+#include "upb/upb/base/descriptor_constants.h"
+#include "upb/upb/collections/array.h"
+#include "upb/upb/collections/internal/array.h"
+#include "upb/upb/collections/map.h"
+#include "upb/upb/mem/arena.h"
+#include "upb/upb/message/accessors.h"
+#include "upb/upb/message/internal/accessors.h"
+#include "upb/upb/message/internal/extension.h"
+#include "upb/upb/message/internal/message.h"
+#include "upb/upb/message/message.h"
+#include "upb/upb/message/tagged_ptr.h"
+#include "upb/upb/mini_table/extension.h"
+#include "upb/upb/mini_table/field.h"
+#include "upb/upb/mini_table/internal/field.h"
+#include "upb/upb/mini_table/message.h"
+#include "upb/upb/wire/decode.h"
+#include "upb/upb/wire/eps_copy_input_stream.h"
+#include "upb/upb/wire/internal/constants.h"
+#include "upb/upb/wire/reader.h"
 
 // Must be last.
-#include "upb/port/def.inc"
+#include "upb/upb/port/def.inc"
 
 // Parses unknown data by merging into existing base_message or creating a
 // new message usingg mini_table.
@@ -87,8 +100,7 @@ upb_GetExtension_Status upb_MiniTable_GetOrPromoteExtension(
 
   // Check unknown fields, if available promote.
   int field_number = ext_table->field.number;
-  upb_FindUnknownRet result = upb_MiniTable_FindUnknown(
-      msg, field_number, kUpb_WireFormat_DefaultDepthLimit);
+  upb_FindUnknownRet result = upb_MiniTable_FindUnknown(msg, field_number, 0);
   if (result.status != kUpb_FindUnknown_Ok) {
     return kUpb_GetExtension_NotPresent;
   }
@@ -130,6 +142,8 @@ static upb_FindUnknownRet upb_FindUnknownRet_ParseError(void) {
 upb_FindUnknownRet upb_MiniTable_FindUnknown(const upb_Message* msg,
                                              uint32_t field_number,
                                              int depth_limit) {
+  depth_limit = depth_limit ? depth_limit : kUpb_WireFormat_DefaultDepthLimit;
+
   size_t size;
   upb_FindUnknownRet ret;
 

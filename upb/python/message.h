@@ -33,8 +33,8 @@
 
 #include <stdbool.h>
 
-#include "python/protobuf.h"
-#include "upb/reflection/message.h"
+#include "upb/python/protobuf.h"
+#include "upb/upb/reflection/message.h"
 
 // Removes the wrapper object for this field from the unset subobject cache.
 void PyUpb_Message_CacheDelete(PyObject* _self, const upb_FieldDef* f);
@@ -95,6 +95,10 @@ PyObject* PyUpb_Message_GetFieldValue(PyObject* _self,
 // already been resolved to a `upb_FieldDef*`.
 int PyUpb_Message_SetFieldValue(PyObject* _self, const upb_FieldDef* field,
                                 PyObject* value, PyObject* exc);
+
+// Creates message meta class.
+PyObject* PyUpb_MessageMeta_DoCreateClass(PyObject* py_descriptor,
+                                          const char* name, PyObject* dict);
 
 // Returns the version associated with this message.  The version will be
 // incremented when the message changes.

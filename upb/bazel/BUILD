@@ -9,20 +9,20 @@ load("@rules_python//python:defs.bzl", "py_binary")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 # begin:google_only
-# package(default_applicable_licenses = ["//:license"])
+# package(default_applicable_licenses = ["//upb:license"])
 # end:google_only
 
 licenses(["notice"])
 
 exports_files(
     ["workspace_deps.bzl"],
-    visibility = ["//cmake:__pkg__"],
+    visibility = ["//upb/cmake:__pkg__"],
 )
 
 py_binary(
     name = "amalgamate",
     srcs = ["amalgamate.py"],
-    visibility = ["//:__pkg__"],
+    visibility = ["//upb:__pkg__"],
 )
 
 # py_proto_library() is private rule, only intended for internal use by upb.
@@ -34,12 +34,30 @@ bzl_library(
 )
 
 bzl_library(
-    name = "upb_proto_library_bzl",
-    srcs = ["upb_proto_library.bzl"],
-    visibility = ["//visibility:public"],
+    name = "upb_proto_library_internal_bzl",
+    srcs = [
+        "upb_proto_library_internal/aspect.bzl",
+        "upb_proto_library_internal/cc_library_func.bzl",
+        "upb_proto_library_internal/copts.bzl",
+        "upb_proto_library_internal/rule.bzl",
+    ],
     deps = [
         "@bazel_skylib//lib:paths",
         "@bazel_tools//tools/cpp:toolchain_utils.bzl",
+    ],
+)
+
+bzl_library(
+    name = "upb_proto_library_bzl",
+    srcs = [
+        "upb_c_proto_library.bzl",
+        "upb_minitable_proto_library.bzl",
+        "upb_proto_library.bzl",
+        "upb_proto_reflection_library.bzl",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":upb_proto_library_internal_bzl",
         "@rules_proto//proto:defs",
     ],
 )

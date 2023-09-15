@@ -28,15 +28,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "python/descriptor.h"
+#include "upb/python/descriptor.h"
 
-#include "python/convert.h"
-#include "python/descriptor_containers.h"
-#include "python/descriptor_pool.h"
-#include "python/message.h"
-#include "python/protobuf.h"
-#include "upb/reflection/def.h"
-#include "upb/util/def_to_proto.h"
+#include "upb/python/convert.h"
+#include "upb/python/descriptor_containers.h"
+#include "upb/python/descriptor_pool.h"
+#include "upb/python/message.h"
+#include "upb/python/protobuf.h"
+#include "upb/upb/reflection/def.h"
+#include "upb/upb/util/def_to_proto.h"
 
 // -----------------------------------------------------------------------------
 // DescriptorBase
@@ -112,7 +112,9 @@ static PyObject* PyUpb_DescriptorBase_GetOptions(PyUpb_DescriptorBase* self,
   if (!self->options) {
     // Load descriptors protos if they are not loaded already. We have to do
     // this lazily, otherwise, it would lead to circular imports.
-    PyObject* mod = PyImport_ImportModule(PYUPB_DESCRIPTOR_MODULE);
+    PyObject* mod = PyImport_ImportModuleLevel(PYUPB_DESCRIPTOR_MODULE, NULL,
+                                               NULL, NULL, 0);
+    if (mod == NULL) return NULL;
     Py_DECREF(mod);
 
     // Find the correct options message.
@@ -230,6 +232,25 @@ PyObject* PyUpb_Descriptor_Get(const upb_MessageDef* m) {
 
 PyObject* PyUpb_Descriptor_GetClass(const upb_MessageDef* m) {
   PyObject* ret = PyUpb_ObjCache_Get(upb_MessageDef_MiniTable(m));
+  if (ret) return ret;
+
+  // On demand create the clss if not exist. However, if users repeatedly
+  // create and destroy a class, it could trigger a loop. This is not an
+  // issue now, but if we see CPU waste for repeatedly create and destroy
+  // in the future, we could make PyUpb_Descriptor_Get() append the descriptor
+  // to an internal list in DescriptorPool, let the pool keep descriptors alive.
+  PyObject* py_descriptor = PyUpb_Descriptor_Get(m);
+  if (py_descriptor == NULL) return NULL;
+  const char* name = upb_MessageDef_Name(m);
+  PyObject* dict = PyDict_New();
+  if (dict == NULL) goto err;
+  int status = PyDict_SetItemString(dict, "DESCRIPTOR", py_descriptor);
+  if (status < 0) goto err;
+  ret = PyUpb_MessageMeta_DoCreateClass(py_descriptor, name, dict);
+
+err:
+  Py_XDECREF(py_descriptor);
+  Py_XDECREF(dict);
   return ret;
 }
 
@@ -501,7 +522,7 @@ static PyObject* PyUpb_Descriptor_GetFullName(PyObject* self, void* closure) {
 static PyObject* PyUpb_Descriptor_GetConcreteClass(PyObject* self,
                                                    void* closure) {
   const upb_MessageDef* msgdef = PyUpb_Descriptor_GetDef(self);
-  return PyUpb_Descriptor_GetClass(msgdef);
+  return PyUpb_ObjCache_Get(upb_MessageDef_MiniTable(msgdef));
 }
 
 static PyObject* PyUpb_Descriptor_GetFile(PyObject* self, void* closure) {
