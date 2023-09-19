@@ -2289,7 +2289,7 @@ TEST_F(ExtensionDescriptorTest, DuplicateFieldNumber) {
                FieldDescriptorProto::LABEL_OPTIONAL,
                FieldDescriptorProto::TYPE_INT32);
   // Currently we only generate a warning for conflicting extension numbers.
-  // TODO(xiaofeng): Change it to an error.
+  // TODO: Change it to an error.
   ASSERT_TRUE(pool.BuildFile(file_proto) != nullptr);
 }
 
@@ -3321,7 +3321,7 @@ TEST(CustomOptions, OptionLocations) {
   const OneofDescriptor* oneof = message->FindOneofByName("AnOneof");
   const FieldDescriptor* map_field = message->FindFieldByName("map_field");
   const EnumDescriptor* enm = message->FindEnumTypeByName("AnEnum");
-  // TODO(benjy): Support EnumValue options, once the compiler does.
+  // TODO: Support EnumValue options, once the compiler does.
   const ServiceDescriptor* service =
       file->FindServiceByName("TestServiceWithCustomOptions");
   const MethodDescriptor* method = service->FindMethodByName("Foo");
@@ -7631,7 +7631,7 @@ TEST_F(FeaturesTest, RestoresOptionsRoundTrip) {
         label: LABEL_REPEATED
         type: TYPE_INT64
         options {
-          packed: true
+          deprecated: true
           features {
             [pb.test] { int_field_feature: 9 }
           }
@@ -7716,7 +7716,7 @@ TEST_F(FeaturesTest, RestoresOptionsRoundTrip) {
                                  [pb.test] { int_message_feature: 3 }
                                })pb"));
   EXPECT_THAT(proto.message_type(0).field(0).options(),
-              EqualsProto(R"pb(packed: true
+              EqualsProto(R"pb(deprecated: true
                                features {
                                  [pb.test] { int_field_feature: 9 }
                                })pb"));
@@ -9159,6 +9159,30 @@ TEST_F(FeaturesTest, FeaturesOutsideEditions) {
       "foo.proto: foo.proto: EDITIONS: Features are only valid under "
       "editions.\n");
 }
+
+TEST_F(FeaturesTest, InvalidFieldPacked) {
+  BuildDescriptorMessagesInTestPool();
+  BuildFileWithErrors(
+      R"pb(
+        name: "foo.proto"
+        syntax: "editions"
+        edition_enum: EDITION_2023
+        message_type {
+          name: "Foo"
+          field {
+            name: "bar"
+            number: 1
+            label: LABEL_REPEATED
+            type: TYPE_INT64
+            options { packed: true }
+          }
+        }
+      )pb",
+      "foo.proto: Foo.bar: NAME: Field option packed is not allowed under "
+      "editions.  Use the repeated_field_encoding feature to control this "
+      "behavior.\n");
+}
+
 
 TEST_F(FeaturesTest, InvalidFieldImplicitDefault) {
   BuildDescriptorMessagesInTestPool();
@@ -11379,7 +11403,7 @@ class SourceLocationTest : public testing::Test {
   static constexpr int kAFieldNumber = 1;
 };
 
-// TODO(adonovan): implement support for option fields and for
+// TODO: implement support for option fields and for
 // subparts of declarations.
 
 TEST_F(SourceLocationTest, GetSourceLocation) {

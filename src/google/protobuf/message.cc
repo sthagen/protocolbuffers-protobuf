@@ -46,7 +46,7 @@ namespace google {
 namespace protobuf {
 namespace internal {
 
-// TODO(gerbens) make this factorized better. This should not have to hop
+// TODO make this factorized better. This should not have to hop
 // to reflection. Currently uses GeneratedMessageReflection and thus is
 // defined in generated_message_reflection.cc
 void RegisterFileLevelMetadata(const DescriptorTable* descriptor_table);
@@ -97,6 +97,10 @@ void Message::CopyFrom(const Message& from) {
         << from.GetDescriptor()->full_name();
     ReflectionOps::Copy(from, this);
   }
+}
+
+std::string Message::GetTypeName() const {
+  return GetDescriptor()->full_name();
 }
 
 void Message::Clear() { ReflectionOps::Clear(this); }

@@ -388,7 +388,7 @@ typedef enum {
   kUpb_CType_Float = 2,
   kUpb_CType_Int32 = 3,
   kUpb_CType_UInt32 = 4,
-  kUpb_CType_Enum = 5,  // Enum values are int32. TODO(b/279178239): rename
+  kUpb_CType_Enum = 5,  // Enum values are int32. TODO: rename
   kUpb_CType_Message = 6,
   kUpb_CType_Double = 7,
   kUpb_CType_Int64 = 8,
@@ -1470,7 +1470,7 @@ UPB_INLINE upb_MapInsertStatus _upb_Map_Insert(upb_Map* map, const void* key,
     return kUpb_MapInsertStatus_OutOfMemory;
   }
 
-  // TODO(haberman): add overwrite operation to minimize number of lookups.
+  // TODO: add overwrite operation to minimize number of lookups.
   bool removed =
       upb_strtable_remove2(&map->table, strkey.data, strkey.size, NULL);
   if (!upb_strtable_insert(&map->table, strkey.data, strkey.size, tabval, a)) {
@@ -2337,7 +2337,7 @@ UPB_API bool upb_ExtensionRegistry_Add(upb_ExtensionRegistry* r,
 // registry. If there are any errors, the entire array is backed out.
 // The extensions must outlive the registry.
 // Possible errors include OOM or an extension number that already exists.
-// TODO(salo): There is currently no way to know the exact reason for failure.
+// TODO: There is currently no way to know the exact reason for failure.
 bool upb_ExtensionRegistry_AddArray(upb_ExtensionRegistry* r,
                                     const upb_MiniTableExtension** e,
                                     size_t count);
@@ -3157,7 +3157,6 @@ typedef union upb_MiniTableSub upb_MiniTableSub;
 // Export the newer headers, for legacy users.  New users should include the
 // more specific headers directly.
 // IWYU pragma: begin_exports
-
 #ifndef UPB_MINI_DESCRIPTOR_BUILD_ENUM_H_
 #define UPB_MINI_DESCRIPTOR_BUILD_ENUM_H_
 
@@ -3175,7 +3174,7 @@ UPB_API upb_MiniTableEnum* upb_MiniDescriptor_BuildEnum(const char* data,
                                                         upb_Arena* arena,
                                                         upb_Status* status);
 
-// TODO(b/289057707): Deprecated name; update callers.
+// TODO: Deprecated name; update callers.
 UPB_API_INLINE upb_MiniTableEnum* upb_MiniTableEnum_Build(const char* data,
                                                           size_t len,
                                                           upb_Arena* arena,
@@ -11042,6 +11041,7 @@ UPB_API bool upb_FieldDef_IsSubMessage(const upb_FieldDef* f);
 UPB_API const char* upb_FieldDef_JsonName(const upb_FieldDef* f);
 UPB_API upb_Label upb_FieldDef_Label(const upb_FieldDef* f);
 UPB_API const upb_MessageDef* upb_FieldDef_MessageSubDef(const upb_FieldDef* f);
+bool _upb_FieldDef_ValidateUtf8(const upb_FieldDef* f);
 
 // Creates a mini descriptor string for a field, returns true on success.
 bool upb_FieldDef_MiniDescriptorEncode(const upb_FieldDef* f, upb_Arena* a,
@@ -11542,7 +11542,7 @@ extern "C" {
 #endif
 
 enum {
-  /* When set, emits 0/default values.  TODO(haberman): proto3 only? */
+  /* When set, emits 0/default values.  TODO: proto3 only? */
   upb_JsonEncode_EmitDefaults = 1 << 0,
 
   /* When set, use normal (snake_case) field names instead of JSON (camelCase)
@@ -12178,6 +12178,7 @@ typedef enum {
   kUpb_EncodedFieldModifier_FlipPacked = 1 << 0,
   kUpb_EncodedFieldModifier_IsRequired = 1 << 1,
   kUpb_EncodedFieldModifier_IsProto3Singular = 1 << 2,
+  kUpb_EncodedFieldModifier_FlipValidateUtf8 = 1 << 3,
 } upb_EncodedFieldModifier;
 
 enum {
@@ -12217,8 +12218,10 @@ typedef enum {
   kUpb_FieldModifier_IsClosedEnum = 1 << 2,
   kUpb_FieldModifier_IsProto3Singular = 1 << 3,
   kUpb_FieldModifier_IsRequired = 1 << 4,
+  kUpb_FieldModifier_ValidateUtf8 = 1 << 5,
 } kUpb_FieldModifier;
 
+// These modifiers are also used on the wire.
 typedef enum {
   kUpb_MessageModifier_ValidateUtf8 = 1 << 0,
   kUpb_MessageModifier_DefaultIsPacked = 1 << 1,
@@ -12679,7 +12682,7 @@ upb_ServiceDef* _upb_ServiceDefs_New(
 // Must be last.
 
 // Manages the storage for mini descriptor strings as they are being encoded.
-// TODO(b/234740652): Move some of this state directly into the encoder, maybe.
+// TODO: Move some of this state directly into the encoder, maybe.
 typedef struct {
   upb_MtDataEncoder e;
   size_t bufsize;
