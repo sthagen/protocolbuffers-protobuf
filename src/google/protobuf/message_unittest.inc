@@ -46,6 +46,7 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/message.h"
+#include "google/protobuf/reflection_ops.h"
 #include "google/protobuf/test_util2.h"
 
 
@@ -69,6 +70,7 @@ using google::protobuf::io::win32::open;
 #define O_BINARY 0  // If this isn't defined, the platform doesn't need it.
 #endif
 #endif
+
 
 TEST(MESSAGE_TEST_NAME, SerializeHelpers) {
   // TODO:  Test more helpers?  They're all two-liners so it seems
@@ -742,6 +744,7 @@ TEST(MESSAGE_TEST_NAME, SupportDeepRecursionLimit) {
 inline bool IsOptimizeForCodeSize(const Descriptor* descriptor) {
   return descriptor->file()->options().optimize_for() == FileOptions::CODE_SIZE;
 }
+
 
 TEST(MESSAGE_TEST_NAME, Swap) {
   UNITTEST::NestedTestAllTypes o;
