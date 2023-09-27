@@ -1110,9 +1110,8 @@ FeatureSet* CreateProto2DefaultFeatures() {
   features->set_repeated_field_encoding(FeatureSet::EXPANDED);
   features->set_message_encoding(FeatureSet::LENGTH_PREFIXED);
   features->set_json_format(FeatureSet::LEGACY_BEST_EFFORT);
+  features->set_utf8_validation(FeatureSet::NONE);
   features->MutableExtension(pb::cpp)->set_legacy_closed_enum(true);
-  features->MutableExtension(pb::cpp)->set_utf8_validation(
-      pb::CppFeatures::VERIFY_DLOG);
 
   return features;
 }
@@ -1137,11 +1136,10 @@ const FeatureSet& GetProto3Features() {
     features->set_field_presence(FeatureSet::IMPLICIT);
     features->set_enum_type(FeatureSet::OPEN);
     features->set_repeated_field_encoding(FeatureSet::PACKED);
+    features->set_utf8_validation(FeatureSet::VERIFY);
     features->set_message_encoding(FeatureSet::LENGTH_PREFIXED);
     features->set_json_format(FeatureSet::ALLOW);
     features->MutableExtension(pb::cpp)->set_legacy_closed_enum(false);
-    features->MutableExtension(pb::cpp)->set_utf8_validation(
-        pb::CppFeatures::VERIFY_PARSE);
     return features;
   }();
   return *kProto3Features;
@@ -2795,7 +2793,7 @@ void FileDescriptor::CopyHeadingTo(FileDescriptorProto* proto) const {
     proto->set_syntax(FileDescriptorLegacy::SyntaxName(syntax));
   }
   if (syntax == FileDescriptorLegacy::Syntax::SYNTAX_EDITIONS) {
-    proto->set_edition_enum(edition());
+    proto->set_edition(edition());
   }
 
   if (&options() != &FileOptions::default_instance()) {
@@ -3805,8 +3803,7 @@ bool FieldDescriptor::is_packed() const {
 
 static bool IsStrictUtf8(const FieldDescriptor* field) {
   return internal::InternalFeatureHelper::GetFeatures(*field)
-             .GetExtension(pb::cpp)
-             .utf8_validation() == pb::CppFeatures::VERIFY_PARSE;
+             .utf8_validation() == FeatureSet::VERIFY;
 }
 
 bool FieldDescriptor::requires_utf8_validation() const {
@@ -5573,7 +5570,7 @@ static void PlanAllocationSize(const FileDescriptorProto& proto,
   alloc.PlanArray<FileDescriptorTables>(1);
   alloc.PlanArray<std::string>(2);  // name + package
   if (proto.has_options()) alloc.PlanArray<FileOptions>(1);
-  if (proto.has_edition_enum()) {
+  if (proto.has_edition()) {
     alloc.PlanArray<FeatureSet>(1);
     if (HasFeatures(proto.options())) {
       alloc.PlanArray<FeatureSet>(1);
@@ -5680,14 +5677,14 @@ FileDescriptor* DescriptorBuilder::BuildFileImpl(
   FileDescriptor* result = alloc.AllocateArray<FileDescriptor>(1);
   file_ = result;
 
-  if (proto.has_edition_enum()) {
+  if (proto.has_edition()) {
     const FeatureSetDefaults& defaults =
         pool_->feature_set_defaults_spec_ == nullptr
             ? GetCppFeatureSetDefaults()
             : *pool_->feature_set_defaults_spec_;
 
     absl::StatusOr<FeatureResolver> feature_resolver =
-        FeatureResolver::Create(proto.edition_enum(), defaults);
+        FeatureResolver::Create(proto.edition(), defaults);
     if (!feature_resolver.ok()) {
       AddError(
           proto.name(), proto, DescriptorPool::ErrorCollector::EDITIONS,
@@ -5730,8 +5727,8 @@ FileDescriptor* DescriptorBuilder::BuildFileImpl(
       return absl::StrCat("Unrecognized syntax: ", proto.syntax());
     });
   }
-  if (proto.has_edition_enum()) {
-    file_->edition_ = proto.edition_enum();
+  if (proto.has_edition()) {
+    file_->edition_ = proto.edition();
   } else {
     file_->edition_ = Edition::EDITION_UNKNOWN;
   }
@@ -7901,6 +7898,17 @@ void DescriptorBuilder::ValidateOptions(const FieldDescriptor* field,
   }
 }
 
+static bool IsStringMapType(const FieldDescriptor& field) {
+  if (!field.is_map()) return false;
+  for (int i = 0; i < field.message_type()->field_count(); ++i) {
+    if (field.message_type()->field(i)->type() ==
+        FieldDescriptor::TYPE_STRING) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void DescriptorBuilder::ValidateFieldFeatures(
     const FieldDescriptor* field, const FieldDescriptorProto& proto) {
   // Rely on our legacy validation for proto2/proto3 files.
@@ -7966,6 +7974,12 @@ void DescriptorBuilder::ValidateFieldFeatures(
       field->proto_features_->has_repeated_field_encoding()) {
     AddError(field->full_name(), proto, DescriptorPool::ErrorCollector::NAME,
              "Only repeated fields can specify repeated field encoding.");
+  }
+  if (field->type() != FieldDescriptor::TYPE_STRING &&
+      !IsStringMapType(*field) &&
+      field->proto_features_->has_utf8_validation()) {
+    AddError(field->full_name(), proto, DescriptorPool::ErrorCollector::NAME,
+             "Only string fields can specify utf8 validation.");
   }
   if (!field->is_packable() &&
       field->proto_features_->repeated_field_encoding() == FeatureSet::PACKED) {

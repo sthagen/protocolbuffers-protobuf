@@ -264,17 +264,18 @@ TEST_F(CodeGeneratorTest, BuildFeatureSetDefaults) {
   EXPECT_THAT(generator.BuildFeatureSetDefaults(),
               IsOkAndHolds(EqualsProto(R"pb(
                 defaults {
-                  edition_enum: EDITION_2023
+                  edition: EDITION_2023
                   features {
                     field_presence: EXPLICIT
                     enum_type: OPEN
                     repeated_field_encoding: PACKED
+                    utf8_validation: VERIFY
                     message_encoding: LENGTH_PREFIXED
                     json_format: ALLOW
                   }
                 }
-                minimum_edition_enum: EDITION_99997_TEST_ONLY
-                maximum_edition_enum: EDITION_99999_TEST_ONLY
+                minimum_edition: EDITION_99997_TEST_ONLY
+                maximum_edition: EDITION_99999_TEST_ONLY
               )pb")));
 }
 

@@ -9,10 +9,10 @@
 #ifndef GOOGLE_PROTOBUF_DESCRIPTOR_PROTO_UPB_MINITABLE_H_
 #define GOOGLE_PROTOBUF_DESCRIPTOR_PROTO_UPB_MINITABLE_H_
 
-#include "upb/upb/generated_code_support.h"
+#include "upb/generated_code_support.h"
 
 // Must be last.
-#include "upb/upb/port/def.inc"
+#include "upb/port/def.inc"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,6 +58,7 @@ extern const upb_MiniTableEnum google_protobuf_FeatureSet_FieldPresence_enum_ini
 extern const upb_MiniTableEnum google_protobuf_FeatureSet_JsonFormat_enum_init;
 extern const upb_MiniTableEnum google_protobuf_FeatureSet_MessageEncoding_enum_init;
 extern const upb_MiniTableEnum google_protobuf_FeatureSet_RepeatedFieldEncoding_enum_init;
+extern const upb_MiniTableEnum google_protobuf_FeatureSet_Utf8Validation_enum_init;
 extern const upb_MiniTableEnum google_protobuf_FieldDescriptorProto_Label_enum_init;
 extern const upb_MiniTableEnum google_protobuf_FieldDescriptorProto_Type_enum_init;
 extern const upb_MiniTableEnum google_protobuf_FieldOptions_CType_enum_init;
@@ -73,6 +74,6 @@ extern const upb_MiniTableFile google_protobuf_descriptor_proto_upb_file_layout;
 }  /* extern "C" */
 #endif
 
-#include "upb/upb/port/undef.inc"
+#include "upb/port/undef.inc"
 
 #endif  /* GOOGLE_PROTOBUF_DESCRIPTOR_PROTO_UPB_MINITABLE_H_ */
