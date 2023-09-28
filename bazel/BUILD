@@ -14,11 +14,6 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 licenses(["notice"])
 
-exports_files(
-    ["workspace_deps.bzl"],
-    visibility = ["//upb/cmake:__pkg__"],
-)
-
 py_binary(
     name = "amalgamate",
     srcs = ["amalgamate.py"],
@@ -43,6 +38,7 @@ bzl_library(
     ],
     deps = [
         "@bazel_skylib//lib:paths",
+        "@rules_proto//proto:defs",
         "@bazel_tools//tools/cpp:toolchain_utils.bzl",
     ],
 )
