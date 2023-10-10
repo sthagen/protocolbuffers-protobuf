@@ -9238,7 +9238,7 @@ TEST_F(FeaturesTest, MergeFeatureValidationFailed) {
         options { features { field_presence: FIELD_PRESENCE_UNKNOWN } }
       )pb",
       "foo.proto: foo.proto: EDITIONS: Feature field "
-      "google.protobuf.FeatureSet.field_presence must resolve to a known value, found "
+      "`field_presence` must resolve to a known value, found "
       "FIELD_PRESENCE_UNKNOWN\n");
 }
 
@@ -9256,6 +9256,18 @@ TEST_F(FeaturesTest, FeaturesOutsideEditions) {
       "editions.\n");
 }
 
+TEST_F(FeaturesTest, InvalidRequiredByDefault) {
+  BuildDescriptorMessagesInTestPool();
+  BuildFileWithErrors(
+      R"pb(
+        name: "foo.proto"
+        syntax: "editions"
+        edition: EDITION_2023
+        options { features { field_presence: LEGACY_REQUIRED } }
+      )pb",
+      "foo.proto: foo.proto: EDITIONS: Required presence can't be specified "
+      "by default.\n");
+}
 TEST_F(FeaturesTest, InvalidFieldPacked) {
   BuildDescriptorMessagesInTestPool();
   BuildFileWithErrors(
@@ -9981,6 +9993,51 @@ TEST_F(FeaturesTest, InvalidJsonUniquenessCustomError) {
       )pb",
       "foo.proto: Foo: NAME: The custom JSON name of field \"bar2\" (\"baz\") "
       "conflicts with the custom JSON name of field \"bar\".\n");
+}
+
+TEST_F(FeaturesTest, InvalidRequiredLabel) {
+  BuildDescriptorMessagesInTestPool();
+  BuildFileWithErrors(
+      R"pb(
+        name: "foo.proto"
+        syntax: "editions"
+        edition: EDITION_2023
+        message_type {
+          name: "Foo"
+          field {
+            name: "bar"
+            number: 1
+            label: LABEL_REQUIRED
+            type: TYPE_STRING
+          }
+        }
+      )pb",
+      "foo.proto: Foo.bar: NAME: Required label is not allowed under editions. "
+      " Use the feature field_presence = LEGACY_REQUIRED to control this "
+      "behavior.\n");
+}
+
+TEST_F(FeaturesTest, InvalidGroupLabel) {
+  BuildDescriptorMessagesInTestPool();
+  BuildFileWithErrors(
+      R"pb(
+        name: "foo.proto"
+        syntax: "editions"
+        edition: EDITION_2023
+        message_type {
+          name: "Foo"
+          field {
+            name: "bar"
+            number: 1
+            type_name: ".Foo"
+            label: LABEL_OPTIONAL
+            type: TYPE_GROUP
+          }
+        }
+      )pb",
+      "foo.proto: Foo.bar: NAME: Group types are not allowed under editions.  "
+      "Use the feature message_encoding = DELIMITED to control this "
+      "behavior.\n");
 }
 
 // Test that the result of FileDescriptor::DebugString() can be used to create

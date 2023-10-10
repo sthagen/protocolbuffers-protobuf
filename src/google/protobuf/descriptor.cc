@@ -4540,6 +4540,8 @@ class DescriptorBuilder {
   // AddError(). Do not look at their options, which have not been interpreted.
   void ValidateOptions(const FileDescriptor* file,
                        const FileDescriptorProto& proto);
+  void ValidateFileFeatures(const FileDescriptor* file,
+                            const FileDescriptorProto& proto);
   void ValidateOptions(const Descriptor* message, const DescriptorProto& proto);
   void ValidateOptions(const OneofDescriptor* oneof,
                        const OneofDescriptorProto& proto);
@@ -7655,6 +7657,8 @@ static bool IsLite(const FileDescriptor* file) {
 
 void DescriptorBuilder::ValidateOptions(const FileDescriptor* file,
                                         const FileDescriptorProto& proto) {
+  ValidateFileFeatures(file, proto);
+
   // Lite files can only be imported by other Lite files.
   if (!IsLite(file)) {
     for (int i = 0; i < file->dependency_count(); i++) {
@@ -7915,10 +7919,31 @@ static bool IsStringMapType(const FieldDescriptor& field) {
   return false;
 }
 
+void DescriptorBuilder::ValidateFileFeatures(const FileDescriptor* file,
+                                             const FileDescriptorProto& proto) {
+  if (file->features().field_presence() == FeatureSet::LEGACY_REQUIRED) {
+    AddError(file->name(), proto, DescriptorPool::ErrorCollector::EDITIONS,
+             "Required presence can't be specified by default.");
+  }
+}
+
 void DescriptorBuilder::ValidateFieldFeatures(
     const FieldDescriptor* field, const FieldDescriptorProto& proto) {
   // Rely on our legacy validation for proto2/proto3 files.
   if (IsLegacyFeatureSet(field->features())) return;
+
+  // Double check proto descriptors in editions.  These would usually be caught
+  // by the parser, but may not be for dynamically built descriptors.
+  if (proto.label() == FieldDescriptorProto::LABEL_REQUIRED) {
+    AddError(field->full_name(), proto, DescriptorPool::ErrorCollector::NAME,
+             "Required label is not allowed under editions.  Use the feature "
+             "field_presence = LEGACY_REQUIRED to control this behavior.");
+  }
+  if (proto.type() == FieldDescriptorProto::TYPE_GROUP) {
+    AddError(field->full_name(), proto, DescriptorPool::ErrorCollector::NAME,
+             "Group types are not allowed under editions.  Use the feature "
+             "message_encoding = DELIMITED to control this behavior.");
+  }
 
   // Validate legacy options that have been migrated to features.
   if (field->options().has_packed()) {

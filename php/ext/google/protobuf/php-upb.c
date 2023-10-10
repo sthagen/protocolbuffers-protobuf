@@ -1856,8 +1856,8 @@ static const char descriptor[11632] = {'\n', ' ', 'g', 'o', 'o', 'g', 'l', 'e', 
 '\022', '\021', '\n', '\r', 'T', 'Y', 'P', 'E', '_', 'S', 'F', 'I', 'X', 'E', 'D', '6', '4', '\020', '\020', '\022', '\017', '\n', '\013', 'T', 'Y', 
 'P', 'E', '_', 'S', 'I', 'N', 'T', '3', '2', '\020', '\021', '\022', '\017', '\n', '\013', 'T', 'Y', 'P', 'E', '_', 'S', 'I', 'N', 'T', '6', 
 '4', '\020', '\022', '\"', 'C', '\n', '\005', 'L', 'a', 'b', 'e', 'l', '\022', '\022', '\n', '\016', 'L', 'A', 'B', 'E', 'L', '_', 'O', 'P', 'T', 
-'I', 'O', 'N', 'A', 'L', '\020', '\001', '\022', '\022', '\n', '\016', 'L', 'A', 'B', 'E', 'L', '_', 'R', 'E', 'Q', 'U', 'I', 'R', 'E', 'D', 
-'\020', '\002', '\022', '\022', '\n', '\016', 'L', 'A', 'B', 'E', 'L', '_', 'R', 'E', 'P', 'E', 'A', 'T', 'E', 'D', '\020', '\003', '\"', 'c', '\n', 
+'I', 'O', 'N', 'A', 'L', '\020', '\001', '\022', '\022', '\n', '\016', 'L', 'A', 'B', 'E', 'L', '_', 'R', 'E', 'P', 'E', 'A', 'T', 'E', 'D', 
+'\020', '\003', '\022', '\022', '\n', '\016', 'L', 'A', 'B', 'E', 'L', '_', 'R', 'E', 'Q', 'U', 'I', 'R', 'E', 'D', '\020', '\002', '\"', 'c', '\n', 
 '\024', 'O', 'n', 'e', 'o', 'f', 'D', 'e', 's', 'c', 'r', 'i', 'p', 't', 'o', 'r', 'P', 'r', 'o', 't', 'o', '\022', '\022', '\n', '\004', 
 'n', 'a', 'm', 'e', '\030', '\001', ' ', '\001', '(', '\t', 'R', '\004', 'n', 'a', 'm', 'e', '\022', '7', '\n', '\007', 'o', 'p', 't', 'i', 'o', 
 'n', 's', '\030', '\002', ' ', '\001', '(', '\013', '2', '\035', '.', 'g', 'o', 'o', 'g', 'l', 'e', '.', 'p', 'r', 'o', 't', 'o', 'b', 'u', 
@@ -10749,6 +10749,9 @@ struct upb_MessageDef {
   upb_inttable itof;
   upb_strtable ntof;
 
+  // Looking up fields by json name.
+  upb_strtable jtof;
+
   /* All nested defs.
    * MEM: We could save some space here by putting nested defs in a contiguous
    * region and calculating counts from offsets or vice-versa. */
@@ -10774,9 +10777,6 @@ struct upb_MessageDef {
   bool in_message_set;
   bool is_sorted;
   upb_WellKnown well_known_type;
-#if UINTPTR_MAX == 0xffffffff
-  uint32_t padding;  // Increase size to a multiple of 8.
-#endif
 };
 
 static void assign_msg_wellknowntype(upb_MessageDef* m) {
@@ -10919,16 +10919,16 @@ bool upb_MessageDef_FindByNameWithSize(const upb_MessageDef* m,
 const upb_FieldDef* upb_MessageDef_FindByJsonNameWithSize(
     const upb_MessageDef* m, const char* name, size_t size) {
   upb_value val;
-  const upb_FieldDef* f;
+
+  if (upb_strtable_lookup2(&m->jtof, name, size, &val)) {
+    return upb_value_getconstptr(val);
+  }
 
   if (!upb_strtable_lookup2(&m->ntof, name, size, &val)) {
     return NULL;
   }
 
-  f = _upb_DefType_Unpack(val, UPB_DEFTYPE_FIELD);
-  if (!f) f = _upb_DefType_Unpack(val, UPB_DEFTYPE_FIELD_JSONNAME);
-
-  return f;
+  return _upb_DefType_Unpack(val, UPB_DEFTYPE_FIELD);
 }
 
 int upb_MessageDef_ExtensionRangeCount(const upb_MessageDef* m) {
@@ -11108,16 +11108,24 @@ void _upb_MessageDef_InsertField(upb_DefBuilder* ctx, upb_MessageDef* m,
       _upb_MessageDef_Insert(m, shortname, shortnamelen, field_v, ctx->arena);
   if (!ok) _upb_DefBuilder_OomErr(ctx);
 
-  if (strcmp(shortname, json_name) != 0) {
-    if (upb_strtable_lookup(&m->ntof, json_name, &v)) {
-      _upb_DefBuilder_Errf(ctx, "duplicate json_name (%s)", json_name);
-    }
-
-    const size_t json_size = strlen(json_name);
-    const upb_value json_v = _upb_DefType_Pack(f, UPB_DEFTYPE_FIELD_JSONNAME);
-    ok = _upb_MessageDef_Insert(m, json_name, json_size, json_v, ctx->arena);
-    if (!ok) _upb_DefBuilder_OomErr(ctx);
+  // TODO: Once editions is supported this should turn into a
+  // check on LEGACY_BEST_EFFORT
+  if (strcmp(shortname, json_name) != 0 &&
+      upb_FileDef_Syntax(m->file) == kUpb_Syntax_Proto3 &&
+      upb_strtable_lookup(&m->ntof, json_name, &v)) {
+    _upb_DefBuilder_Errf(
+        ctx, "duplicate json_name for (%s) with original field name (%s)",
+        shortname, json_name);
   }
+
+  if (upb_strtable_lookup(&m->jtof, json_name, &v)) {
+    _upb_DefBuilder_Errf(ctx, "duplicate json_name (%s)", json_name);
+  }
+
+  const size_t json_size = strlen(json_name);
+  ok = upb_strtable_insert(&m->jtof, json_name, json_size,
+                           upb_value_constptr(f), ctx->arena);
+  if (!ok) _upb_DefBuilder_OomErr(ctx);
 
   if (upb_inttable_lookup(&m->itof, field_number, NULL)) {
     _upb_DefBuilder_Errf(ctx, "duplicate field number (%u)", field_number);
@@ -11369,6 +11377,9 @@ static void create_msgdef(upb_DefBuilder* ctx, const char* prefix,
   if (!ok) _upb_DefBuilder_OomErr(ctx);
 
   ok = upb_strtable_init(&m->ntof, n_oneof + n_field, ctx->arena);
+  if (!ok) _upb_DefBuilder_OomErr(ctx);
+
+  ok = upb_strtable_init(&m->jtof, n_field, ctx->arena);
   if (!ok) _upb_DefBuilder_OomErr(ctx);
 
   UPB_DEF_SET_OPTIONS(m->opts, DescriptorProto, MessageOptions, msg_proto);
