@@ -257,7 +257,7 @@ class PROTOBUF_EXPORT Message : public MessageLite {
   // messages which will be merged.  Repeated fields will be concatenated.
   // The given message must be of the same type as this message (i.e. the
   // exact same class).
-  virtual void MergeFrom(const Message& from);
+  void MergeFrom(const Message& from);
 
   // Verifies that IsInitialized() returns true.  ABSL_CHECK-fails otherwise,
   // with a nice error message.
@@ -286,8 +286,7 @@ class PROTOBUF_EXPORT Message : public MessageLite {
   void DiscardUnknownFields();
 
   // Computes (an estimate of) the total number of bytes currently used for
-  // storing the message in memory.  The default implementation calls the
-  // Reflection object's SpaceUsed() method.
+  // storing the message in memory.
   //
   // SpaceUsed() is noticeably slower than ByteSize(), as it is implemented
   // using reflection (rather than the generated code implementation for
@@ -297,7 +296,7 @@ class PROTOBUF_EXPORT Message : public MessageLite {
   // Note: The precise value of this method should never be depended on, and can
   // change substantially due to internal details.  In debug builds, this will
   // include a random fuzz factor to prevent these dependencies.
-  virtual size_t SpaceUsedLong() const;
+  size_t SpaceUsedLong() const;
 
   [[deprecated("Please use SpaceUsedLong() instead")]] int SpaceUsed() const {
     return internal::ToIntSize(SpaceUsedLong());
@@ -1572,6 +1571,12 @@ bool SplitFieldHasExtraIndirectionStatic(const FieldDescriptor* field) {
   ABSL_DCHECK_EQ(SplitFieldHasExtraIndirection(field), ret);
   return ret;
 }
+
+class RawMessageBase : public Message {
+ public:
+  using Message::Message;
+  virtual size_t SpaceUsedLong() const = 0;
+};
 
 }  // namespace internal
 
