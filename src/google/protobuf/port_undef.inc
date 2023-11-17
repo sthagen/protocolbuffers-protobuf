@@ -40,8 +40,6 @@
 #undef PROTOBUF_MINIMUM_EDITION
 #undef PROTOBUF_MAXIMUM_EDITION
 #undef PROTOBUF_FIELD_OFFSET
-#undef PROTOBUF_MIN_HEADER_VERSION_FOR_PROTOC
-#undef PROTOBUF_MIN_PROTOC_VERSION
 #undef PROTOBUF_PREDICT_TRUE
 #undef PROTOBUF_PREDICT_FALSE
 #undef PROTOBUF_EXPORT
@@ -93,6 +91,11 @@
 #endif
 
 // Restore macros that may have been #undef'd in port_def.inc.
+
+#ifdef PROTOBUF_DID_UNDEF_noreturn
+#pragma pop_macro("noreturn")
+#undef PROTOBUF_DID_UNDEF_noreturn
+#endif
 
 #ifdef PROTOBUF_DID_UNDEF_PACKAGE
 #pragma pop_macro("PACKAGE")
