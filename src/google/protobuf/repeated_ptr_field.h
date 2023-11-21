@@ -113,15 +113,10 @@ struct TypeImplementsMergeBehaviorProbeForMergeFrom {
       type;
 };
 
-template <typename T, typename = void>
-struct TypeImplementsMergeBehavior
-    : TypeImplementsMergeBehaviorProbeForMergeFrom<T> {};
-
-
-template <>
-struct TypeImplementsMergeBehavior<std::string> {
-  typedef std::true_type type;
-};
+template <typename T>
+using TypeImplementsMergeBehavior =
+    absl::disjunction<std::is_same<T, std::string>,
+                      TypeImplementsMergeBehaviorProbeForMergeFrom<T>>;
 
 template <typename T>
 struct IsMovable
@@ -241,14 +236,6 @@ class PROTOBUF_EXPORT RepeatedPtrFieldBase {
     if (!using_sso()) ++rep()->allocated_size;
     auto* result = TypeHandler::New(arena_, std::move(value));
     element_at(ExchangeCurrentSize(current_size_ + 1)) = result;
-  }
-
-  template <typename TypeHandler>
-  void Delete(int index) {
-    ABSL_DCHECK_GE(index, 0);
-    ABSL_DCHECK_LT(index, current_size_);
-    using H = CommonHandler<TypeHandler>;
-    Delete<H>(element_at(index), arena_);
   }
 
   // Must be called from destructor.
