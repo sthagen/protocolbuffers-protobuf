@@ -27,6 +27,7 @@
 #include "upb/mini_table/enum.h"
 #include "upb/mini_table/extension.h"
 #include "upb/mini_table/field.h"
+#include "upb/mini_table/internal/field.h"
 
 // Must be last.
 #include "upb/mini_table/internal/field.h"
@@ -66,7 +67,7 @@ UPB_API_INLINE bool upb_Message_HasField(const upb_Message* msg,
 
 UPB_API_INLINE uint32_t upb_Message_WhichOneofFieldNumber(
     const upb_Message* message, const upb_MiniTableField* oneof_field) {
-  UPB_ASSUME(_upb_MiniTableField_InOneOf(oneof_field));
+  UPB_ASSUME(upb_MiniTableField_IsInOneof(oneof_field));
   return _upb_Message_GetOneofCase(message, oneof_field);
 }
 
@@ -378,7 +379,7 @@ UPB_API_INLINE upb_Array* upb_Message_GetOrCreateMutableArray(
   _upb_MiniTableField_CheckIsArray(field);
   upb_Array* array = upb_Message_GetMutableArray(msg, field);
   if (!array) {
-    array = _upb_Array_New(arena, 4, _upb_MiniTable_ElementSizeLg2(field));
+    array = _upb_Array_New(arena, 4, _upb_MiniTableField_ElemSizeLg2(field));
     // Check again due to: https://godbolt.org/z/7WfaoKG1r
     _upb_MiniTableField_CheckIsArray(field);
     upb_MessageValue val;

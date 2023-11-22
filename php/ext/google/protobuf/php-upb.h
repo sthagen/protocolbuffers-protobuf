@@ -995,12 +995,82 @@ UPB_INLINE bool upb_MiniTableEnum_CheckValue(const upb_MiniTableEnum* e,
 #ifndef UPB_MINI_TABLE_FIELD_H_
 #define UPB_MINI_TABLE_FIELD_H_
 
+#include <stddef.h>
+
 
 #ifndef UPB_MINI_TABLE_INTERNAL_FIELD_H_
 #define UPB_MINI_TABLE_INTERNAL_FIELD_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
+
+#ifndef UPB_MINI_TABLE_INTERNAL_SIZE_LOG2_H_
+#define UPB_MINI_TABLE_INTERNAL_SIZE_LOG2_H_
+
+#include <stddef.h>
+#include <stdint.h>
+
+
+// Must be last.
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Return the log2 of the storage size in bytes for a upb_CType
+UPB_INLINE int upb_CType_SizeLg2(upb_CType c_type) {
+  static const int8_t size[] = {
+      0,               // kUpb_CType_Bool
+      2,               // kUpb_CType_Float
+      2,               // kUpb_CType_Int32
+      2,               // kUpb_CType_UInt32
+      2,               // kUpb_CType_Enum
+      UPB_SIZE(2, 3),  // kUpb_CType_Message
+      3,               // kUpb_CType_Double
+      3,               // kUpb_CType_Int64
+      3,               // kUpb_CType_UInt64
+      UPB_SIZE(3, 4),  // kUpb_CType_String
+      UPB_SIZE(3, 4),  // kUpb_CType_Bytes
+  };
+
+  // -1 here because the enum is one-based but the table is zero-based.
+  return size[c_type - 1];
+}
+
+// Return the log2 of the storage size in bytes for a upb_FieldType
+UPB_INLINE int upb_FieldType_SizeLg2(upb_FieldType field_type) {
+  static const int8_t size[] = {
+      3,               // kUpb_FieldType_Double
+      2,               // kUpb_FieldType_Float
+      3,               // kUpb_FieldType_Int64
+      3,               // kUpb_FieldType_UInt64
+      2,               // kUpb_FieldType_Int32
+      3,               // kUpb_FieldType_Fixed64
+      2,               // kUpb_FieldType_Fixed32
+      0,               // kUpb_FieldType_Bool
+      UPB_SIZE(3, 4),  // kUpb_FieldType_String
+      UPB_SIZE(2, 3),  // kUpb_FieldType_Group
+      UPB_SIZE(2, 3),  // kUpb_FieldType_Message
+      UPB_SIZE(3, 4),  // kUpb_FieldType_Bytes
+      2,               // kUpb_FieldType_UInt32
+      2,               // kUpb_FieldType_Enum
+      2,               // kUpb_FieldType_SFixed32
+      3,               // kUpb_FieldType_SFixed64
+      2,               // kUpb_FieldType_SInt32
+      3,               // kUpb_FieldType_SInt64
+  };
+
+  // -1 here because the enum is one-based but the table is zero-based.
+  return size[field_type - 1];
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_MINI_TABLE_INTERNAL_SIZE_LOG2_H_ */
 
 // Must be last.
 
@@ -1084,12 +1154,86 @@ UPB_INLINE void _upb_MiniTableField_CheckIsMap(
   UPB_ASSUME(field->presence == 0);
 }
 
+UPB_INLINE size_t
+_upb_MiniTableField_ElemSizeLg2(const struct upb_MiniTableField* field) {
+  return upb_FieldType_SizeLg2(
+      (upb_FieldType)field->UPB_PRIVATE(descriptortype));
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
 
 
 #endif /* UPB_MINI_TABLE_INTERNAL_FIELD_H_ */
+
+// Must be last.
+
+typedef struct upb_MiniTableField upb_MiniTableField;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UPB_API_INLINE upb_FieldType
+upb_MiniTableField_Type(const upb_MiniTableField* f) {
+  if (f->mode & kUpb_LabelFlags_IsAlternate) {
+    if (f->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Int32) {
+      return kUpb_FieldType_Enum;
+    } else if (f->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Bytes) {
+      return kUpb_FieldType_String;
+    } else {
+      UPB_ASSERT(false);
+    }
+  }
+  return (upb_FieldType)f->UPB_PRIVATE(descriptortype);
+}
+
+UPB_API_INLINE upb_CType upb_MiniTableField_CType(const upb_MiniTableField* f) {
+  return upb_FieldType_CType(upb_MiniTableField_Type(f));
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsClosedEnum(
+    const upb_MiniTableField* field) {
+  return field->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Enum;
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsExtension(
+    const upb_MiniTableField* f) {
+  return f->mode & kUpb_LabelFlags_IsExtension;
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsInOneof(const upb_MiniTableField* f) {
+  return f->presence < 0;
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsRepeatedOrMap(
+    const upb_MiniTableField* f) {
+  // This works because upb_FieldMode has no value 3.
+  return !(f->mode & kUpb_FieldMode_Scalar);
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsSubMessage(
+    const upb_MiniTableField* f) {
+  return f->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Message ||
+         f->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Group;
+}
+
+UPB_API_INLINE bool upb_MiniTableField_HasPresence(
+    const upb_MiniTableField* f) {
+  if (upb_MiniTableField_IsExtension(f)) {
+    return !upb_MiniTableField_IsRepeatedOrMap(f);
+  } else {
+    return f->presence != 0;
+  }
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_MINI_TABLE_FIELD_H_ */
 
 #ifndef UPB_MINI_TABLE_INTERNAL_MESSAGE_H_
 #define UPB_MINI_TABLE_INTERNAL_MESSAGE_H_
@@ -1179,70 +1323,6 @@ union upb_MiniTableSub {
 
 
 #endif /* UPB_MINI_TABLE_INTERNAL_SUB_H_ */
-
-// Must be last.
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct upb_MiniTableField upb_MiniTableField;
-
-UPB_API_INLINE upb_FieldType
-upb_MiniTableField_Type(const upb_MiniTableField* field) {
-  if (field->mode & kUpb_LabelFlags_IsAlternate) {
-    if (field->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Int32) {
-      return kUpb_FieldType_Enum;
-    } else if (field->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Bytes) {
-      return kUpb_FieldType_String;
-    } else {
-      UPB_ASSERT(false);
-    }
-  }
-  return (upb_FieldType)field->UPB_PRIVATE(descriptortype);
-}
-
-UPB_API_INLINE upb_CType upb_MiniTableField_CType(const upb_MiniTableField* f) {
-  return upb_FieldType_CType(upb_MiniTableField_Type(f));
-}
-
-UPB_API_INLINE bool upb_MiniTableField_IsClosedEnum(
-    const upb_MiniTableField* field) {
-  return field->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Enum;
-}
-
-UPB_API_INLINE bool upb_MiniTableField_IsExtension(
-    const upb_MiniTableField* field) {
-  return field->mode & kUpb_LabelFlags_IsExtension;
-}
-
-UPB_API_INLINE bool upb_MiniTableField_IsRepeatedOrMap(
-    const upb_MiniTableField* field) {
-  // This works because upb_FieldMode has no value 3.
-  return !(field->mode & kUpb_FieldMode_Scalar);
-}
-
-UPB_API_INLINE bool upb_MiniTableField_IsSubMessage(
-    const upb_MiniTableField* field) {
-  return field->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Message ||
-         field->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Group;
-}
-
-UPB_API_INLINE bool upb_MiniTableField_HasPresence(
-    const upb_MiniTableField* field) {
-  if (upb_MiniTableField_IsExtension(field)) {
-    return !upb_MiniTableField_IsRepeatedOrMap(field);
-  } else {
-    return field->presence != 0;
-  }
-}
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_MINI_TABLE_FIELD_H_ */
 
 // Must be last.
 
@@ -2147,73 +2227,6 @@ bool _upb_Message_AddUnknown(upb_Message* msg, const char* data, size_t len,
 
 #endif /* UPB_MESSAGE_INTERNAL_H_ */
 
-#ifndef UPB_MESSAGE_INTERNAL_SIZE_LOG2_H_
-#define UPB_MESSAGE_INTERNAL_SIZE_LOG2_H_
-
-#include <stddef.h>
-#include <stdint.h>
-
-
-// Must be last.
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Return the log2 of the storage size in bytes for a upb_CType
-UPB_INLINE int upb_SizeLog2_CType(upb_CType c_type) {
-  static const int8_t size[] = {
-      0,               // kUpb_CType_Bool
-      2,               // kUpb_CType_Float
-      2,               // kUpb_CType_Int32
-      2,               // kUpb_CType_UInt32
-      2,               // kUpb_CType_Enum
-      UPB_SIZE(2, 3),  // kUpb_CType_Message
-      3,               // kUpb_CType_Double
-      3,               // kUpb_CType_Int64
-      3,               // kUpb_CType_UInt64
-      UPB_SIZE(3, 4),  // kUpb_CType_String
-      UPB_SIZE(3, 4),  // kUpb_CType_Bytes
-  };
-
-  // -1 here because the enum is one-based but the table is zero-based.
-  return size[c_type - 1];
-}
-
-// Return the log2 of the storage size in bytes for a upb_FieldType
-UPB_INLINE int upb_SizeLog2_FieldType(upb_FieldType field_type) {
-  static const int8_t size[] = {
-      3,               // kUpb_FieldType_Double
-      2,               // kUpb_FieldType_Float
-      3,               // kUpb_FieldType_Int64
-      3,               // kUpb_FieldType_UInt64
-      2,               // kUpb_FieldType_Int32
-      3,               // kUpb_FieldType_Fixed64
-      2,               // kUpb_FieldType_Fixed32
-      0,               // kUpb_FieldType_Bool
-      UPB_SIZE(3, 4),  // kUpb_FieldType_String
-      UPB_SIZE(2, 3),  // kUpb_FieldType_Group
-      UPB_SIZE(2, 3),  // kUpb_FieldType_Message
-      UPB_SIZE(3, 4),  // kUpb_FieldType_Bytes
-      2,               // kUpb_FieldType_UInt32
-      2,               // kUpb_FieldType_Enum
-      2,               // kUpb_FieldType_SFixed32
-      3,               // kUpb_FieldType_SFixed64
-      2,               // kUpb_FieldType_SInt32
-      3,               // kUpb_FieldType_SInt64
-  };
-
-  // -1 here because the enum is one-based but the table is zero-based.
-  return size[field_type - 1];
-}
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_MESSAGE_INTERNAL_SIZE_LOG2_H_ */
-
 // Must be last.
 
 #if defined(__GNUC__) && !defined(__clang__)
@@ -2289,14 +2302,14 @@ UPB_INLINE void _upb_Message_ClearHasbitByField(const upb_Message* msg,
 
 // Oneof case access ///////////////////////////////////////////////////////////
 
-UPB_INLINE size_t _upb_OneofCase_Offset(const upb_MiniTableField* f) {
+UPB_INLINE size_t _upb_MiniTableField_OneofOffset(const upb_MiniTableField* f) {
   UPB_ASSERT(f->presence < 0);
   return ~(ptrdiff_t)f->presence;
 }
 
 UPB_INLINE uint32_t* _upb_Message_OneofCasePtr(upb_Message* msg,
                                                const upb_MiniTableField* f) {
-  return UPB_PTR_AT(msg, _upb_OneofCase_Offset(f), uint32_t);
+  return UPB_PTR_AT(msg, _upb_MiniTableField_OneofOffset(f), uint32_t);
 }
 
 UPB_INLINE uint32_t _upb_Message_GetOneofCase(const upb_Message* msg,
@@ -2313,10 +2326,6 @@ UPB_INLINE void _upb_Message_SetOneofCase(upb_Message* msg,
 
 // LINT.ThenChange(GoogleInternalName2)
 
-UPB_INLINE bool _upb_MiniTableField_InOneOf(const upb_MiniTableField* field) {
-  return field->presence < 0;
-}
-
 UPB_INLINE void* _upb_MiniTableField_GetPtr(upb_Message* msg,
                                             const upb_MiniTableField* field) {
   return (char*)msg + field->offset;
@@ -2331,7 +2340,7 @@ UPB_INLINE void _upb_Message_SetPresence(upb_Message* msg,
                                          const upb_MiniTableField* field) {
   if (field->presence > 0) {
     _upb_Message_SetHasbitByField(msg, field);
-  } else if (_upb_MiniTableField_InOneOf(field)) {
+  } else if (upb_MiniTableField_IsInOneof(field)) {
     _upb_Message_SetOneofCase(msg, field);
   }
 }
@@ -2372,12 +2381,6 @@ UPB_INLINE void _upb_MiniTable_CopyFieldData(void* to, const void* from,
     }
   }
   UPB_UNREACHABLE();
-}
-
-UPB_INLINE size_t
-_upb_MiniTable_ElementSizeLg2(const upb_MiniTableField* field) {
-  return upb_SizeLog2_FieldType(
-      (upb_FieldType)field->UPB_PRIVATE(descriptortype));
 }
 
 // Here we define universal getter/setter functions for message fields.
@@ -2422,7 +2425,7 @@ UPB_INLINE bool _upb_Message_HasNonExtensionField(
     const upb_Message* msg, const upb_MiniTableField* field) {
   UPB_ASSERT(upb_MiniTableField_HasPresence(field));
   UPB_ASSUME(!upb_MiniTableField_IsExtension(field));
-  if (_upb_MiniTableField_InOneOf(field)) {
+  if (upb_MiniTableField_IsInOneof(field)) {
     return _upb_Message_GetOneofCase(msg, field) == field->number;
   } else {
     return _upb_Message_GetHasbitByField(msg, field);
@@ -2433,7 +2436,7 @@ static UPB_FORCEINLINE void _upb_Message_GetNonExtensionField(
     const upb_Message* msg, const upb_MiniTableField* field,
     const void* default_val, void* val) {
   UPB_ASSUME(!upb_MiniTableField_IsExtension(field));
-  if ((_upb_MiniTableField_InOneOf(field) ||
+  if ((upb_MiniTableField_IsInOneof(field) ||
        _upb_MiniTable_ValueIsNonZero(default_val, field)) &&
       !_upb_Message_HasNonExtensionField(msg, field)) {
     _upb_MiniTable_CopyFieldData(val, default_val, field);
@@ -2519,7 +2522,7 @@ UPB_INLINE void _upb_Message_ClearNonExtensionField(
     upb_Message* msg, const upb_MiniTableField* field) {
   if (field->presence > 0) {
     _upb_Message_ClearHasbitByField(msg, field);
-  } else if (_upb_MiniTableField_InOneOf(field)) {
+  } else if (upb_MiniTableField_IsInOneof(field)) {
     uint32_t* ptr = _upb_Message_OneofCasePtr(msg, field);
     if (*ptr != field->number) return;
     *ptr = 0;
@@ -2718,7 +2721,7 @@ UPB_API_INLINE bool upb_Message_HasField(const upb_Message* msg,
 
 UPB_API_INLINE uint32_t upb_Message_WhichOneofFieldNumber(
     const upb_Message* message, const upb_MiniTableField* oneof_field) {
-  UPB_ASSUME(_upb_MiniTableField_InOneOf(oneof_field));
+  UPB_ASSUME(upb_MiniTableField_IsInOneof(oneof_field));
   return _upb_Message_GetOneofCase(message, oneof_field);
 }
 
@@ -3030,7 +3033,7 @@ UPB_API_INLINE upb_Array* upb_Message_GetOrCreateMutableArray(
   _upb_MiniTableField_CheckIsArray(field);
   upb_Array* array = upb_Message_GetMutableArray(msg, field);
   if (!array) {
-    array = _upb_Array_New(arena, 4, _upb_MiniTable_ElementSizeLg2(field));
+    array = _upb_Array_New(arena, 4, _upb_MiniTableField_ElemSizeLg2(field));
     // Check again due to: https://godbolt.org/z/7WfaoKG1r
     _upb_MiniTableField_CheckIsArray(field);
     upb_MessageValue val;
