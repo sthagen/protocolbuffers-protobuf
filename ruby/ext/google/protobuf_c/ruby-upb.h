@@ -935,9 +935,9 @@ UPB_API void* upb_Array_MutableDataPtr(upb_Array* arr);
 // Must be last.
 
 struct upb_MiniTableEnum {
-  uint32_t mask_limit;   // Limit enum value that can be tested with mask.
-  uint32_t value_count;  // Number of values after the bitfield.
-  uint32_t data[];       // Bitmask + enumerated values follow.
+  uint32_t UPB_PRIVATE(mask_limit);   // Highest that can be tested with mask.
+  uint32_t UPB_PRIVATE(value_count);  // Number of values after the bitfield.
+  uint32_t UPB_PRIVATE(data)[];       // Bitmask + enumerated values follow.
 };
 
 #ifdef __cplusplus
@@ -947,19 +947,22 @@ extern "C" {
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableEnum_CheckValue)(
     const struct upb_MiniTableEnum* e, uint32_t val) {
   if (UPB_LIKELY(val < 64)) {
-    const uint64_t mask = e->data[0] | ((uint64_t)e->data[1] << 32);
+    const uint64_t mask =
+        e->UPB_PRIVATE(data)[0] | ((uint64_t)e->UPB_PRIVATE(data)[1] << 32);
     const uint64_t bit = 1ULL << val;
     return (mask & bit) != 0;
   }
-  if (UPB_LIKELY(val < e->mask_limit)) {
-    const uint32_t mask = e->data[val / 32];
+  if (UPB_LIKELY(val < e->UPB_PRIVATE(mask_limit))) {
+    const uint32_t mask = e->UPB_PRIVATE(data)[val / 32];
     const uint32_t bit = 1ULL << (val % 32);
     return (mask & bit) != 0;
   }
 
   // OPT: binary search long lists?
-  const uint32_t* start = &e->data[e->mask_limit / 32];
-  const uint32_t* limit = &e->data[e->mask_limit / 32 + e->value_count];
+  const uint32_t* start =
+      &e->UPB_PRIVATE(data)[e->UPB_PRIVATE(mask_limit) / 32];
+  const uint32_t* limit = &e->UPB_PRIVATE(
+      data)[e->UPB_PRIVATE(mask_limit) / 32 + e->UPB_PRIVATE(value_count)];
   for (const uint32_t* p = start; p < limit; p++) {
     if (*p == val) return true;
   }
@@ -1430,25 +1433,89 @@ size_t upb_Message_ExtensionCount(const upb_Message* msg);
 #ifndef UPB_MINI_TABLE_EXTENSION_H_
 #define UPB_MINI_TABLE_EXTENSION_H_
 
+#include <stdint.h>
+
 
 #ifndef UPB_MINI_TABLE_INTERNAL_EXTENSION_H_
 #define UPB_MINI_TABLE_INTERNAL_EXTENSION_H_
+
+#include <stdint.h>
 
 
 // Must be last.
 
 struct upb_MiniTableExtension {
   // Do not move this field. We need to be able to alias pointers.
-  struct upb_MiniTableField field;
+  struct upb_MiniTableField UPB_PRIVATE(field);
 
-  const struct upb_MiniTable* extendee;
-  union upb_MiniTableSub sub;  // NULL unless submessage or proto2 enum
+  const struct upb_MiniTable* UPB_PRIVATE(extendee);
+  union upb_MiniTableSub UPB_PRIVATE(sub);  // NULL unless submsg or proto2 enum
 };
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UPB_INLINE const struct upb_MiniTableField* UPB_PRIVATE(
+    _upb_MiniTableExtension_AsField)(const struct upb_MiniTableExtension* e) {
+  return (const struct upb_MiniTableField*)&e->UPB_PRIVATE(field);
+}
+
+UPB_INLINE uint32_t UPB_PRIVATE(_upb_MiniTableExtension_Number)(
+    const struct upb_MiniTableExtension* e) {
+  return e->UPB_PRIVATE(field).number;
+}
+
+UPB_INLINE const struct upb_MiniTable* UPB_PRIVATE(
+    _upb_MiniTableExtension_GetSubMessage)(
+    const struct upb_MiniTableExtension* e) {
+  return e->UPB_PRIVATE(sub).submsg;
+}
+
+UPB_INLINE void UPB_PRIVATE(_upb_MiniTableExtension_SetSubMessage)(
+    struct upb_MiniTableExtension* e, const struct upb_MiniTable* m) {
+  e->UPB_PRIVATE(sub).submsg = m;
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 
 #endif /* UPB_MINI_TABLE_INTERNAL_EXTENSION_H_ */
 
+// Must be last.
+
 typedef struct upb_MiniTableExtension upb_MiniTableExtension;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UPB_API_INLINE const struct upb_MiniTableField* upb_MiniTableExtension_AsField(
+    const upb_MiniTableExtension* e) {
+  return UPB_PRIVATE(_upb_MiniTableExtension_AsField)(e);
+}
+
+UPB_API_INLINE uint32_t
+upb_MiniTableExtension_Number(const upb_MiniTableExtension* e) {
+  return UPB_PRIVATE(_upb_MiniTableExtension_Number)(e);
+}
+
+UPB_API_INLINE const struct upb_MiniTable* upb_MiniTableExtension_GetSubMessage(
+    const upb_MiniTableExtension* e) {
+  return UPB_PRIVATE(_upb_MiniTableExtension_GetSubMessage)(e);
+}
+
+UPB_API_INLINE void upb_MiniTableExtension_SetSubMessage(
+    upb_MiniTableExtension* e, const struct upb_MiniTable* m) {
+  return UPB_PRIVATE(_upb_MiniTableExtension_SetSubMessage)(e, m);
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
 
 #endif /* UPB_MINI_TABLE_EXTENSION_H_ */
 
@@ -2419,7 +2486,7 @@ UPB_INLINE void _upb_MiniTable_CopyFieldData(void* to, const void* from,
 
 UPB_INLINE bool _upb_Message_HasExtensionField(
     const upb_Message* msg, const upb_MiniTableExtension* ext) {
-  UPB_ASSERT(upb_MiniTableField_HasPresence(&ext->field));
+  UPB_ASSERT(upb_MiniTableField_HasPresence(&ext->UPB_PRIVATE(field)));
   return _upb_Message_Getext(msg, ext) != NULL;
 }
 
@@ -2451,12 +2518,12 @@ static UPB_FORCEINLINE void _upb_Message_GetNonExtensionField(
 UPB_INLINE void _upb_Message_GetExtensionField(
     const upb_Message* msg, const upb_MiniTableExtension* mt_ext,
     const void* default_val, void* val) {
-  UPB_ASSUME(upb_MiniTableField_IsExtension(&mt_ext->field));
+  UPB_ASSUME(upb_MiniTableField_IsExtension(&mt_ext->UPB_PRIVATE(field)));
   const upb_Message_Extension* ext = _upb_Message_Getext(msg, mt_ext);
   if (ext) {
-    _upb_MiniTable_CopyFieldData(val, &ext->data, &mt_ext->field);
+    _upb_MiniTable_CopyFieldData(val, &ext->data, &mt_ext->UPB_PRIVATE(field));
   } else {
-    _upb_MiniTable_CopyFieldData(val, default_val, &mt_ext->field);
+    _upb_MiniTable_CopyFieldData(val, default_val, &mt_ext->UPB_PRIVATE(field));
   }
 }
 
@@ -2502,7 +2569,7 @@ UPB_INLINE bool _upb_Message_SetExtensionField(
   upb_Message_Extension* ext =
       _upb_Message_GetOrCreateExtension(msg, mt_ext, a);
   if (!ext) return false;
-  _upb_MiniTable_CopyFieldData(&ext->data, val, &mt_ext->field);
+  _upb_MiniTable_CopyFieldData(&ext->data, val, &mt_ext->UPB_PRIVATE(field));
   return true;
 }
 
@@ -11942,10 +12009,6 @@ bool _upb_mapsorter_pushexts(_upb_mapsorter* s,
 
 #endif /* UPB_COLLECTIONS_INTERNAL_MAP_SORTER_H_ */
 
-#ifndef UPB_MINI_DESCRIPTOR_INTERNAL_DECODER_H_
-#define UPB_MINI_DESCRIPTOR_INTERNAL_DECODER_H_
-
-
 #ifndef UPB_MINI_DESCRIPTOR_INTERNAL_BASE92_H_
 #define UPB_MINI_DESCRIPTOR_INTERNAL_BASE92_H_
 
@@ -11999,6 +12062,10 @@ UPB_INLINE const char* _upb_Base92_DecodeVarint(const char* ptr,
 
 
 #endif  // UPB_MINI_DESCRIPTOR_INTERNAL_BASE92_H_
+
+#ifndef UPB_MINI_DESCRIPTOR_INTERNAL_DECODER_H_
+#define UPB_MINI_DESCRIPTOR_INTERNAL_DECODER_H_
+
 
 // Must be last.
 
