@@ -394,7 +394,7 @@ static void upb_MtDecoder_AllocateSubs(upb_MtDecoder* d,
   upb_MdDecoder_CheckOutOfMemory(&d->base, subs);
   uint32_t i = 0;
   for (; i < sub_counts.submsg_count; i++) {
-    subs[i].submsg = &_kUpb_MiniTable_Empty;
+    subs[i].UPB_PRIVATE(submsg) = &_kUpb_MiniTable_Empty;
   }
   if (sub_counts.subenum_count) {
     upb_MiniTableField* f = d->fields;
@@ -405,7 +405,7 @@ static void upb_MtDecoder_AllocateSubs(upb_MtDecoder* d,
       }
     }
     for (; i < sub_counts.submsg_count + sub_counts.subenum_count; i++) {
-      subs[i].subenum = NULL;
+      subs[i].UPB_PRIVATE(subenum) = NULL;
     }
   }
   d->table->subs = subs;
@@ -638,7 +638,7 @@ static void upb_MtDecoder_ValidateEntryField(upb_MtDecoder* d,
                            name, expected_num, (int)f->number);
   }
 
-  if (upb_MiniTableField_IsRepeatedOrMap(f)) {
+  if (!upb_MiniTableField_IsScalar(f)) {
     upb_MdDecoder_ErrorJmp(
         &d->base, "map %s cannot be repeated or map, or be in oneof", name);
   }
@@ -816,7 +816,7 @@ static const char* upb_MtDecoder_DoBuildMiniTableExtension(
     if (!upb_MiniTableField_IsSubMessage(f)) return NULL;
 
     // Extensions of MessageSet must be non-repeating.
-    if ((f->mode & kUpb_FieldMode_Mask) == kUpb_FieldMode_Array) return NULL;
+    if (upb_MiniTableField_IsArray(f)) return NULL;
   }
 
   ext->UPB_PRIVATE(extendee) = extendee;

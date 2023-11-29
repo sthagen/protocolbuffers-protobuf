@@ -28,6 +28,7 @@
 #include "upb/mini_table/internal/field.h"
 #include "upb/mini_table/internal/message.h"
 #include "upb/mini_table/message.h"
+#include "upb/mini_table/sub.h"
 
 // begin:google_only
 // #include "testing/fuzzing/fuzztest.h"
@@ -65,7 +66,7 @@ TEST_P(MiniTableTest, AllScalarTypes) {
   for (int i = 0; i < 16; i++) {
     const upb_MiniTableField* f = &table->fields[i];
     EXPECT_EQ(i + 1, f->number);
-    EXPECT_EQ(kUpb_FieldMode_Scalar, f->mode & kUpb_FieldMode_Mask);
+    EXPECT_TRUE(upb_MiniTableField_IsScalar(f));
     EXPECT_TRUE(offsets.insert(f->offset).second);
     EXPECT_TRUE(f->offset < table->size);
   }
@@ -91,7 +92,7 @@ TEST_P(MiniTableTest, AllRepeatedTypes) {
   for (int i = 0; i < 16; i++) {
     const upb_MiniTableField* f = &table->fields[i];
     EXPECT_EQ(i + 1, f->number);
-    EXPECT_EQ(kUpb_FieldMode_Array, f->mode & kUpb_FieldMode_Mask);
+    EXPECT_TRUE(upb_MiniTableField_IsArray(f));
     EXPECT_TRUE(offsets.insert(f->offset).second);
     EXPECT_TRUE(f->offset < table->size);
   }
@@ -120,7 +121,7 @@ TEST_P(MiniTableTest, Skips) {
     const upb_MiniTableField* f = &table->fields[i];
     EXPECT_EQ(field_numbers[i], f->number);
     EXPECT_EQ(kUpb_FieldType_Float, upb_MiniTableField_Type(f));
-    EXPECT_EQ(kUpb_FieldMode_Scalar, f->mode & kUpb_FieldMode_Mask);
+    EXPECT_TRUE(upb_MiniTableField_IsScalar(f));
     EXPECT_TRUE(offsets.insert(f->offset).second);
     EXPECT_TRUE(f->offset < table->size);
   }
@@ -149,7 +150,7 @@ TEST_P(MiniTableTest, AllScalarTypesOneof) {
   for (int i = 0; i < 16; i++) {
     const upb_MiniTableField* f = &table->fields[i];
     EXPECT_EQ(i + 1, f->number);
-    EXPECT_EQ(kUpb_FieldMode_Scalar, f->mode & kUpb_FieldMode_Mask);
+    EXPECT_TRUE(upb_MiniTableField_IsScalar(f));
     // For a oneof all fields have the same offset.
     EXPECT_EQ(table->fields[0].offset, f->offset);
     // All presence fields should point to the same oneof case offset.
@@ -240,8 +241,8 @@ TEST_P(MiniTableTest, SubsInitializedToEmpty) {
       e.data().data(), e.data().size(), GetParam(), arena.ptr(), status.ptr());
   ASSERT_NE(nullptr, table);
   EXPECT_EQ(table->field_count, 2);
-  EXPECT_EQ(table->subs[0].submsg, &_kUpb_MiniTable_Empty);
-  EXPECT_EQ(table->subs[1].submsg, &_kUpb_MiniTable_Empty);
+  EXPECT_EQ(upb_MiniTableSub_Message(table->subs[0]), &_kUpb_MiniTable_Empty);
+  EXPECT_EQ(upb_MiniTableSub_Message(table->subs[1]), &_kUpb_MiniTable_Empty);
 }
 
 TEST(MiniTableEnumTest, PositiveAndNegative) {
