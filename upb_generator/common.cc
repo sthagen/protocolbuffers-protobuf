@@ -84,7 +84,7 @@ std::string FieldInitializer(upb::FieldDefPtr field,
                              const upb_MiniTableField* field64,
                              const upb_MiniTableField* field32) {
   return absl::Substitute(
-      "{$0, $1, $2, $3, $4, $5}", field64->number,
+      "{$0, $1, $2, $3, $4, $5}", upb_MiniTableField_Number(field64),
       ArchDependentSize(field32->offset, field64->offset),
       ArchDependentSize(field32->presence, field64->presence),
       field64->UPB_PRIVATE(submsg_index) == kUpb_NoSub
@@ -106,7 +106,7 @@ std::string ArchDependentSize(int64_t size32, int64_t size64) {
 std::string GetModeInit(const upb_MiniTableField* field32,
                         const upb_MiniTableField* field64) {
   std::string ret;
-  uint8_t mode32 = field32->mode;
+  uint8_t mode32 = field32->UPB_PRIVATE(mode);
   switch (mode32 & kUpb_FieldMode_Mask) {
     case kUpb_FieldMode_Map:
       ret = "(int)kUpb_FieldMode_Map";

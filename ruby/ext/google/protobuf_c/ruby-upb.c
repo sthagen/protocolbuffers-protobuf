@@ -6416,7 +6416,7 @@ enum PresenceClass {
 };
 
 static bool upb_MtDecoder_FieldIsPackable(upb_MiniTableField* field) {
-  return (field->mode & kUpb_FieldMode_Array) &&
+  return (field->UPB_PRIVATE(mode) & kUpb_FieldMode_Array) &&
          upb_FieldType_IsPackable(field->UPB_PRIVATE(descriptortype));
 }
 
@@ -6433,18 +6433,18 @@ static void upb_MiniTable_SetTypeAndSub(upb_MiniTableField* field,
   if (is_proto3_enum) {
     UPB_ASSERT(type == kUpb_FieldType_Enum);
     type = kUpb_FieldType_Int32;
-    field->mode |= kUpb_LabelFlags_IsAlternate;
+    field->UPB_PRIVATE(mode) |= kUpb_LabelFlags_IsAlternate;
   } else if (type == kUpb_FieldType_String &&
              !(msg_modifiers & kUpb_MessageModifier_ValidateUtf8)) {
     type = kUpb_FieldType_Bytes;
-    field->mode |= kUpb_LabelFlags_IsAlternate;
+    field->UPB_PRIVATE(mode) |= kUpb_LabelFlags_IsAlternate;
   }
 
   field->UPB_PRIVATE(descriptortype) = type;
 
   if (upb_MtDecoder_FieldIsPackable(field) &&
       (msg_modifiers & kUpb_MessageModifier_DefaultIsPacked)) {
-    field->mode |= kUpb_LabelFlags_IsPacked;
+    field->UPB_PRIVATE(mode) |= kUpb_LabelFlags_IsPacked;
   }
 
   if (type == kUpb_FieldType_Message || type == kUpb_FieldType_Group) {
@@ -6511,18 +6511,19 @@ static void upb_MiniTable_SetField(upb_MtDecoder* d, uint8_t ch,
   int8_t type = _upb_FromBase92(ch);
   if (ch >= _upb_ToBase92(kUpb_EncodedType_RepeatedBase)) {
     type -= kUpb_EncodedType_RepeatedBase;
-    field->mode = kUpb_FieldMode_Array;
-    field->mode |= pointer_rep << kUpb_FieldRep_Shift;
+    field->UPB_PRIVATE(mode) = kUpb_FieldMode_Array;
+    field->UPB_PRIVATE(mode) |= pointer_rep << kUpb_FieldRep_Shift;
     field->offset = kNoPresence;
   } else {
-    field->mode = kUpb_FieldMode_Scalar;
+    field->UPB_PRIVATE(mode) = kUpb_FieldMode_Scalar;
     field->offset = kHasbitPresence;
     if (type == kUpb_EncodedType_Group || type == kUpb_EncodedType_Message) {
-      field->mode |= pointer_rep << kUpb_FieldRep_Shift;
+      field->UPB_PRIVATE(mode) |= pointer_rep << kUpb_FieldRep_Shift;
     } else if ((unsigned long)type >= sizeof(kUpb_EncodedToFieldRep)) {
       upb_MdDecoder_ErrorJmp(&d->base, "Invalid field type: %d", (int)type);
     } else {
-      field->mode |= kUpb_EncodedToFieldRep[type] << kUpb_FieldRep_Shift;
+      field->UPB_PRIVATE(mode) |= kUpb_EncodedToFieldRep[type]
+                                  << kUpb_FieldRep_Shift;
     }
   }
   if ((unsigned long)type >= sizeof(kUpb_EncodedToType)) {
@@ -6540,22 +6541,23 @@ static void upb_MtDecoder_ModifyField(upb_MtDecoder* d,
     if (!upb_MtDecoder_FieldIsPackable(field)) {
       upb_MdDecoder_ErrorJmp(&d->base,
                              "Cannot flip packed on unpackable field %" PRIu32,
-                             field->number);
+                             upb_MiniTableField_Number(field));
     }
-    field->mode ^= kUpb_LabelFlags_IsPacked;
+    field->UPB_PRIVATE(mode) ^= kUpb_LabelFlags_IsPacked;
   }
 
   if (field_modifiers & kUpb_EncodedFieldModifier_FlipValidateUtf8) {
     if (field->UPB_PRIVATE(descriptortype) != kUpb_FieldType_Bytes ||
-        !(field->mode & kUpb_LabelFlags_IsAlternate)) {
-      upb_MdDecoder_ErrorJmp(
-          &d->base,
-          "Cannot flip ValidateUtf8 on field %" PRIu32 ", type=%d, mode=%d",
-          field->number, (int)field->UPB_PRIVATE(descriptortype),
-          (int)field->mode);
+        !(field->UPB_PRIVATE(mode) & kUpb_LabelFlags_IsAlternate)) {
+      upb_MdDecoder_ErrorJmp(&d->base,
+                             "Cannot flip ValidateUtf8 on field %" PRIu32
+                             ", type=%d, mode=%d",
+                             upb_MiniTableField_Number(field),
+                             (int)field->UPB_PRIVATE(descriptortype),
+                             (int)field->UPB_PRIVATE(mode));
     }
     field->UPB_PRIVATE(descriptortype) = kUpb_FieldType_String;
-    field->mode &= ~kUpb_LabelFlags_IsAlternate;
+    field->UPB_PRIVATE(mode) &= ~kUpb_LabelFlags_IsAlternate;
   }
 
   bool singular = field_modifiers & kUpb_EncodedFieldModifier_IsProto3Singular;
@@ -6565,12 +6567,12 @@ static void upb_MtDecoder_ModifyField(upb_MtDecoder* d,
   if ((singular || required) && field->offset != kHasbitPresence) {
     upb_MdDecoder_ErrorJmp(&d->base,
                            "Invalid modifier(s) for repeated field %" PRIu32,
-                           field->number);
+                           upb_MiniTableField_Number(field));
   }
   if (singular && required) {
     upb_MdDecoder_ErrorJmp(
         &d->base, "Field %" PRIu32 " cannot be both singular and required",
-        field->number);
+        upb_MiniTableField_Number(field));
   }
 
   if (singular) field->offset = kNoPresence;
@@ -6671,7 +6673,7 @@ static const char* upb_MtDecoder_DecodeOneofField(upb_MtDecoder* d,
   }
 
   // Oneof storage must be large enough to accommodate the largest member.
-  int rep = f->mode >> kUpb_FieldRep_Shift;
+  int rep = f->UPB_PRIVATE(mode) >> kUpb_FieldRep_Shift;
   if (upb_MtDecoder_SizeOfRep(rep, d->platform) >
       upb_MtDecoder_SizeOfRep(item->rep, d->platform)) {
     item->rep = rep;
@@ -6771,7 +6773,7 @@ static const char* upb_MtDecoder_Parse(upb_MtDecoder* d, const char* ptr,
       upb_MiniTableField* field = fields;
       *field_count += 1;
       fields = (char*)fields + field_size;
-      field->number = ++last_field_number;
+      field->UPB_PRIVATE(number) = ++last_field_number;
       last_field = field;
       upb_MiniTable_SetField(d, ch, field, msg_modifiers, sub_counts);
     } else if (kUpb_EncodedValue_MinModifier <= ch &&
@@ -6856,7 +6858,7 @@ static bool upb_MtDecoder_SortLayoutItems(upb_MtDecoder* d) {
     upb_MiniTableField* f = &d->fields[i];
     if (f->offset >= kOneofBase) continue;
     upb_LayoutItem item = {.field_index = i,
-                           .rep = f->mode >> kUpb_FieldRep_Shift,
+                           .rep = f->UPB_PRIVATE(mode) >> kUpb_FieldRep_Shift,
                            .type = kUpb_LayoutItemType_Field};
     upb_MtDecoder_PushItem(d, item);
   }
@@ -6973,10 +6975,11 @@ static void upb_MtDecoder_ValidateEntryField(upb_MtDecoder* d,
                                              const upb_MiniTableField* f,
                                              uint32_t expected_num) {
   const char* name = expected_num == 1 ? "key" : "val";
-  if (f->number != expected_num) {
+  const uint32_t f_number = upb_MiniTableField_Number(f);
+  if (f_number != expected_num) {
     upb_MdDecoder_ErrorJmp(&d->base,
                            "map %s did not have expected number (%d vs %d)",
-                           name, expected_num, (int)f->number);
+                           name, expected_num, f_number);
   }
 
   if (!upb_MiniTableField_IsScalar(f)) {
@@ -7148,7 +7151,7 @@ static const char* upb_MtDecoder_DoBuildMiniTableExtension(
 
   upb_MiniTableField* f = &ext->UPB_PRIVATE(field);
 
-  f->mode |= kUpb_LabelFlags_IsExtension;
+  f->UPB_PRIVATE(mode) |= kUpb_LabelFlags_IsExtension;
   f->offset = 0;
   f->presence = 0;
 
@@ -7242,7 +7245,9 @@ bool upb_MiniTable_SetSubMessage(upb_MiniTable* table,
             table->UPB_PRIVATE(ext) & kUpb_ExtMode_IsMapEntry;
         if (UPB_UNLIKELY(table_is_map)) return false;
 
-        field->mode = (field->mode & ~kUpb_FieldMode_Mask) | kUpb_FieldMode_Map;
+        field->UPB_PRIVATE(mode) =
+            (field->UPB_PRIVATE(mode) & ~kUpb_FieldMode_Mask) |
+            kUpb_FieldMode_Map;
       }
       break;
 
@@ -7752,7 +7757,7 @@ const upb_MiniTableField* upb_MiniTable_FindFieldByNumber(
 
   // Ideal case: index into dense fields
   if (i < m->UPB_PRIVATE(dense_below)) {
-    UPB_ASSERT(m->UPB_PRIVATE(fields)[i].number == number);
+    UPB_ASSERT(m->UPB_PRIVATE(fields)[i].UPB_PRIVATE(number) == number);
     return &m->UPB_PRIVATE(fields)[i];
   }
 
@@ -7761,7 +7766,7 @@ const upb_MiniTableField* upb_MiniTable_FindFieldByNumber(
   int hi = m->UPB_PRIVATE(field_count) - 1;
   while (lo <= hi) {
     int mid = (lo + hi) / 2;
-    uint32_t num = m->UPB_PRIVATE(fields)[mid].number;
+    uint32_t num = m->UPB_PRIVATE(fields)[mid].UPB_PRIVATE(number);
     if (num < number) {
       lo = mid + 1;
       continue;
@@ -12327,7 +12332,7 @@ static upb_Message* _upb_Decoder_NewSubMessage(upb_Decoder* d,
   // Extensions should not be unlinked. A message extension should not be
   // registered until its sub-message type is available to be linked.
   bool is_empty = UPB_PRIVATE(_upb_MiniTable_IsEmpty)(subl);
-  bool is_extension = field->mode & kUpb_LabelFlags_IsExtension;
+  bool is_extension = field->UPB_PRIVATE(mode) & kUpb_LabelFlags_IsExtension;
   UPB_ASSERT(!(is_empty && is_extension));
 
   if (is_empty && !(d->options & kUpb_DecodeOption_ExperimentalAllowUnlinked)) {
@@ -12428,7 +12433,8 @@ static const char* _upb_Decoder_DecodeKnownGroup(
     const upb_MiniTableSub* subs, const upb_MiniTableField* field) {
   const upb_MiniTable* subl = _upb_MiniTableSubs_MessageByField(subs, field);
   UPB_ASSERT(subl);
-  return _upb_Decoder_DecodeGroup(d, ptr, submsg, subl, field->number);
+  return _upb_Decoder_DecodeGroup(d, ptr, submsg, subl,
+                                  field->UPB_PRIVATE(number));
 }
 
 static char* upb_Decoder_EncodeVarint32(uint32_t val, char* ptr) {
@@ -12465,9 +12471,11 @@ static bool _upb_Decoder_CheckEnum(upb_Decoder* d, const char* ptr,
   // Unrecognized enum goes into unknown fields.
   // For packed fields the tag could be arbitrarily far in the past,
   // so we just re-encode the tag and value here.
-  const uint32_t tag = ((uint32_t)field->number << 3) | kUpb_WireType_Varint;
+  const uint32_t tag =
+      ((uint32_t)field->UPB_PRIVATE(number) << 3) | kUpb_WireType_Varint;
   upb_Message* unknown_msg =
-      field->mode & kUpb_LabelFlags_IsExtension ? d->unknown_msg : msg;
+      field->UPB_PRIVATE(mode) & kUpb_LabelFlags_IsExtension ? d->unknown_msg
+                                                             : msg;
   _upb_Decoder_AddUnknownVarints(d, unknown_msg, tag, v);
   return false;
 }
@@ -12724,7 +12732,8 @@ static const char* _upb_Decoder_DecodeToMap(upb_Decoder* d, const char* ptr,
   if (size != 0) {
     char* buf;
     size_t size;
-    uint32_t tag = ((uint32_t)field->number << 3) | kUpb_WireType_Delimited;
+    uint32_t tag =
+        ((uint32_t)field->UPB_PRIVATE(number) << 3) | kUpb_WireType_Delimited;
     upb_EncodeStatus status =
         upb_Encode(&ent.data, entry, 0, &d->arena, &buf, &size);
     if (status != kUpb_EncodeStatus_Ok) {
@@ -12764,10 +12773,11 @@ static const char* _upb_Decoder_DecodeToSubMessage(
   } else if (field->presence < 0) {
     /* Oneof case */
     uint32_t* oneof_case = _upb_Message_OneofCasePtr(msg, field);
-    if (op == kUpb_DecodeOp_SubMessage && *oneof_case != field->number) {
+    if (op == kUpb_DecodeOp_SubMessage &&
+        *oneof_case != field->UPB_PRIVATE(number)) {
       memset(mem, 0, sizeof(void*));
     }
-    *oneof_case = field->number;
+    *oneof_case = field->UPB_PRIVATE(number);
   }
 
   /* Store into message. */
@@ -13000,13 +13010,13 @@ static const upb_MiniTableField* _upb_Decoder_FindField(upb_Decoder* d,
      * since fields are usually in order. */
     size_t last = *last_field_index;
     for (idx = last; idx < t->UPB_PRIVATE(field_count); idx++) {
-      if (t->UPB_PRIVATE(fields)[idx].number == field_number) {
+      if (t->UPB_PRIVATE(fields)[idx].UPB_PRIVATE(number) == field_number) {
         goto found;
       }
     }
 
     for (idx = t->UPB_PRIVATE(dense_below); idx < last; idx++) {
-      if (t->UPB_PRIVATE(fields)[idx].number == field_number) {
+      if (t->UPB_PRIVATE(fields)[idx].UPB_PRIVATE(number) == field_number) {
         goto found;
       }
     }
@@ -13033,7 +13043,7 @@ static const upb_MiniTableField* _upb_Decoder_FindField(upb_Decoder* d,
   return &none; /* Unknown field. */
 
 found:
-  UPB_ASSERT(t->UPB_PRIVATE(fields)[idx].number == field_number);
+  UPB_ASSERT(t->UPB_PRIVATE(fields)[idx].UPB_PRIVATE(number) == field_number);
   *last_field_index = idx;
   return &t->UPB_PRIVATE(fields)[idx];
 }
@@ -13070,7 +13080,7 @@ static void _upb_Decoder_CheckUnlinked(upb_Decoder* d, const upb_MiniTable* mt,
                                        const upb_MiniTableField* field,
                                        int* op) {
   // If sub-message is not linked, treat as unknown.
-  if (field->mode & kUpb_LabelFlags_IsExtension) return;
+  if (field->UPB_PRIVATE(mode) & kUpb_LabelFlags_IsExtension) return;
   const upb_MiniTable* mt_sub =
       _upb_MiniTableSubs_MessageByField(mt->UPB_PRIVATE(subs), field);
   if ((d->options & kUpb_DecodeOption_ExperimentalAllowUnlinked) ||
@@ -13191,7 +13201,7 @@ static const char* _upb_Decoder_DecodeWireValue(upb_Decoder* d, const char* ptr,
       *op = _upb_Decoder_GetDelimitedOp(d, mt, field);
       return ptr;
     case kUpb_WireType_StartGroup:
-      val->uint32_val = field->number;
+      val->uint32_val = field->UPB_PRIVATE(number);
       if (field->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Group) {
         *op = kUpb_DecodeOp_SubMessage;
         _upb_Decoder_CheckUnlinked(d, mt, field, op);
@@ -13214,7 +13224,7 @@ static const char* _upb_Decoder_DecodeKnownField(
     const upb_MiniTable* layout, const upb_MiniTableField* field, int op,
     wireval* val) {
   const upb_MiniTableSub* subs = layout->UPB_PRIVATE(subs);
-  uint8_t mode = field->mode;
+  uint8_t mode = field->UPB_PRIVATE(mode);
 
   if (UPB_UNLIKELY(mode & kUpb_LabelFlags_IsExtension)) {
     const upb_MiniTableExtension* ext_layout =
@@ -14685,7 +14695,7 @@ static void encode_scalar(upb_encstate* e, const void* _field_mem,
         return;
       }
       if (--e->depth == 0) encode_err(e, kUpb_EncodeStatus_MaxDepthExceeded);
-      encode_tag(e, f->number, kUpb_WireType_EndGroup);
+      encode_tag(e, f->UPB_PRIVATE(number), kUpb_WireType_EndGroup);
       encode_TaggedMessagePtr(e, submsg, subm, &size);
       wire_type = kUpb_WireType_StartGroup;
       e->depth++;
@@ -14711,7 +14721,7 @@ static void encode_scalar(upb_encstate* e, const void* _field_mem,
   }
 #undef CASE
 
-  encode_tag(e, f->number, wire_type);
+  encode_tag(e, f->UPB_PRIVATE(number), wire_type);
 }
 
 static void encode_array(upb_encstate* e, const upb_Message* msg,
@@ -14725,20 +14735,21 @@ static void encode_array(upb_encstate* e, const upb_Message* msg,
     return;
   }
 
-#define VARINT_CASE(ctype, encode)                                       \
-  {                                                                      \
-    const ctype* start = _upb_array_constptr(arr);                       \
-    const ctype* ptr = start + arr->size;                                \
-    uint32_t tag = packed ? 0 : (f->number << 3) | kUpb_WireType_Varint; \
-    do {                                                                 \
-      ptr--;                                                             \
-      encode_varint(e, encode);                                          \
-      if (tag) encode_varint(e, tag);                                    \
-    } while (ptr != start);                                              \
-  }                                                                      \
+#define VARINT_CASE(ctype, encode)                                         \
+  {                                                                        \
+    const ctype* start = _upb_array_constptr(arr);                         \
+    const ctype* ptr = start + arr->size;                                  \
+    uint32_t tag =                                                         \
+        packed ? 0 : (f->UPB_PRIVATE(number) << 3) | kUpb_WireType_Varint; \
+    do {                                                                   \
+      ptr--;                                                               \
+      encode_varint(e, encode);                                            \
+      if (tag) encode_varint(e, tag);                                      \
+    } while (ptr != start);                                                \
+  }                                                                        \
   break;
 
-#define TAG(wire_type) (packed ? 0 : (f->number << 3 | wire_type))
+#define TAG(wire_type) (packed ? 0 : (f->UPB_PRIVATE(number) << 3 | wire_type))
 
   switch (f->UPB_PRIVATE(descriptortype)) {
     case kUpb_FieldType_Double:
@@ -14777,7 +14788,7 @@ static void encode_array(upb_encstate* e, const upb_Message* msg,
         ptr--;
         encode_bytes(e, ptr->data, ptr->size);
         encode_varint(e, ptr->size);
-        encode_tag(e, f->number, kUpb_WireType_Delimited);
+        encode_tag(e, f->UPB_PRIVATE(number), kUpb_WireType_Delimited);
       } while (ptr != start);
       return;
     }
@@ -14790,9 +14801,9 @@ static void encode_array(upb_encstate* e, const upb_Message* msg,
       do {
         size_t size;
         ptr--;
-        encode_tag(e, f->number, kUpb_WireType_EndGroup);
+        encode_tag(e, f->UPB_PRIVATE(number), kUpb_WireType_EndGroup);
         encode_TaggedMessagePtr(e, *ptr, subm, &size);
-        encode_tag(e, f->number, kUpb_WireType_StartGroup);
+        encode_tag(e, f->UPB_PRIVATE(number), kUpb_WireType_StartGroup);
       } while (ptr != start);
       e->depth++;
       return;
@@ -14808,7 +14819,7 @@ static void encode_array(upb_encstate* e, const upb_Message* msg,
         ptr--;
         encode_TaggedMessagePtr(e, *ptr, subm, &size);
         encode_varint(e, size);
-        encode_tag(e, f->number, kUpb_WireType_Delimited);
+        encode_tag(e, f->UPB_PRIVATE(number), kUpb_WireType_Delimited);
       } while (ptr != start);
       e->depth++;
       return;
@@ -14818,7 +14829,7 @@ static void encode_array(upb_encstate* e, const upb_Message* msg,
 
   if (packed) {
     encode_varint(e, e->limit - e->ptr - pre_len);
-    encode_tag(e, f->number, kUpb_WireType_Delimited);
+    encode_tag(e, f->UPB_PRIVATE(number), kUpb_WireType_Delimited);
   }
 }
 
@@ -14853,7 +14864,7 @@ static void encode_map(upb_encstate* e, const upb_Message* msg,
         map, &sorted);
     upb_MapEntry ent;
     while (_upb_sortedmap_next(&e->sorter, map, &sorted, &ent)) {
-      encode_mapentry(e, f->number, layout, &ent);
+      encode_mapentry(e, f->UPB_PRIVATE(number), layout, &ent);
     }
     _upb_mapsorter_popmap(&e->sorter, &sorted);
   } else {
@@ -14864,7 +14875,7 @@ static void encode_map(upb_encstate* e, const upb_Message* msg,
       upb_MapEntry ent;
       _upb_map_fromkey(key, &ent.data.k, map->key_size);
       _upb_map_fromvalue(val, &ent.data.v, map->val_size);
-      encode_mapentry(e, f->number, layout, &ent);
+      encode_mapentry(e, f->UPB_PRIVATE(number), layout, &ent);
     }
   }
 }
@@ -14903,7 +14914,7 @@ static bool encode_shouldencode(upb_encstate* e, const upb_Message* msg,
     return _upb_Message_GetHasbitByField(msg, f);
   } else {
     // Field is in a oneof.
-    return _upb_Message_GetOneofCase(msg, f) == f->number;
+    return _upb_Message_GetOneofCase(msg, f) == f->UPB_PRIVATE(number);
   }
 }
 

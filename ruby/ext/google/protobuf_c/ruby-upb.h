@@ -506,10 +506,6 @@ typedef struct {
   const char* data;
   size_t size;
 } upb_StringView;
-// LINT.ThenChange(
-//  GoogleInternalName0,
-//  //depot/google3/third_party/upb/bits/golang/accessor.go:map_go_string
-// )
 
 #ifdef __cplusplus
 extern "C" {
@@ -530,6 +526,12 @@ UPB_INLINE upb_StringView upb_StringView_FromString(const char* data) {
 UPB_INLINE bool upb_StringView_IsEqual(upb_StringView a, upb_StringView b) {
   return a.size == b.size && memcmp(a.data, b.data, a.size) == 0;
 }
+
+// LINT.ThenChange(
+//  GoogleInternalName0,
+//  //depot/google3/third_party/upb/bits/golang/accessor.go:map_go_string,
+//  //depot/google3/third_party/upb/bits/typescript/string_view.ts
+// )
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -632,9 +634,11 @@ UPB_INLINE void upb_gfree(void* ptr) { upb_free(&upb_alloc_global, ptr); }
 
 typedef struct upb_Arena upb_Arena;
 
+// LINT.IfChange(struct_definition)
 typedef struct {
   char *ptr, *end;
 } _upb_ArenaHead;
+// LINT.ThenChange(//depot/google3/third_party/upb/bits/typescript/arena.ts)
 
 #ifdef __cplusplus
 extern "C" {
@@ -1007,6 +1011,8 @@ UPB_INLINE bool upb_MiniTableEnum_CheckValue(const upb_MiniTableEnum* e,
 #ifndef UPB_MINI_TABLE_FIELD_H_
 #define UPB_MINI_TABLE_FIELD_H_
 
+#include <stdint.h>
+
 
 #ifndef UPB_MINI_TABLE_INTERNAL_FIELD_H_
 #define UPB_MINI_TABLE_INTERNAL_FIELD_H_
@@ -1084,8 +1090,9 @@ UPB_INLINE int upb_FieldType_SizeLg2(upb_FieldType field_type) {
 
 // Must be last.
 
+// LINT.IfChange(struct_definition)
 struct upb_MiniTableField {
-  uint32_t number;
+  uint32_t UPB_ONLYBITS(number);
   uint16_t offset;
   int16_t presence;  // If >0, hasbit_index.  If <0, ~oneof_index
 
@@ -1096,7 +1103,7 @@ struct upb_MiniTableField {
   uint8_t UPB_PRIVATE(descriptortype);
 
   // upb_FieldMode | upb_LabelFlags | (upb_FieldRep << kUpb_FieldRep_Shift)
-  uint8_t mode;
+  uint8_t UPB_ONLYBITS(mode);
 };
 
 #define kUpb_NoSub ((uint16_t)-1)
@@ -1142,42 +1149,42 @@ extern "C" {
 
 UPB_INLINE upb_FieldMode
 UPB_PRIVATE(_upb_MiniTableField_Mode)(const struct upb_MiniTableField* f) {
-  return (upb_FieldMode)(f->mode & kUpb_FieldMode_Mask);
+  return (upb_FieldMode)(f->UPB_ONLYBITS(mode) & kUpb_FieldMode_Mask);
 }
 
 UPB_INLINE upb_FieldRep
 UPB_PRIVATE(_upb_MiniTableField_GetRep)(const struct upb_MiniTableField* f) {
-  return (upb_FieldRep)(f->mode >> kUpb_FieldRep_Shift);
+  return (upb_FieldRep)(f->UPB_ONLYBITS(mode) >> kUpb_FieldRep_Shift);
 }
 
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsArray)(
     const struct upb_MiniTableField* f) {
-  return (f->mode & kUpb_FieldMode_Mask) == kUpb_FieldMode_Array;
+  return UPB_PRIVATE(_upb_MiniTableField_Mode)(f) == kUpb_FieldMode_Array;
 }
 
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsMap)(
     const struct upb_MiniTableField* f) {
-  return (f->mode & kUpb_FieldMode_Mask) == kUpb_FieldMode_Map;
+  return UPB_PRIVATE(_upb_MiniTableField_Mode)(f) == kUpb_FieldMode_Map;
 }
 
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsScalar)(
     const struct upb_MiniTableField* f) {
-  return (f->mode & kUpb_FieldMode_Mask) == kUpb_FieldMode_Scalar;
+  return UPB_PRIVATE(_upb_MiniTableField_Mode)(f) == kUpb_FieldMode_Scalar;
 }
 
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsAlternate)(
     const struct upb_MiniTableField* f) {
-  return (f->mode & kUpb_LabelFlags_IsAlternate) != 0;
+  return (f->UPB_ONLYBITS(mode) & kUpb_LabelFlags_IsAlternate) != 0;
 }
 
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsExtension)(
     const struct upb_MiniTableField* f) {
-  return (f->mode & kUpb_LabelFlags_IsExtension) != 0;
+  return (f->UPB_ONLYBITS(mode) & kUpb_LabelFlags_IsExtension) != 0;
 }
 
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsPacked)(
     const struct upb_MiniTableField* f) {
-  return (f->mode & kUpb_LabelFlags_IsPacked) != 0;
+  return (f->UPB_ONLYBITS(mode) & kUpb_LabelFlags_IsPacked) != 0;
 }
 
 UPB_INLINE upb_FieldType
@@ -1221,6 +1228,11 @@ UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_HasPresence)(
   }
 }
 
+UPB_INLINE uint32_t
+UPB_PRIVATE(_upb_MiniTableField_Number)(const struct upb_MiniTableField* f) {
+  return f->UPB_ONLYBITS(number);
+}
+
 UPB_INLINE void UPB_PRIVATE(_upb_MiniTableField_CheckIsArray)(
     const struct upb_MiniTableField* f) {
   UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) ==
@@ -1241,6 +1253,8 @@ UPB_INLINE size_t UPB_PRIVATE(_upb_MiniTableField_ElemSizeLg2)(
     const struct upb_MiniTableField* f) {
   return upb_FieldType_SizeLg2((upb_FieldType)f->UPB_PRIVATE(descriptortype));
 }
+
+// LINT.ThenChange(//depot/google3/third_party/upb/bits/typescript/mini_table_field.ts)
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -1299,6 +1313,10 @@ UPB_API_INLINE bool upb_MiniTableField_IsScalar(const upb_MiniTableField* f) {
 UPB_API_INLINE bool upb_MiniTableField_IsSubMessage(
     const upb_MiniTableField* f) {
   return UPB_PRIVATE(_upb_MiniTableField_IsSubMessage)(f);
+}
+
+UPB_API_INLINE uint32_t upb_MiniTableField_Number(const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_Number)(f);
 }
 
 UPB_API_INLINE upb_FieldType
@@ -1388,6 +1406,7 @@ typedef enum {
 // upb_MiniTable represents the memory layout of a given upb_MessageDef.
 // The members are public so generated code can initialize them,
 // but users MUST NOT directly read or write any of its members.
+// LINT.IfChange(minitable_struct_definition)
 struct upb_MiniTable {
   const union upb_MiniTableSub* UPB_PRIVATE(subs);
   const struct upb_MiniTableField* UPB_ONLYBITS(fields);
@@ -1408,6 +1427,7 @@ struct upb_MiniTable {
   // of flexible array members is a GNU extension, not in C99 unfortunately.
   _upb_FastTable_Entry UPB_PRIVATE(fasttable)[];
 };
+// LINT.ThenChange(//depot/google3/third_party/upb/bits/typescript/mini_table.ts)
 
 #ifdef __cplusplus
 extern "C" {
@@ -1622,7 +1642,7 @@ UPB_INLINE const struct upb_MiniTableField* UPB_PRIVATE(
 
 UPB_INLINE uint32_t UPB_PRIVATE(_upb_MiniTableExtension_Number)(
     const struct upb_MiniTableExtension* e) {
-  return e->UPB_PRIVATE(field).number;
+  return e->UPB_PRIVATE(field).UPB_ONLYBITS(number);
 }
 
 UPB_INLINE const struct upb_MiniTable* UPB_PRIVATE(
@@ -2547,7 +2567,7 @@ UPB_INLINE uint32_t _upb_Message_GetOneofCase(const upb_Message* msg,
 
 UPB_INLINE void _upb_Message_SetOneofCase(upb_Message* msg,
                                           const upb_MiniTableField* f) {
-  *_upb_Message_OneofCasePtr(msg, f) = f->number;
+  *_upb_Message_OneofCasePtr(msg, f) = upb_MiniTableField_Number(f);
 }
 
 // TODO: implement _upb_Message_ClearOneofCase()
@@ -2655,7 +2675,8 @@ UPB_INLINE bool _upb_Message_HasNonExtensionField(
   UPB_ASSERT(upb_MiniTableField_HasPresence(field));
   UPB_ASSUME(!upb_MiniTableField_IsExtension(field));
   if (upb_MiniTableField_IsInOneof(field)) {
-    return _upb_Message_GetOneofCase(msg, field) == field->number;
+    return _upb_Message_GetOneofCase(msg, field) ==
+           upb_MiniTableField_Number(field);
   } else {
     return _upb_Message_GetHasbitByField(msg, field);
   }
@@ -2753,7 +2774,7 @@ UPB_INLINE void _upb_Message_ClearNonExtensionField(
     _upb_Message_ClearHasbitByField(msg, field);
   } else if (upb_MiniTableField_IsInOneof(field)) {
     uint32_t* ptr = _upb_Message_OneofCasePtr(msg, field);
-    if (*ptr != field->number) return;
+    if (*ptr != upb_MiniTableField_Number(field)) return;
     *ptr = 0;
   }
   const char zeros[16] = {0};
@@ -2832,7 +2853,6 @@ struct upb_Array {
   size_t size;                   // The number of elements in the array.
   size_t UPB_PRIVATE(capacity);  // Allocated storage. Measured in elements.
 };
-// LINT.ThenChange(GoogleInternalName1)
 
 UPB_INLINE void UPB_PRIVATE(_upb_Array_SetTaggedPtr)(upb_Array* array,
                                                      void* data, size_t lg2) {
@@ -2904,6 +2924,11 @@ UPB_INLINE void UPB_PRIVATE(_upb_Array_Set)(upb_Array* array, size_t i,
   char* arr_data = (char*)_upb_array_ptr(array);
   memcpy(arr_data + (i * elem_size), data, elem_size);
 }
+
+// LINT.ThenChange(
+//  GoogleInternalName1,
+//  //depot/google3/third_party/upb/bits/typescript/array.ts
+//)
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -12000,6 +12025,7 @@ double _upb_NoLocaleStrtod(const char *str, char **endptr);
 
 typedef struct _upb_MemBlock _upb_MemBlock;
 
+// LINT.IfChange(struct_definition)
 struct upb_Arena {
   _upb_ArenaHead head;
 
@@ -12028,6 +12054,7 @@ struct upb_Arena {
   // upb_Arena_SpaceAllocated().
   UPB_ATOMIC(_upb_MemBlock*) blocks;
 };
+// LINT.ThenChange(//depot/google3/third_party/upb/bits/typescript/arena.ts)
 
 UPB_INLINE bool _upb_Arena_IsTaggedRefcount(uintptr_t parent_or_count) {
   return (parent_or_count & 1) == 1;

@@ -17,8 +17,9 @@
 // Must be last.
 #include "upb/port/def.inc"
 
+// LINT.IfChange(struct_definition)
 struct upb_MiniTableField {
-  uint32_t number;
+  uint32_t UPB_ONLYBITS(number);
   uint16_t offset;
   int16_t presence;  // If >0, hasbit_index.  If <0, ~oneof_index
 
@@ -29,7 +30,7 @@ struct upb_MiniTableField {
   uint8_t UPB_PRIVATE(descriptortype);
 
   // upb_FieldMode | upb_LabelFlags | (upb_FieldRep << kUpb_FieldRep_Shift)
-  uint8_t mode;
+  uint8_t UPB_ONLYBITS(mode);
 };
 
 #define kUpb_NoSub ((uint16_t)-1)
@@ -75,42 +76,42 @@ extern "C" {
 
 UPB_INLINE upb_FieldMode
 UPB_PRIVATE(_upb_MiniTableField_Mode)(const struct upb_MiniTableField* f) {
-  return (upb_FieldMode)(f->mode & kUpb_FieldMode_Mask);
+  return (upb_FieldMode)(f->UPB_ONLYBITS(mode) & kUpb_FieldMode_Mask);
 }
 
 UPB_INLINE upb_FieldRep
 UPB_PRIVATE(_upb_MiniTableField_GetRep)(const struct upb_MiniTableField* f) {
-  return (upb_FieldRep)(f->mode >> kUpb_FieldRep_Shift);
+  return (upb_FieldRep)(f->UPB_ONLYBITS(mode) >> kUpb_FieldRep_Shift);
 }
 
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsArray)(
     const struct upb_MiniTableField* f) {
-  return (f->mode & kUpb_FieldMode_Mask) == kUpb_FieldMode_Array;
+  return UPB_PRIVATE(_upb_MiniTableField_Mode)(f) == kUpb_FieldMode_Array;
 }
 
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsMap)(
     const struct upb_MiniTableField* f) {
-  return (f->mode & kUpb_FieldMode_Mask) == kUpb_FieldMode_Map;
+  return UPB_PRIVATE(_upb_MiniTableField_Mode)(f) == kUpb_FieldMode_Map;
 }
 
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsScalar)(
     const struct upb_MiniTableField* f) {
-  return (f->mode & kUpb_FieldMode_Mask) == kUpb_FieldMode_Scalar;
+  return UPB_PRIVATE(_upb_MiniTableField_Mode)(f) == kUpb_FieldMode_Scalar;
 }
 
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsAlternate)(
     const struct upb_MiniTableField* f) {
-  return (f->mode & kUpb_LabelFlags_IsAlternate) != 0;
+  return (f->UPB_ONLYBITS(mode) & kUpb_LabelFlags_IsAlternate) != 0;
 }
 
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsExtension)(
     const struct upb_MiniTableField* f) {
-  return (f->mode & kUpb_LabelFlags_IsExtension) != 0;
+  return (f->UPB_ONLYBITS(mode) & kUpb_LabelFlags_IsExtension) != 0;
 }
 
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsPacked)(
     const struct upb_MiniTableField* f) {
-  return (f->mode & kUpb_LabelFlags_IsPacked) != 0;
+  return (f->UPB_ONLYBITS(mode) & kUpb_LabelFlags_IsPacked) != 0;
 }
 
 UPB_INLINE upb_FieldType
@@ -154,6 +155,11 @@ UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_HasPresence)(
   }
 }
 
+UPB_INLINE uint32_t
+UPB_PRIVATE(_upb_MiniTableField_Number)(const struct upb_MiniTableField* f) {
+  return f->UPB_ONLYBITS(number);
+}
+
 UPB_INLINE void UPB_PRIVATE(_upb_MiniTableField_CheckIsArray)(
     const struct upb_MiniTableField* f) {
   UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) ==
@@ -174,6 +180,8 @@ UPB_INLINE size_t UPB_PRIVATE(_upb_MiniTableField_ElemSizeLg2)(
     const struct upb_MiniTableField* f) {
   return upb_FieldType_SizeLg2((upb_FieldType)f->UPB_PRIVATE(descriptortype));
 }
+
+// LINT.ThenChange(//depot/google3/third_party/upb/bits/typescript/mini_table_field.ts)
 
 #ifdef __cplusplus
 } /* extern "C" */
