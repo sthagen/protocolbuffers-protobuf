@@ -917,99 +917,17 @@ UPB_API void* upb_Array_MutableDataPtr(upb_Array* arr);
 #ifndef UPB_MESSAGE_INTERNAL_EXTENSION_H_
 #define UPB_MESSAGE_INTERNAL_EXTENSION_H_
 
-
-// Public APIs for message operations that do not depend on the schema.
-//
-// MiniTable-based accessors live in accessors.h.
-
-#ifndef UPB_MESSAGE_MESSAGE_H_
-#define UPB_MESSAGE_MESSAGE_H_
-
 #include <stddef.h>
 
 
-#ifndef UPB_MINI_TABLE_MESSAGE_H_
-#define UPB_MINI_TABLE_MESSAGE_H_
-
-
-#ifndef UPB_MINI_TABLE_ENUM_H_
-#define UPB_MINI_TABLE_ENUM_H_
+#ifndef UPB_MINI_TABLE_EXTENSION_H_
+#define UPB_MINI_TABLE_EXTENSION_H_
 
 #include <stdint.h>
 
 
-#ifndef UPB_MINI_TABLE_INTERNAL_ENUM_H_
-#define UPB_MINI_TABLE_INTERNAL_ENUM_H_
-
-#include <stdint.h>
-
-// Must be last.
-
-struct upb_MiniTableEnum {
-  uint32_t UPB_PRIVATE(mask_limit);   // Highest that can be tested with mask.
-  uint32_t UPB_PRIVATE(value_count);  // Number of values after the bitfield.
-  uint32_t UPB_PRIVATE(data)[];       // Bitmask + enumerated values follow.
-};
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableEnum_CheckValue)(
-    const struct upb_MiniTableEnum* e, uint32_t val) {
-  if (UPB_LIKELY(val < 64)) {
-    const uint64_t mask =
-        e->UPB_PRIVATE(data)[0] | ((uint64_t)e->UPB_PRIVATE(data)[1] << 32);
-    const uint64_t bit = 1ULL << val;
-    return (mask & bit) != 0;
-  }
-  if (UPB_LIKELY(val < e->UPB_PRIVATE(mask_limit))) {
-    const uint32_t mask = e->UPB_PRIVATE(data)[val / 32];
-    const uint32_t bit = 1ULL << (val % 32);
-    return (mask & bit) != 0;
-  }
-
-  // OPT: binary search long lists?
-  const uint32_t* start =
-      &e->UPB_PRIVATE(data)[e->UPB_PRIVATE(mask_limit) / 32];
-  const uint32_t* limit = &e->UPB_PRIVATE(
-      data)[e->UPB_PRIVATE(mask_limit) / 32 + e->UPB_PRIVATE(value_count)];
-  for (const uint32_t* p = start; p < limit; p++) {
-    if (*p == val) return true;
-  }
-  return false;
-}
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_MINI_TABLE_INTERNAL_ENUM_H_ */
-
-// Must be last
-
-typedef struct upb_MiniTableEnum upb_MiniTableEnum;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Validates enum value against range defined by enum mini table.
-UPB_INLINE bool upb_MiniTableEnum_CheckValue(const upb_MiniTableEnum* e,
-                                             uint32_t val) {
-  return UPB_PRIVATE(_upb_MiniTableEnum_CheckValue)(e, val);
-}
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_MINI_TABLE_ENUM_H_ */
-
-#ifndef UPB_MINI_TABLE_FIELD_H_
-#define UPB_MINI_TABLE_FIELD_H_
+#ifndef UPB_MINI_TABLE_INTERNAL_EXTENSION_H_
+#define UPB_MINI_TABLE_INTERNAL_EXTENSION_H_
 
 #include <stdint.h>
 
@@ -1203,6 +1121,20 @@ UPB_PRIVATE(_upb_MiniTableField_CType)(const struct upb_MiniTableField* f) {
   return upb_FieldType_CType(UPB_PRIVATE(_upb_MiniTableField_Type)(f));
 }
 
+UPB_INLINE char _upb_MiniTableField_HasbitMask(
+    const struct upb_MiniTableField* f) {
+  UPB_ASSERT(f->presence > 0);
+  const size_t index = f->presence;
+  return 1 << (index % 8);
+}
+
+UPB_INLINE size_t
+_upb_MiniTableField_HasbitOffset(const struct upb_MiniTableField* f) {
+  UPB_ASSERT(f->presence > 0);
+  const size_t index = f->presence;
+  return index / 8;
+}
+
 UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_IsClosedEnum)(
     const struct upb_MiniTableField* f) {
   return f->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Enum;
@@ -1231,6 +1163,12 @@ UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_HasPresence)(
 UPB_INLINE uint32_t
 UPB_PRIVATE(_upb_MiniTableField_Number)(const struct upb_MiniTableField* f) {
   return f->UPB_ONLYBITS(number);
+}
+
+UPB_INLINE size_t
+_upb_MiniTableField_OneofOffset(const struct upb_MiniTableField* f) {
+  UPB_ASSERT(UPB_PRIVATE(_upb_MiniTableField_IsInOneof)(f));
+  return ~(ptrdiff_t)f->presence;
 }
 
 UPB_INLINE void UPB_PRIVATE(_upb_MiniTableField_CheckIsArray)(
@@ -1262,78 +1200,6 @@ UPB_INLINE size_t UPB_PRIVATE(_upb_MiniTableField_ElemSizeLg2)(
 
 
 #endif /* UPB_MINI_TABLE_INTERNAL_FIELD_H_ */
-
-// Must be last.
-
-typedef struct upb_MiniTableField upb_MiniTableField;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-UPB_API_INLINE upb_CType upb_MiniTableField_CType(const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTableField_CType)(f);
-}
-
-UPB_API_INLINE bool upb_MiniTableField_HasPresence(
-    const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTableField_HasPresence)(f);
-}
-
-UPB_API_INLINE bool upb_MiniTableField_IsArray(const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTableField_IsArray)(f);
-}
-
-UPB_API_INLINE bool upb_MiniTableField_IsClosedEnum(
-    const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTableField_IsClosedEnum)(f);
-}
-
-UPB_API_INLINE bool upb_MiniTableField_IsExtension(
-    const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTableField_IsExtension)(f);
-}
-
-UPB_API_INLINE bool upb_MiniTableField_IsInOneof(const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTableField_IsInOneof)(f);
-}
-
-UPB_API_INLINE bool upb_MiniTableField_IsMap(const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTableField_IsMap)(f);
-}
-
-UPB_API_INLINE bool upb_MiniTableField_IsPacked(const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTableField_IsPacked)(f);
-}
-
-UPB_API_INLINE bool upb_MiniTableField_IsScalar(const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTableField_IsScalar)(f);
-}
-
-UPB_API_INLINE bool upb_MiniTableField_IsSubMessage(
-    const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTableField_IsSubMessage)(f);
-}
-
-UPB_API_INLINE uint32_t upb_MiniTableField_Number(const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTableField_Number)(f);
-}
-
-UPB_API_INLINE upb_FieldType
-upb_MiniTableField_Type(const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTableField_Type)(f);
-}
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_MINI_TABLE_FIELD_H_ */
-
-#ifndef UPB_MINI_TABLE_INTERNAL_MESSAGE_H_
-#define UPB_MINI_TABLE_INTERNAL_MESSAGE_H_
-
 
 #ifndef UPB_MINI_TABLE_INTERNAL_SUB_H_
 #define UPB_MINI_TABLE_INTERNAL_SUB_H_
@@ -1379,242 +1245,6 @@ UPB_INLINE const struct upb_MiniTable* UPB_PRIVATE(_upb_MiniTableSub_Message)(
 
 
 #endif /* UPB_MINI_TABLE_INTERNAL_SUB_H_ */
-
-// Must be last.
-
-struct upb_Decoder;
-typedef const char* _upb_FieldParser(struct upb_Decoder* d, const char* ptr,
-                                     upb_Message* msg, intptr_t table,
-                                     uint64_t hasbits, uint64_t data);
-typedef struct {
-  uint64_t field_data;
-  _upb_FieldParser* field_parser;
-} _upb_FastTable_Entry;
-
-typedef enum {
-  kUpb_ExtMode_NonExtendable = 0,  // Non-extendable message.
-  kUpb_ExtMode_Extendable = 1,     // Normal extendable message.
-  kUpb_ExtMode_IsMessageSet = 2,   // MessageSet message.
-  kUpb_ExtMode_IsMessageSet_ITEM =
-      3,  // MessageSet item (temporary only, see decode.c)
-
-  // During table building we steal a bit to indicate that the message is a map
-  // entry.  *Only* used during table building!
-  kUpb_ExtMode_IsMapEntry = 4,
-} upb_ExtMode;
-
-// upb_MiniTable represents the memory layout of a given upb_MessageDef.
-// The members are public so generated code can initialize them,
-// but users MUST NOT directly read or write any of its members.
-// LINT.IfChange(minitable_struct_definition)
-struct upb_MiniTable {
-  const union upb_MiniTableSub* UPB_PRIVATE(subs);
-  const struct upb_MiniTableField* UPB_ONLYBITS(fields);
-
-  // Must be aligned to sizeof(void*). Doesn't include internal members like
-  // unknown fields, extension dict, pointer to msglayout, etc.
-  uint16_t size;
-
-  uint16_t UPB_ONLYBITS(field_count);
-
-  uint8_t UPB_PRIVATE(ext);  // upb_ExtMode, uint8_t here so sizeof(ext) == 1
-  uint8_t UPB_PRIVATE(dense_below);
-  uint8_t UPB_PRIVATE(table_mask);
-  uint8_t UPB_PRIVATE(required_count);  // Required fields have the low hasbits.
-
-  // To statically initialize the tables of variable length, we need a flexible
-  // array member, and we need to compile in gnu99 mode (constant initialization
-  // of flexible array members is a GNU extension, not in C99 unfortunately.
-  _upb_FastTable_Entry UPB_PRIVATE(fasttable)[];
-};
-// LINT.ThenChange(//depot/google3/third_party/upb/bits/typescript/mini_table.ts)
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-UPB_INLINE const struct upb_MiniTable* UPB_PRIVATE(_upb_MiniTable_Empty)(void) {
-  extern const struct upb_MiniTable UPB_PRIVATE(_kUpb_MiniTable_Empty);
-
-  return &UPB_PRIVATE(_kUpb_MiniTable_Empty);
-}
-
-UPB_INLINE int UPB_PRIVATE(_upb_MiniTable_FieldCount)(
-    const struct upb_MiniTable* m) {
-  return m->UPB_ONLYBITS(field_count);
-}
-
-UPB_INLINE bool UPB_PRIVATE(_upb_MiniTable_IsEmpty)(
-    const struct upb_MiniTable* m) {
-  extern const struct upb_MiniTable UPB_PRIVATE(_kUpb_MiniTable_Empty);
-
-  return m == &UPB_PRIVATE(_kUpb_MiniTable_Empty);
-}
-
-UPB_INLINE const struct upb_MiniTableField* UPB_PRIVATE(
-    _upb_MiniTable_GetFieldByIndex)(const struct upb_MiniTable* m, uint32_t i) {
-  return &m->UPB_ONLYBITS(fields)[i];
-}
-
-UPB_INLINE const union upb_MiniTableSub* UPB_PRIVATE(
-    _upb_MiniTable_GetSubByIndex)(const struct upb_MiniTable* m, uint32_t i) {
-  return &m->UPB_PRIVATE(subs)[i];
-}
-
-UPB_INLINE const struct upb_MiniTable* UPB_PRIVATE(
-    _upb_MiniTable_GetSubMessageTable)(const struct upb_MiniTable* m,
-                                       const struct upb_MiniTableField* f) {
-  UPB_ASSERT(UPB_PRIVATE(_upb_MiniTableField_CType)(f) == kUpb_CType_Message);
-  const struct upb_MiniTable* ret = UPB_PRIVATE(_upb_MiniTableSub_Message)(
-      m->UPB_PRIVATE(subs)[f->UPB_PRIVATE(submsg_index)]);
-  UPB_ASSUME(ret);
-  return UPB_PRIVATE(_upb_MiniTable_IsEmpty)(ret) ? NULL : ret;
-}
-
-UPB_INLINE const struct upb_MiniTableEnum* UPB_PRIVATE(
-    _upb_MiniTable_GetSubEnumTable)(const struct upb_MiniTable* m,
-                                    const struct upb_MiniTableField* f) {
-  UPB_ASSERT(UPB_PRIVATE(_upb_MiniTableField_CType)(f) == kUpb_CType_Enum);
-  return UPB_PRIVATE(_upb_MiniTableSub_Enum)(
-      m->UPB_PRIVATE(subs)[f->UPB_PRIVATE(submsg_index)]);
-}
-
-UPB_INLINE bool UPB_PRIVATE(_upb_MiniTable_MessageFieldIsLinked)(
-    const struct upb_MiniTable* m, const struct upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTable_GetSubMessageTable)(m, f) != NULL;
-}
-
-// Computes a bitmask in which the |m->required_count| lowest bits are set,
-// except that we skip the lowest bit (because upb never uses hasbit 0).
-//
-// Sample output:
-//    RequiredMask(1) => 0b10 (0x2)
-//    RequiredMask(5) => 0b111110 (0x3e)
-UPB_INLINE uint64_t
-UPB_PRIVATE(_upb_MiniTable_RequiredMask)(const struct upb_MiniTable* m) {
-  int n = m->UPB_PRIVATE(required_count);
-  UPB_ASSERT(0 < n && n <= 63);
-  return ((1ULL << n) - 1) << 1;
-}
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_MINI_TABLE_INTERNAL_MESSAGE_H_ */
-
-// Must be last.
-
-typedef struct upb_MiniTable upb_MiniTable;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-UPB_API const upb_MiniTableField* upb_MiniTable_FindFieldByNumber(
-    const upb_MiniTable* m, uint32_t number);
-
-UPB_API_INLINE const upb_MiniTableField* upb_MiniTable_GetFieldByIndex(
-    const upb_MiniTable* m, uint32_t index) {
-  return UPB_PRIVATE(_upb_MiniTable_GetFieldByIndex)(m, index);
-}
-
-UPB_API_INLINE int upb_MiniTable_FieldCount(const upb_MiniTable* m) {
-  return UPB_PRIVATE(_upb_MiniTable_FieldCount)(m);
-}
-
-// Returns the MiniTable for a message field, NULL if the field is unlinked.
-UPB_API_INLINE const upb_MiniTable* upb_MiniTable_GetSubMessageTable(
-    const upb_MiniTable* m, const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTable_GetSubMessageTable)(m, f);
-}
-
-// Returns the MiniTableEnum for a message field, NULL if the field is unlinked.
-UPB_API_INLINE const upb_MiniTableEnum* upb_MiniTable_GetSubEnumTable(
-    const upb_MiniTable* m, const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTable_GetSubEnumTable)(m, f);
-}
-
-// Returns true if this MiniTable field is linked to a MiniTable for the
-// sub-message.
-UPB_API_INLINE bool upb_MiniTable_MessageFieldIsLinked(
-    const upb_MiniTable* m, const upb_MiniTableField* f) {
-  return UPB_PRIVATE(_upb_MiniTable_MessageFieldIsLinked)(m, f);
-}
-
-// TODO: Implement convenience getters for map entries:
-//
-// upb_MiniTable_GetMapKey()
-// upb_MiniTable_GetMapValue()
-// These could also assert that this is indeed a map entry (well, as best we
-// can. We can assert that there are two fields with field numbers 1 and 2).
-
-// If this field is in a oneof, returns the first field in the oneof.
-//
-// Otherwise returns NULL.
-//
-// Usage:
-//   const upb_MiniTableField* field = upb_MiniTable_GetOneof(m, f);
-//   do {
-//       ..
-//   } while (upb_MiniTable_NextOneofField(m, &field);
-//
-const upb_MiniTableField* upb_MiniTable_GetOneof(const upb_MiniTable* m,
-                                                 const upb_MiniTableField* f);
-
-// Iterates to the next field in the oneof. If this is the last field in the
-// oneof, returns false. The ordering of fields in the oneof is not
-// guaranteed.
-// REQUIRES: |f| is the field initialized by upb_MiniTable_GetOneof and updated
-//           by prior upb_MiniTable_NextOneofField calls.
-bool upb_MiniTable_NextOneofField(const upb_MiniTable* m,
-                                  const upb_MiniTableField** f);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_MINI_TABLE_MESSAGE_H_ */
-
-// Must be last.
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Creates a new message with the given mini_table on the given arena.
-UPB_API upb_Message* upb_Message_New(const upb_MiniTable* mini_table,
-                                     upb_Arena* arena);
-
-// Returns a reference to the message's unknown data.
-const char* upb_Message_GetUnknown(const upb_Message* msg, size_t* len);
-
-// Removes partial unknown data from message.
-void upb_Message_DeleteUnknown(upb_Message* msg, const char* data, size_t len);
-
-// Returns the number of extensions present in this message.
-size_t upb_Message_ExtensionCount(const upb_Message* msg);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_MESSAGE_MESSAGE_H_ */
-
-#ifndef UPB_MINI_TABLE_EXTENSION_H_
-#define UPB_MINI_TABLE_EXTENSION_H_
-
-#include <stdint.h>
-
-
-#ifndef UPB_MINI_TABLE_INTERNAL_EXTENSION_H_
-#define UPB_MINI_TABLE_INTERNAL_EXTENSION_H_
-
-#include <stdint.h>
-
 
 // Must be last.
 
@@ -2318,6 +1948,362 @@ typedef struct {
 
 #endif  // UPB_MINI_TABLE_INTERNAL_TYPES_H_
 
+#ifndef UPB_MINI_TABLE_MESSAGE_H_
+#define UPB_MINI_TABLE_MESSAGE_H_
+
+
+#ifndef UPB_MINI_TABLE_ENUM_H_
+#define UPB_MINI_TABLE_ENUM_H_
+
+#include <stdint.h>
+
+
+#ifndef UPB_MINI_TABLE_INTERNAL_ENUM_H_
+#define UPB_MINI_TABLE_INTERNAL_ENUM_H_
+
+#include <stdint.h>
+
+// Must be last.
+
+struct upb_MiniTableEnum {
+  uint32_t UPB_PRIVATE(mask_limit);   // Highest that can be tested with mask.
+  uint32_t UPB_PRIVATE(value_count);  // Number of values after the bitfield.
+  uint32_t UPB_PRIVATE(data)[];       // Bitmask + enumerated values follow.
+};
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableEnum_CheckValue)(
+    const struct upb_MiniTableEnum* e, uint32_t val) {
+  if (UPB_LIKELY(val < 64)) {
+    const uint64_t mask =
+        e->UPB_PRIVATE(data)[0] | ((uint64_t)e->UPB_PRIVATE(data)[1] << 32);
+    const uint64_t bit = 1ULL << val;
+    return (mask & bit) != 0;
+  }
+  if (UPB_LIKELY(val < e->UPB_PRIVATE(mask_limit))) {
+    const uint32_t mask = e->UPB_PRIVATE(data)[val / 32];
+    const uint32_t bit = 1ULL << (val % 32);
+    return (mask & bit) != 0;
+  }
+
+  // OPT: binary search long lists?
+  const uint32_t* start =
+      &e->UPB_PRIVATE(data)[e->UPB_PRIVATE(mask_limit) / 32];
+  const uint32_t* limit = &e->UPB_PRIVATE(
+      data)[e->UPB_PRIVATE(mask_limit) / 32 + e->UPB_PRIVATE(value_count)];
+  for (const uint32_t* p = start; p < limit; p++) {
+    if (*p == val) return true;
+  }
+  return false;
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_MINI_TABLE_INTERNAL_ENUM_H_ */
+
+// Must be last
+
+typedef struct upb_MiniTableEnum upb_MiniTableEnum;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Validates enum value against range defined by enum mini table.
+UPB_INLINE bool upb_MiniTableEnum_CheckValue(const upb_MiniTableEnum* e,
+                                             uint32_t val) {
+  return UPB_PRIVATE(_upb_MiniTableEnum_CheckValue)(e, val);
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_MINI_TABLE_ENUM_H_ */
+
+#ifndef UPB_MINI_TABLE_FIELD_H_
+#define UPB_MINI_TABLE_FIELD_H_
+
+#include <stdint.h>
+
+
+// Must be last.
+
+typedef struct upb_MiniTableField upb_MiniTableField;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UPB_API_INLINE upb_CType upb_MiniTableField_CType(const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_CType)(f);
+}
+
+UPB_API_INLINE bool upb_MiniTableField_HasPresence(
+    const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_HasPresence)(f);
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsArray(const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_IsArray)(f);
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsClosedEnum(
+    const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_IsClosedEnum)(f);
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsExtension(
+    const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_IsExtension)(f);
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsInOneof(const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_IsInOneof)(f);
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsMap(const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_IsMap)(f);
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsPacked(const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_IsPacked)(f);
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsScalar(const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_IsScalar)(f);
+}
+
+UPB_API_INLINE bool upb_MiniTableField_IsSubMessage(
+    const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_IsSubMessage)(f);
+}
+
+UPB_API_INLINE uint32_t upb_MiniTableField_Number(const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_Number)(f);
+}
+
+UPB_API_INLINE upb_FieldType
+upb_MiniTableField_Type(const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTableField_Type)(f);
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_MINI_TABLE_FIELD_H_ */
+
+#ifndef UPB_MINI_TABLE_INTERNAL_MESSAGE_H_
+#define UPB_MINI_TABLE_INTERNAL_MESSAGE_H_
+
+
+// Must be last.
+
+struct upb_Decoder;
+typedef const char* _upb_FieldParser(struct upb_Decoder* d, const char* ptr,
+                                     upb_Message* msg, intptr_t table,
+                                     uint64_t hasbits, uint64_t data);
+typedef struct {
+  uint64_t field_data;
+  _upb_FieldParser* field_parser;
+} _upb_FastTable_Entry;
+
+typedef enum {
+  kUpb_ExtMode_NonExtendable = 0,  // Non-extendable message.
+  kUpb_ExtMode_Extendable = 1,     // Normal extendable message.
+  kUpb_ExtMode_IsMessageSet = 2,   // MessageSet message.
+  kUpb_ExtMode_IsMessageSet_ITEM =
+      3,  // MessageSet item (temporary only, see decode.c)
+
+  // During table building we steal a bit to indicate that the message is a map
+  // entry.  *Only* used during table building!
+  kUpb_ExtMode_IsMapEntry = 4,
+} upb_ExtMode;
+
+// upb_MiniTable represents the memory layout of a given upb_MessageDef.
+// The members are public so generated code can initialize them,
+// but users MUST NOT directly read or write any of its members.
+// LINT.IfChange(minitable_struct_definition)
+struct upb_MiniTable {
+  const union upb_MiniTableSub* UPB_PRIVATE(subs);
+  const struct upb_MiniTableField* UPB_ONLYBITS(fields);
+
+  // Must be aligned to sizeof(void*). Doesn't include internal members like
+  // unknown fields, extension dict, pointer to msglayout, etc.
+  uint16_t UPB_PRIVATE(size);
+
+  uint16_t UPB_ONLYBITS(field_count);
+
+  uint8_t UPB_PRIVATE(ext);  // upb_ExtMode, uint8_t here so sizeof(ext) == 1
+  uint8_t UPB_PRIVATE(dense_below);
+  uint8_t UPB_PRIVATE(table_mask);
+  uint8_t UPB_PRIVATE(required_count);  // Required fields have the low hasbits.
+
+  // To statically initialize the tables of variable length, we need a flexible
+  // array member, and we need to compile in gnu99 mode (constant initialization
+  // of flexible array members is a GNU extension, not in C99 unfortunately.
+  _upb_FastTable_Entry UPB_PRIVATE(fasttable)[];
+};
+// LINT.ThenChange(//depot/google3/third_party/upb/bits/typescript/mini_table.ts)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UPB_INLINE const struct upb_MiniTable* UPB_PRIVATE(_upb_MiniTable_Empty)(void) {
+  extern const struct upb_MiniTable UPB_PRIVATE(_kUpb_MiniTable_Empty);
+
+  return &UPB_PRIVATE(_kUpb_MiniTable_Empty);
+}
+
+UPB_INLINE int UPB_PRIVATE(_upb_MiniTable_FieldCount)(
+    const struct upb_MiniTable* m) {
+  return m->UPB_ONLYBITS(field_count);
+}
+
+UPB_INLINE bool UPB_PRIVATE(_upb_MiniTable_IsEmpty)(
+    const struct upb_MiniTable* m) {
+  extern const struct upb_MiniTable UPB_PRIVATE(_kUpb_MiniTable_Empty);
+
+  return m == &UPB_PRIVATE(_kUpb_MiniTable_Empty);
+}
+
+UPB_INLINE const struct upb_MiniTableField* UPB_PRIVATE(
+    _upb_MiniTable_GetFieldByIndex)(const struct upb_MiniTable* m, uint32_t i) {
+  return &m->UPB_ONLYBITS(fields)[i];
+}
+
+UPB_INLINE const union upb_MiniTableSub* UPB_PRIVATE(
+    _upb_MiniTable_GetSubByIndex)(const struct upb_MiniTable* m, uint32_t i) {
+  return &m->UPB_PRIVATE(subs)[i];
+}
+
+UPB_INLINE const struct upb_MiniTable* UPB_PRIVATE(
+    _upb_MiniTable_GetSubMessageTable)(const struct upb_MiniTable* m,
+                                       const struct upb_MiniTableField* f) {
+  UPB_ASSERT(UPB_PRIVATE(_upb_MiniTableField_CType)(f) == kUpb_CType_Message);
+  const struct upb_MiniTable* ret = UPB_PRIVATE(_upb_MiniTableSub_Message)(
+      m->UPB_PRIVATE(subs)[f->UPB_PRIVATE(submsg_index)]);
+  UPB_ASSUME(ret);
+  return UPB_PRIVATE(_upb_MiniTable_IsEmpty)(ret) ? NULL : ret;
+}
+
+UPB_INLINE const struct upb_MiniTableEnum* UPB_PRIVATE(
+    _upb_MiniTable_GetSubEnumTable)(const struct upb_MiniTable* m,
+                                    const struct upb_MiniTableField* f) {
+  UPB_ASSERT(UPB_PRIVATE(_upb_MiniTableField_CType)(f) == kUpb_CType_Enum);
+  return UPB_PRIVATE(_upb_MiniTableSub_Enum)(
+      m->UPB_PRIVATE(subs)[f->UPB_PRIVATE(submsg_index)]);
+}
+
+UPB_INLINE bool UPB_PRIVATE(_upb_MiniTable_MessageFieldIsLinked)(
+    const struct upb_MiniTable* m, const struct upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTable_GetSubMessageTable)(m, f) != NULL;
+}
+
+// Computes a bitmask in which the |m->required_count| lowest bits are set,
+// except that we skip the lowest bit (because upb never uses hasbit 0).
+//
+// Sample output:
+//    RequiredMask(1) => 0b10 (0x2)
+//    RequiredMask(5) => 0b111110 (0x3e)
+UPB_INLINE uint64_t
+UPB_PRIVATE(_upb_MiniTable_RequiredMask)(const struct upb_MiniTable* m) {
+  int n = m->UPB_PRIVATE(required_count);
+  UPB_ASSERT(0 < n && n <= 63);
+  return ((1ULL << n) - 1) << 1;
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_MINI_TABLE_INTERNAL_MESSAGE_H_ */
+
+// Must be last.
+
+typedef struct upb_MiniTable upb_MiniTable;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UPB_API const upb_MiniTableField* upb_MiniTable_FindFieldByNumber(
+    const upb_MiniTable* m, uint32_t number);
+
+UPB_API_INLINE const upb_MiniTableField* upb_MiniTable_GetFieldByIndex(
+    const upb_MiniTable* m, uint32_t index) {
+  return UPB_PRIVATE(_upb_MiniTable_GetFieldByIndex)(m, index);
+}
+
+UPB_API_INLINE int upb_MiniTable_FieldCount(const upb_MiniTable* m) {
+  return UPB_PRIVATE(_upb_MiniTable_FieldCount)(m);
+}
+
+// Returns the MiniTable for a message field, NULL if the field is unlinked.
+UPB_API_INLINE const upb_MiniTable* upb_MiniTable_GetSubMessageTable(
+    const upb_MiniTable* m, const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTable_GetSubMessageTable)(m, f);
+}
+
+// Returns the MiniTableEnum for a message field, NULL if the field is unlinked.
+UPB_API_INLINE const upb_MiniTableEnum* upb_MiniTable_GetSubEnumTable(
+    const upb_MiniTable* m, const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTable_GetSubEnumTable)(m, f);
+}
+
+// Returns true if this MiniTable field is linked to a MiniTable for the
+// sub-message.
+UPB_API_INLINE bool upb_MiniTable_MessageFieldIsLinked(
+    const upb_MiniTable* m, const upb_MiniTableField* f) {
+  return UPB_PRIVATE(_upb_MiniTable_MessageFieldIsLinked)(m, f);
+}
+
+// TODO: Implement convenience getters for map entries:
+//
+// upb_MiniTable_GetMapKey()
+// upb_MiniTable_GetMapValue()
+// These could also assert that this is indeed a map entry (well, as best we
+// can. We can assert that there are two fields with field numbers 1 and 2).
+
+// If this field is in a oneof, returns the first field in the oneof.
+//
+// Otherwise returns NULL.
+//
+// Usage:
+//   const upb_MiniTableField* field = upb_MiniTable_GetOneof(m, f);
+//   do {
+//       ..
+//   } while (upb_MiniTable_NextOneofField(m, &field);
+//
+const upb_MiniTableField* upb_MiniTable_GetOneof(const upb_MiniTable* m,
+                                                 const upb_MiniTableField* f);
+
+// Iterates to the next field in the oneof. If this is the last field in the
+// oneof, returns false. The ordering of fields in the oneof is not
+// guaranteed.
+// REQUIRES: |f| is the field initialized by upb_MiniTable_GetOneof and updated
+//           by prior upb_MiniTable_NextOneofField calls.
+bool upb_MiniTable_NextOneofField(const upb_MiniTable* m,
+                                  const upb_MiniTableField** f);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_MINI_TABLE_MESSAGE_H_ */
+
 // Must be last.
 
 #ifdef __cplusplus
@@ -2358,12 +2344,11 @@ struct upb_Message_InternalData {
 };
 
 UPB_INLINE size_t upb_msg_sizeof(const upb_MiniTable* m) {
-  return m->size + sizeof(upb_Message_Internal);
+  return m->UPB_PRIVATE(size) + sizeof(upb_Message_Internal);
 }
 
-// Inline version upb_Message_New(), for internal use.
-UPB_INLINE upb_Message* _upb_Message_New(const upb_MiniTable* mini_table,
-                                         upb_Arena* arena) {
+UPB_INLINE upb_Message* UPB_PRIVATE(_upb_Message_New)(
+    const upb_MiniTable* mini_table, upb_Arena* arena) {
   size_t size = upb_msg_sizeof(mini_table);
   void* mem = upb_Arena_Malloc(arena, size + sizeof(upb_Message_Internal));
   if (UPB_UNLIKELY(!mem)) return NULL;
@@ -2381,11 +2366,6 @@ UPB_INLINE upb_Message_Internal* upb_Message_Getinternal(
 // Discards the unknown fields for this message only.
 void _upb_Message_DiscardUnknown_shallow(upb_Message* msg);
 
-// Adds unknown data (serialized protobuf data) to the given message.
-// The data is copied into the message instance.
-bool _upb_Message_AddUnknown(upb_Message* msg, const char* data, size_t len,
-                             upb_Arena* arena);
-
 bool UPB_PRIVATE(_upb_Message_Realloc)(upb_Message* msg, size_t need,
                                        upb_Arena* arena);
 
@@ -2395,6 +2375,49 @@ bool UPB_PRIVATE(_upb_Message_Realloc)(upb_Message* msg, size_t need,
 
 
 #endif /* UPB_MESSAGE_INTERNAL_H_ */
+
+// Public APIs for message operations that do not depend on the schema.
+//
+// MiniTable-based accessors live in accessors.h.
+
+#ifndef UPB_MESSAGE_MESSAGE_H_
+#define UPB_MESSAGE_MESSAGE_H_
+
+#include <stddef.h>
+
+
+// Must be last.
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Creates a new message with the given mini_table on the given arena.
+UPB_API_INLINE upb_Message* upb_Message_New(const upb_MiniTable* mini_table,
+                                            upb_Arena* arena) {
+  return UPB_PRIVATE(_upb_Message_New)(mini_table, arena);
+}
+
+// Adds unknown data (serialized protobuf data) to the given message.
+// The data is copied into the message instance.
+bool upb_Message_AddUnknown(upb_Message* msg, const char* data, size_t len,
+                            upb_Arena* arena);
+
+// Returns a reference to the message's unknown data.
+const char* upb_Message_GetUnknown(const upb_Message* msg, size_t* len);
+
+// Removes partial unknown data from message.
+void upb_Message_DeleteUnknown(upb_Message* msg, const char* data, size_t len);
+
+// Returns the number of extensions present in this message.
+size_t upb_Message_ExtensionCount(const upb_Message* msg);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_MESSAGE_MESSAGE_H_ */
 
 // Must be last.
 
@@ -2424,71 +2447,43 @@ extern "C" {
 
 // Hasbit access ///////////////////////////////////////////////////////////////
 
-UPB_INLINE size_t _upb_Hasbit_Offset(size_t index) { return index / 8; }
-
-UPB_INLINE char _upb_Hasbit_Mask(size_t index) { return 1 << (index % 8); }
-
-UPB_INLINE size_t _upb_Hasbit_Index(const upb_MiniTableField* f) {
-  UPB_ASSERT(f->presence > 0);
-  return f->presence;
-}
-
-UPB_INLINE bool _upb_Message_GetHasbitByIndex(const upb_Message* msg,
-                                              size_t index) {
-  const size_t offset = _upb_Hasbit_Offset(index);
-  const char mask = _upb_Hasbit_Mask(index);
+UPB_INLINE bool UPB_PRIVATE(_upb_Message_GetHasbit)(
+    const upb_Message* msg, const upb_MiniTableField* f) {
+  const size_t offset = _upb_MiniTableField_HasbitOffset(f);
+  const char mask = _upb_MiniTableField_HasbitMask(f);
   return (*UPB_PTR_AT(msg, offset, const char) & mask) != 0;
 }
 
-UPB_INLINE void _upb_Message_SetHasbitByIndex(const upb_Message* msg,
-                                              size_t index) {
-  const size_t offset = _upb_Hasbit_Offset(index);
-  const char mask = _upb_Hasbit_Mask(index);
+UPB_INLINE void UPB_PRIVATE(_upb_Message_SetHasbit)(
+    const upb_Message* msg, const upb_MiniTableField* f) {
+  const size_t offset = _upb_MiniTableField_HasbitOffset(f);
+  const char mask = _upb_MiniTableField_HasbitMask(f);
   (*UPB_PTR_AT(msg, offset, char)) |= mask;
 }
 
-UPB_INLINE void _upb_Message_ClearHasbitByIndex(const upb_Message* msg,
-                                                size_t index) {
-  const size_t offset = _upb_Hasbit_Offset(index);
-  const char mask = _upb_Hasbit_Mask(index);
+UPB_INLINE void UPB_PRIVATE(_upb_Message_ClearHasbit)(
+    const upb_Message* msg, const upb_MiniTableField* f) {
+  const size_t offset = _upb_MiniTableField_HasbitOffset(f);
+  const char mask = _upb_MiniTableField_HasbitMask(f);
   (*UPB_PTR_AT(msg, offset, char)) &= ~mask;
-}
-
-UPB_INLINE bool _upb_Message_GetHasbitByField(const upb_Message* msg,
-                                              const upb_MiniTableField* f) {
-  return _upb_Message_GetHasbitByIndex(msg, _upb_Hasbit_Index(f));
-}
-
-UPB_INLINE void _upb_Message_SetHasbitByField(const upb_Message* msg,
-                                              const upb_MiniTableField* f) {
-  _upb_Message_SetHasbitByIndex(msg, _upb_Hasbit_Index(f));
-}
-
-UPB_INLINE void _upb_Message_ClearHasbitByField(const upb_Message* msg,
-                                                const upb_MiniTableField* f) {
-  _upb_Message_ClearHasbitByIndex(msg, _upb_Hasbit_Index(f));
 }
 
 // Oneof case access ///////////////////////////////////////////////////////////
 
-UPB_INLINE size_t _upb_MiniTableField_OneofOffset(const upb_MiniTableField* f) {
-  UPB_ASSERT(f->presence < 0);
-  return ~(ptrdiff_t)f->presence;
-}
-
-UPB_INLINE uint32_t* _upb_Message_OneofCasePtr(upb_Message* msg,
-                                               const upb_MiniTableField* f) {
+UPB_INLINE uint32_t* UPB_PRIVATE(_upb_Message_OneofCasePtr)(
+    upb_Message* msg, const upb_MiniTableField* f) {
   return UPB_PTR_AT(msg, _upb_MiniTableField_OneofOffset(f), uint32_t);
 }
 
-UPB_INLINE uint32_t _upb_Message_GetOneofCase(const upb_Message* msg,
-                                              const upb_MiniTableField* f) {
-  return *_upb_Message_OneofCasePtr((upb_Message*)msg, f);
+UPB_INLINE uint32_t UPB_PRIVATE(_upb_Message_GetOneofCase)(
+    const upb_Message* msg, const upb_MiniTableField* f) {
+  return *UPB_PRIVATE(_upb_Message_OneofCasePtr)((upb_Message*)msg, f);
 }
 
-UPB_INLINE void _upb_Message_SetOneofCase(upb_Message* msg,
-                                          const upb_MiniTableField* f) {
-  *_upb_Message_OneofCasePtr(msg, f) = upb_MiniTableField_Number(f);
+UPB_INLINE void UPB_PRIVATE(_upb_Message_SetOneofCase)(
+    upb_Message* msg, const upb_MiniTableField* f) {
+  *UPB_PRIVATE(_upb_Message_OneofCasePtr)(msg, f) =
+      upb_MiniTableField_Number(f);
 }
 
 // TODO: implement _upb_Message_ClearOneofCase()
@@ -2505,12 +2500,12 @@ UPB_INLINE const void* _upb_MiniTableField_GetConstPtr(
   return (char*)msg + field->offset;
 }
 
-UPB_INLINE void _upb_Message_SetPresence(upb_Message* msg,
-                                         const upb_MiniTableField* field) {
+UPB_INLINE void UPB_PRIVATE(_upb_Message_SetPresence)(
+    upb_Message* msg, const upb_MiniTableField* field) {
   if (field->presence > 0) {
-    _upb_Message_SetHasbitByField(msg, field);
+    UPB_PRIVATE(_upb_Message_SetHasbit)(msg, field);
   } else if (upb_MiniTableField_IsInOneof(field)) {
-    _upb_Message_SetOneofCase(msg, field);
+    UPB_PRIVATE(_upb_Message_SetOneofCase)(msg, field);
   }
 }
 
@@ -2596,10 +2591,10 @@ UPB_INLINE bool _upb_Message_HasNonExtensionField(
   UPB_ASSERT(upb_MiniTableField_HasPresence(field));
   UPB_ASSUME(!upb_MiniTableField_IsExtension(field));
   if (upb_MiniTableField_IsInOneof(field)) {
-    return _upb_Message_GetOneofCase(msg, field) ==
+    return UPB_PRIVATE(_upb_Message_GetOneofCase)(msg, field) ==
            upb_MiniTableField_Number(field);
   } else {
-    return _upb_Message_GetHasbitByField(msg, field);
+    return UPB_PRIVATE(_upb_Message_GetHasbit)(msg, field);
   }
 }
 
@@ -2659,7 +2654,7 @@ UPB_INLINE upb_MutableMessageValue _upb_Message_GetMutableField(
 UPB_INLINE void _upb_Message_SetNonExtensionField(
     upb_Message* msg, const upb_MiniTableField* field, const void* val) {
   UPB_ASSUME(!upb_MiniTableField_IsExtension(field));
-  _upb_Message_SetPresence(msg, field);
+  UPB_PRIVATE(_upb_Message_SetPresence)(msg, field);
   _upb_MiniTable_CopyFieldData(_upb_MiniTableField_GetPtr(msg, field), val,
                                field);
 }
@@ -2692,9 +2687,9 @@ UPB_INLINE void _upb_Message_ClearExtensionField(
 UPB_INLINE void _upb_Message_ClearNonExtensionField(
     upb_Message* msg, const upb_MiniTableField* field) {
   if (field->presence > 0) {
-    _upb_Message_ClearHasbitByField(msg, field);
+    UPB_PRIVATE(_upb_Message_ClearHasbit)(msg, field);
   } else if (upb_MiniTableField_IsInOneof(field)) {
-    uint32_t* ptr = _upb_Message_OneofCasePtr(msg, field);
+    uint32_t* ptr = UPB_PRIVATE(_upb_Message_OneofCasePtr)(msg, field);
     if (*ptr != upb_MiniTableField_Number(field)) return;
     *ptr = 0;
   }
@@ -2941,7 +2936,7 @@ UPB_API_INLINE bool upb_Message_HasField(const upb_Message* msg,
 UPB_API_INLINE uint32_t upb_Message_WhichOneofFieldNumber(
     const upb_Message* message, const upb_MiniTableField* oneof_field) {
   UPB_ASSUME(upb_MiniTableField_IsInOneof(oneof_field));
-  return _upb_Message_GetOneofCase(message, oneof_field);
+  return UPB_PRIVATE(_upb_Message_GetOneofCase)(message, oneof_field);
 }
 
 // NOTE: The default_val is only used for fields that support presence.
@@ -3242,9 +3237,9 @@ UPB_API_INLINE upb_Message* upb_Message_GetOrCreateMutableMessage(
     const upb_MiniTable* sub_mini_table = upb_MiniTableSub_Message(
         mini_table->UPB_PRIVATE(subs)[field->UPB_PRIVATE(submsg_index)]);
     UPB_ASSERT(sub_mini_table);
-    sub_message = _upb_Message_New(sub_mini_table, arena);
+    sub_message = upb_Message_New(sub_mini_table, arena);
     *UPB_PTR_AT(msg, field->offset, upb_Message*) = sub_message;
-    _upb_Message_SetPresence(msg, field);
+    UPB_PRIVATE(_upb_Message_SetPresence)(msg, field);
   }
   return sub_message;
 }
@@ -4886,7 +4881,7 @@ typedef enum {
 /* google.protobuf.FileDescriptorSet */
 
 UPB_INLINE google_protobuf_FileDescriptorSet* google_protobuf_FileDescriptorSet_new(upb_Arena* arena) {
-  return (google_protobuf_FileDescriptorSet*)_upb_Message_New(&google__protobuf__FileDescriptorSet_msg_init, arena);
+  return (google_protobuf_FileDescriptorSet*)upb_Message_New(&google__protobuf__FileDescriptorSet_msg_init, arena);
 }
 UPB_INLINE google_protobuf_FileDescriptorSet* google_protobuf_FileDescriptorSet_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_FileDescriptorSet* ret = google_protobuf_FileDescriptorSet_new(arena);
@@ -4977,7 +4972,7 @@ UPB_INLINE struct google_protobuf_FileDescriptorProto* google_protobuf_FileDescr
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_FileDescriptorProto* sub = (struct google_protobuf_FileDescriptorProto*)_upb_Message_New(&google__protobuf__FileDescriptorProto_msg_init, arena);
+  struct google_protobuf_FileDescriptorProto* sub = (struct google_protobuf_FileDescriptorProto*)upb_Message_New(&google__protobuf__FileDescriptorProto_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -4986,7 +4981,7 @@ UPB_INLINE struct google_protobuf_FileDescriptorProto* google_protobuf_FileDescr
 /* google.protobuf.FileDescriptorProto */
 
 UPB_INLINE google_protobuf_FileDescriptorProto* google_protobuf_FileDescriptorProto_new(upb_Arena* arena) {
-  return (google_protobuf_FileDescriptorProto*)_upb_Message_New(&google__protobuf__FileDescriptorProto_msg_init, arena);
+  return (google_protobuf_FileDescriptorProto*)upb_Message_New(&google__protobuf__FileDescriptorProto_msg_init, arena);
 }
 UPB_INLINE google_protobuf_FileDescriptorProto* google_protobuf_FileDescriptorProto_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_FileDescriptorProto* ret = google_protobuf_FileDescriptorProto_new(arena);
@@ -5421,7 +5416,7 @@ UPB_INLINE struct google_protobuf_DescriptorProto* google_protobuf_FileDescripto
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_DescriptorProto* sub = (struct google_protobuf_DescriptorProto*)_upb_Message_New(&google__protobuf__DescriptorProto_msg_init, arena);
+  struct google_protobuf_DescriptorProto* sub = (struct google_protobuf_DescriptorProto*)upb_Message_New(&google__protobuf__DescriptorProto_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -5447,7 +5442,7 @@ UPB_INLINE struct google_protobuf_EnumDescriptorProto* google_protobuf_FileDescr
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_EnumDescriptorProto* sub = (struct google_protobuf_EnumDescriptorProto*)_upb_Message_New(&google__protobuf__EnumDescriptorProto_msg_init, arena);
+  struct google_protobuf_EnumDescriptorProto* sub = (struct google_protobuf_EnumDescriptorProto*)upb_Message_New(&google__protobuf__EnumDescriptorProto_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -5473,7 +5468,7 @@ UPB_INLINE struct google_protobuf_ServiceDescriptorProto* google_protobuf_FileDe
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_ServiceDescriptorProto* sub = (struct google_protobuf_ServiceDescriptorProto*)_upb_Message_New(&google__protobuf__ServiceDescriptorProto_msg_init, arena);
+  struct google_protobuf_ServiceDescriptorProto* sub = (struct google_protobuf_ServiceDescriptorProto*)upb_Message_New(&google__protobuf__ServiceDescriptorProto_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -5499,7 +5494,7 @@ UPB_INLINE struct google_protobuf_FieldDescriptorProto* google_protobuf_FileDesc
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_FieldDescriptorProto* sub = (struct google_protobuf_FieldDescriptorProto*)_upb_Message_New(&google__protobuf__FieldDescriptorProto_msg_init, arena);
+  struct google_protobuf_FieldDescriptorProto* sub = (struct google_protobuf_FieldDescriptorProto*)upb_Message_New(&google__protobuf__FieldDescriptorProto_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -5511,7 +5506,7 @@ UPB_INLINE void google_protobuf_FileDescriptorProto_set_options(google_protobuf_
 UPB_INLINE struct google_protobuf_FileOptions* google_protobuf_FileDescriptorProto_mutable_options(google_protobuf_FileDescriptorProto* msg, upb_Arena* arena) {
   struct google_protobuf_FileOptions* sub = (struct google_protobuf_FileOptions*)google_protobuf_FileDescriptorProto_options(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_FileOptions*)_upb_Message_New(&google__protobuf__FileOptions_msg_init, arena);
+    sub = (struct google_protobuf_FileOptions*)upb_Message_New(&google__protobuf__FileOptions_msg_init, arena);
     if (sub) google_protobuf_FileDescriptorProto_set_options(msg, sub);
   }
   return sub;
@@ -5523,7 +5518,7 @@ UPB_INLINE void google_protobuf_FileDescriptorProto_set_source_code_info(google_
 UPB_INLINE struct google_protobuf_SourceCodeInfo* google_protobuf_FileDescriptorProto_mutable_source_code_info(google_protobuf_FileDescriptorProto* msg, upb_Arena* arena) {
   struct google_protobuf_SourceCodeInfo* sub = (struct google_protobuf_SourceCodeInfo*)google_protobuf_FileDescriptorProto_source_code_info(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_SourceCodeInfo*)_upb_Message_New(&google__protobuf__SourceCodeInfo_msg_init, arena);
+    sub = (struct google_protobuf_SourceCodeInfo*)upb_Message_New(&google__protobuf__SourceCodeInfo_msg_init, arena);
     if (sub) google_protobuf_FileDescriptorProto_set_source_code_info(msg, sub);
   }
   return sub;
@@ -5588,7 +5583,7 @@ UPB_INLINE void google_protobuf_FileDescriptorProto_set_edition(google_protobuf_
 /* google.protobuf.DescriptorProto */
 
 UPB_INLINE google_protobuf_DescriptorProto* google_protobuf_DescriptorProto_new(upb_Arena* arena) {
-  return (google_protobuf_DescriptorProto*)_upb_Message_New(&google__protobuf__DescriptorProto_msg_init, arena);
+  return (google_protobuf_DescriptorProto*)upb_Message_New(&google__protobuf__DescriptorProto_msg_init, arena);
 }
 UPB_INLINE google_protobuf_DescriptorProto* google_protobuf_DescriptorProto_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_DescriptorProto* ret = google_protobuf_DescriptorProto_new(arena);
@@ -5972,7 +5967,7 @@ UPB_INLINE struct google_protobuf_FieldDescriptorProto* google_protobuf_Descript
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_FieldDescriptorProto* sub = (struct google_protobuf_FieldDescriptorProto*)_upb_Message_New(&google__protobuf__FieldDescriptorProto_msg_init, arena);
+  struct google_protobuf_FieldDescriptorProto* sub = (struct google_protobuf_FieldDescriptorProto*)upb_Message_New(&google__protobuf__FieldDescriptorProto_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -5998,7 +5993,7 @@ UPB_INLINE struct google_protobuf_DescriptorProto* google_protobuf_DescriptorPro
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_DescriptorProto* sub = (struct google_protobuf_DescriptorProto*)_upb_Message_New(&google__protobuf__DescriptorProto_msg_init, arena);
+  struct google_protobuf_DescriptorProto* sub = (struct google_protobuf_DescriptorProto*)upb_Message_New(&google__protobuf__DescriptorProto_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -6024,7 +6019,7 @@ UPB_INLINE struct google_protobuf_EnumDescriptorProto* google_protobuf_Descripto
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_EnumDescriptorProto* sub = (struct google_protobuf_EnumDescriptorProto*)_upb_Message_New(&google__protobuf__EnumDescriptorProto_msg_init, arena);
+  struct google_protobuf_EnumDescriptorProto* sub = (struct google_protobuf_EnumDescriptorProto*)upb_Message_New(&google__protobuf__EnumDescriptorProto_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -6050,7 +6045,7 @@ UPB_INLINE struct google_protobuf_DescriptorProto_ExtensionRange* google_protobu
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_DescriptorProto_ExtensionRange* sub = (struct google_protobuf_DescriptorProto_ExtensionRange*)_upb_Message_New(&google__protobuf__DescriptorProto__ExtensionRange_msg_init, arena);
+  struct google_protobuf_DescriptorProto_ExtensionRange* sub = (struct google_protobuf_DescriptorProto_ExtensionRange*)upb_Message_New(&google__protobuf__DescriptorProto__ExtensionRange_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -6076,7 +6071,7 @@ UPB_INLINE struct google_protobuf_FieldDescriptorProto* google_protobuf_Descript
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_FieldDescriptorProto* sub = (struct google_protobuf_FieldDescriptorProto*)_upb_Message_New(&google__protobuf__FieldDescriptorProto_msg_init, arena);
+  struct google_protobuf_FieldDescriptorProto* sub = (struct google_protobuf_FieldDescriptorProto*)upb_Message_New(&google__protobuf__FieldDescriptorProto_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -6088,7 +6083,7 @@ UPB_INLINE void google_protobuf_DescriptorProto_set_options(google_protobuf_Desc
 UPB_INLINE struct google_protobuf_MessageOptions* google_protobuf_DescriptorProto_mutable_options(google_protobuf_DescriptorProto* msg, upb_Arena* arena) {
   struct google_protobuf_MessageOptions* sub = (struct google_protobuf_MessageOptions*)google_protobuf_DescriptorProto_options(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_MessageOptions*)_upb_Message_New(&google__protobuf__MessageOptions_msg_init, arena);
+    sub = (struct google_protobuf_MessageOptions*)upb_Message_New(&google__protobuf__MessageOptions_msg_init, arena);
     if (sub) google_protobuf_DescriptorProto_set_options(msg, sub);
   }
   return sub;
@@ -6114,7 +6109,7 @@ UPB_INLINE struct google_protobuf_OneofDescriptorProto* google_protobuf_Descript
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_OneofDescriptorProto* sub = (struct google_protobuf_OneofDescriptorProto*)_upb_Message_New(&google__protobuf__OneofDescriptorProto_msg_init, arena);
+  struct google_protobuf_OneofDescriptorProto* sub = (struct google_protobuf_OneofDescriptorProto*)upb_Message_New(&google__protobuf__OneofDescriptorProto_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -6140,7 +6135,7 @@ UPB_INLINE struct google_protobuf_DescriptorProto_ReservedRange* google_protobuf
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_DescriptorProto_ReservedRange* sub = (struct google_protobuf_DescriptorProto_ReservedRange*)_upb_Message_New(&google__protobuf__DescriptorProto__ReservedRange_msg_init, arena);
+  struct google_protobuf_DescriptorProto_ReservedRange* sub = (struct google_protobuf_DescriptorProto_ReservedRange*)upb_Message_New(&google__protobuf__DescriptorProto__ReservedRange_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -6173,7 +6168,7 @@ UPB_INLINE bool google_protobuf_DescriptorProto_add_reserved_name(google_protobu
 /* google.protobuf.DescriptorProto.ExtensionRange */
 
 UPB_INLINE google_protobuf_DescriptorProto_ExtensionRange* google_protobuf_DescriptorProto_ExtensionRange_new(upb_Arena* arena) {
-  return (google_protobuf_DescriptorProto_ExtensionRange*)_upb_Message_New(&google__protobuf__DescriptorProto__ExtensionRange_msg_init, arena);
+  return (google_protobuf_DescriptorProto_ExtensionRange*)upb_Message_New(&google__protobuf__DescriptorProto__ExtensionRange_msg_init, arena);
 }
 UPB_INLINE google_protobuf_DescriptorProto_ExtensionRange* google_protobuf_DescriptorProto_ExtensionRange_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_DescriptorProto_ExtensionRange* ret = google_protobuf_DescriptorProto_ExtensionRange_new(arena);
@@ -6266,7 +6261,7 @@ UPB_INLINE void google_protobuf_DescriptorProto_ExtensionRange_set_options(googl
 UPB_INLINE struct google_protobuf_ExtensionRangeOptions* google_protobuf_DescriptorProto_ExtensionRange_mutable_options(google_protobuf_DescriptorProto_ExtensionRange* msg, upb_Arena* arena) {
   struct google_protobuf_ExtensionRangeOptions* sub = (struct google_protobuf_ExtensionRangeOptions*)google_protobuf_DescriptorProto_ExtensionRange_options(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_ExtensionRangeOptions*)_upb_Message_New(&google__protobuf__ExtensionRangeOptions_msg_init, arena);
+    sub = (struct google_protobuf_ExtensionRangeOptions*)upb_Message_New(&google__protobuf__ExtensionRangeOptions_msg_init, arena);
     if (sub) google_protobuf_DescriptorProto_ExtensionRange_set_options(msg, sub);
   }
   return sub;
@@ -6275,7 +6270,7 @@ UPB_INLINE struct google_protobuf_ExtensionRangeOptions* google_protobuf_Descrip
 /* google.protobuf.DescriptorProto.ReservedRange */
 
 UPB_INLINE google_protobuf_DescriptorProto_ReservedRange* google_protobuf_DescriptorProto_ReservedRange_new(upb_Arena* arena) {
-  return (google_protobuf_DescriptorProto_ReservedRange*)_upb_Message_New(&google__protobuf__DescriptorProto__ReservedRange_msg_init, arena);
+  return (google_protobuf_DescriptorProto_ReservedRange*)upb_Message_New(&google__protobuf__DescriptorProto__ReservedRange_msg_init, arena);
 }
 UPB_INLINE google_protobuf_DescriptorProto_ReservedRange* google_protobuf_DescriptorProto_ReservedRange_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_DescriptorProto_ReservedRange* ret = google_protobuf_DescriptorProto_ReservedRange_new(arena);
@@ -6350,7 +6345,7 @@ UPB_INLINE void google_protobuf_DescriptorProto_ReservedRange_set_end(google_pro
 /* google.protobuf.ExtensionRangeOptions */
 
 UPB_INLINE google_protobuf_ExtensionRangeOptions* google_protobuf_ExtensionRangeOptions_new(upb_Arena* arena) {
-  return (google_protobuf_ExtensionRangeOptions*)_upb_Message_New(&google__protobuf__ExtensionRangeOptions_msg_init, arena);
+  return (google_protobuf_ExtensionRangeOptions*)upb_Message_New(&google__protobuf__ExtensionRangeOptions_msg_init, arena);
 }
 UPB_INLINE google_protobuf_ExtensionRangeOptions* google_protobuf_ExtensionRangeOptions_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_ExtensionRangeOptions* ret = google_protobuf_ExtensionRangeOptions_new(arena);
@@ -6508,7 +6503,7 @@ UPB_INLINE struct google_protobuf_ExtensionRangeOptions_Declaration* google_prot
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_ExtensionRangeOptions_Declaration* sub = (struct google_protobuf_ExtensionRangeOptions_Declaration*)_upb_Message_New(&google__protobuf__ExtensionRangeOptions__Declaration_msg_init, arena);
+  struct google_protobuf_ExtensionRangeOptions_Declaration* sub = (struct google_protobuf_ExtensionRangeOptions_Declaration*)upb_Message_New(&google__protobuf__ExtensionRangeOptions__Declaration_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -6524,7 +6519,7 @@ UPB_INLINE void google_protobuf_ExtensionRangeOptions_set_features(google_protob
 UPB_INLINE struct google_protobuf_FeatureSet* google_protobuf_ExtensionRangeOptions_mutable_features(google_protobuf_ExtensionRangeOptions* msg, upb_Arena* arena) {
   struct google_protobuf_FeatureSet* sub = (struct google_protobuf_FeatureSet*)google_protobuf_ExtensionRangeOptions_features(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_FeatureSet*)_upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
+    sub = (struct google_protobuf_FeatureSet*)upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
     if (sub) google_protobuf_ExtensionRangeOptions_set_features(msg, sub);
   }
   return sub;
@@ -6550,7 +6545,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_Extension
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)_upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
+  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -6559,7 +6554,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_Extension
 /* google.protobuf.ExtensionRangeOptions.Declaration */
 
 UPB_INLINE google_protobuf_ExtensionRangeOptions_Declaration* google_protobuf_ExtensionRangeOptions_Declaration_new(upb_Arena* arena) {
-  return (google_protobuf_ExtensionRangeOptions_Declaration*)_upb_Message_New(&google__protobuf__ExtensionRangeOptions__Declaration_msg_init, arena);
+  return (google_protobuf_ExtensionRangeOptions_Declaration*)upb_Message_New(&google__protobuf__ExtensionRangeOptions__Declaration_msg_init, arena);
 }
 UPB_INLINE google_protobuf_ExtensionRangeOptions_Declaration* google_protobuf_ExtensionRangeOptions_Declaration_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_ExtensionRangeOptions_Declaration* ret = google_protobuf_ExtensionRangeOptions_Declaration_new(arena);
@@ -6691,7 +6686,7 @@ UPB_INLINE void google_protobuf_ExtensionRangeOptions_Declaration_set_repeated(g
 /* google.protobuf.FieldDescriptorProto */
 
 UPB_INLINE google_protobuf_FieldDescriptorProto* google_protobuf_FieldDescriptorProto_new(upb_Arena* arena) {
-  return (google_protobuf_FieldDescriptorProto*)_upb_Message_New(&google__protobuf__FieldDescriptorProto_msg_init, arena);
+  return (google_protobuf_FieldDescriptorProto*)upb_Message_New(&google__protobuf__FieldDescriptorProto_msg_init, arena);
 }
 UPB_INLINE google_protobuf_FieldDescriptorProto* google_protobuf_FieldDescriptorProto_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_FieldDescriptorProto* ret = google_protobuf_FieldDescriptorProto_new(arena);
@@ -6924,7 +6919,7 @@ UPB_INLINE void google_protobuf_FieldDescriptorProto_set_options(google_protobuf
 UPB_INLINE struct google_protobuf_FieldOptions* google_protobuf_FieldDescriptorProto_mutable_options(google_protobuf_FieldDescriptorProto* msg, upb_Arena* arena) {
   struct google_protobuf_FieldOptions* sub = (struct google_protobuf_FieldOptions*)google_protobuf_FieldDescriptorProto_options(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_FieldOptions*)_upb_Message_New(&google__protobuf__FieldOptions_msg_init, arena);
+    sub = (struct google_protobuf_FieldOptions*)upb_Message_New(&google__protobuf__FieldOptions_msg_init, arena);
     if (sub) google_protobuf_FieldDescriptorProto_set_options(msg, sub);
   }
   return sub;
@@ -6945,7 +6940,7 @@ UPB_INLINE void google_protobuf_FieldDescriptorProto_set_proto3_optional(google_
 /* google.protobuf.OneofDescriptorProto */
 
 UPB_INLINE google_protobuf_OneofDescriptorProto* google_protobuf_OneofDescriptorProto_new(upb_Arena* arena) {
-  return (google_protobuf_OneofDescriptorProto*)_upb_Message_New(&google__protobuf__OneofDescriptorProto_msg_init, arena);
+  return (google_protobuf_OneofDescriptorProto*)upb_Message_New(&google__protobuf__OneofDescriptorProto_msg_init, arena);
 }
 UPB_INLINE google_protobuf_OneofDescriptorProto* google_protobuf_OneofDescriptorProto_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_OneofDescriptorProto* ret = google_protobuf_OneofDescriptorProto_new(arena);
@@ -7019,7 +7014,7 @@ UPB_INLINE void google_protobuf_OneofDescriptorProto_set_options(google_protobuf
 UPB_INLINE struct google_protobuf_OneofOptions* google_protobuf_OneofDescriptorProto_mutable_options(google_protobuf_OneofDescriptorProto* msg, upb_Arena* arena) {
   struct google_protobuf_OneofOptions* sub = (struct google_protobuf_OneofOptions*)google_protobuf_OneofDescriptorProto_options(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_OneofOptions*)_upb_Message_New(&google__protobuf__OneofOptions_msg_init, arena);
+    sub = (struct google_protobuf_OneofOptions*)upb_Message_New(&google__protobuf__OneofOptions_msg_init, arena);
     if (sub) google_protobuf_OneofDescriptorProto_set_options(msg, sub);
   }
   return sub;
@@ -7028,7 +7023,7 @@ UPB_INLINE struct google_protobuf_OneofOptions* google_protobuf_OneofDescriptorP
 /* google.protobuf.EnumDescriptorProto */
 
 UPB_INLINE google_protobuf_EnumDescriptorProto* google_protobuf_EnumDescriptorProto_new(upb_Arena* arena) {
-  return (google_protobuf_EnumDescriptorProto*)_upb_Message_New(&google__protobuf__EnumDescriptorProto_msg_init, arena);
+  return (google_protobuf_EnumDescriptorProto*)upb_Message_New(&google__protobuf__EnumDescriptorProto_msg_init, arena);
 }
 UPB_INLINE google_protobuf_EnumDescriptorProto* google_protobuf_EnumDescriptorProto_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_EnumDescriptorProto* ret = google_protobuf_EnumDescriptorProto_new(arena);
@@ -7227,7 +7222,7 @@ UPB_INLINE struct google_protobuf_EnumValueDescriptorProto* google_protobuf_Enum
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_EnumValueDescriptorProto* sub = (struct google_protobuf_EnumValueDescriptorProto*)_upb_Message_New(&google__protobuf__EnumValueDescriptorProto_msg_init, arena);
+  struct google_protobuf_EnumValueDescriptorProto* sub = (struct google_protobuf_EnumValueDescriptorProto*)upb_Message_New(&google__protobuf__EnumValueDescriptorProto_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -7239,7 +7234,7 @@ UPB_INLINE void google_protobuf_EnumDescriptorProto_set_options(google_protobuf_
 UPB_INLINE struct google_protobuf_EnumOptions* google_protobuf_EnumDescriptorProto_mutable_options(google_protobuf_EnumDescriptorProto* msg, upb_Arena* arena) {
   struct google_protobuf_EnumOptions* sub = (struct google_protobuf_EnumOptions*)google_protobuf_EnumDescriptorProto_options(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_EnumOptions*)_upb_Message_New(&google__protobuf__EnumOptions_msg_init, arena);
+    sub = (struct google_protobuf_EnumOptions*)upb_Message_New(&google__protobuf__EnumOptions_msg_init, arena);
     if (sub) google_protobuf_EnumDescriptorProto_set_options(msg, sub);
   }
   return sub;
@@ -7265,7 +7260,7 @@ UPB_INLINE struct google_protobuf_EnumDescriptorProto_EnumReservedRange* google_
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_EnumDescriptorProto_EnumReservedRange* sub = (struct google_protobuf_EnumDescriptorProto_EnumReservedRange*)_upb_Message_New(&google__protobuf__EnumDescriptorProto__EnumReservedRange_msg_init, arena);
+  struct google_protobuf_EnumDescriptorProto_EnumReservedRange* sub = (struct google_protobuf_EnumDescriptorProto_EnumReservedRange*)upb_Message_New(&google__protobuf__EnumDescriptorProto__EnumReservedRange_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -7298,7 +7293,7 @@ UPB_INLINE bool google_protobuf_EnumDescriptorProto_add_reserved_name(google_pro
 /* google.protobuf.EnumDescriptorProto.EnumReservedRange */
 
 UPB_INLINE google_protobuf_EnumDescriptorProto_EnumReservedRange* google_protobuf_EnumDescriptorProto_EnumReservedRange_new(upb_Arena* arena) {
-  return (google_protobuf_EnumDescriptorProto_EnumReservedRange*)_upb_Message_New(&google__protobuf__EnumDescriptorProto__EnumReservedRange_msg_init, arena);
+  return (google_protobuf_EnumDescriptorProto_EnumReservedRange*)upb_Message_New(&google__protobuf__EnumDescriptorProto__EnumReservedRange_msg_init, arena);
 }
 UPB_INLINE google_protobuf_EnumDescriptorProto_EnumReservedRange* google_protobuf_EnumDescriptorProto_EnumReservedRange_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_EnumDescriptorProto_EnumReservedRange* ret = google_protobuf_EnumDescriptorProto_EnumReservedRange_new(arena);
@@ -7373,7 +7368,7 @@ UPB_INLINE void google_protobuf_EnumDescriptorProto_EnumReservedRange_set_end(go
 /* google.protobuf.EnumValueDescriptorProto */
 
 UPB_INLINE google_protobuf_EnumValueDescriptorProto* google_protobuf_EnumValueDescriptorProto_new(upb_Arena* arena) {
-  return (google_protobuf_EnumValueDescriptorProto*)_upb_Message_New(&google__protobuf__EnumValueDescriptorProto_msg_init, arena);
+  return (google_protobuf_EnumValueDescriptorProto*)upb_Message_New(&google__protobuf__EnumValueDescriptorProto_msg_init, arena);
 }
 UPB_INLINE google_protobuf_EnumValueDescriptorProto* google_protobuf_EnumValueDescriptorProto_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_EnumValueDescriptorProto* ret = google_protobuf_EnumValueDescriptorProto_new(arena);
@@ -7466,7 +7461,7 @@ UPB_INLINE void google_protobuf_EnumValueDescriptorProto_set_options(google_prot
 UPB_INLINE struct google_protobuf_EnumValueOptions* google_protobuf_EnumValueDescriptorProto_mutable_options(google_protobuf_EnumValueDescriptorProto* msg, upb_Arena* arena) {
   struct google_protobuf_EnumValueOptions* sub = (struct google_protobuf_EnumValueOptions*)google_protobuf_EnumValueDescriptorProto_options(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_EnumValueOptions*)_upb_Message_New(&google__protobuf__EnumValueOptions_msg_init, arena);
+    sub = (struct google_protobuf_EnumValueOptions*)upb_Message_New(&google__protobuf__EnumValueOptions_msg_init, arena);
     if (sub) google_protobuf_EnumValueDescriptorProto_set_options(msg, sub);
   }
   return sub;
@@ -7475,7 +7470,7 @@ UPB_INLINE struct google_protobuf_EnumValueOptions* google_protobuf_EnumValueDes
 /* google.protobuf.ServiceDescriptorProto */
 
 UPB_INLINE google_protobuf_ServiceDescriptorProto* google_protobuf_ServiceDescriptorProto_new(upb_Arena* arena) {
-  return (google_protobuf_ServiceDescriptorProto*)_upb_Message_New(&google__protobuf__ServiceDescriptorProto_msg_init, arena);
+  return (google_protobuf_ServiceDescriptorProto*)upb_Message_New(&google__protobuf__ServiceDescriptorProto_msg_init, arena);
 }
 UPB_INLINE google_protobuf_ServiceDescriptorProto* google_protobuf_ServiceDescriptorProto_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_ServiceDescriptorProto* ret = google_protobuf_ServiceDescriptorProto_new(arena);
@@ -7600,7 +7595,7 @@ UPB_INLINE struct google_protobuf_MethodDescriptorProto* google_protobuf_Service
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_MethodDescriptorProto* sub = (struct google_protobuf_MethodDescriptorProto*)_upb_Message_New(&google__protobuf__MethodDescriptorProto_msg_init, arena);
+  struct google_protobuf_MethodDescriptorProto* sub = (struct google_protobuf_MethodDescriptorProto*)upb_Message_New(&google__protobuf__MethodDescriptorProto_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -7612,7 +7607,7 @@ UPB_INLINE void google_protobuf_ServiceDescriptorProto_set_options(google_protob
 UPB_INLINE struct google_protobuf_ServiceOptions* google_protobuf_ServiceDescriptorProto_mutable_options(google_protobuf_ServiceDescriptorProto* msg, upb_Arena* arena) {
   struct google_protobuf_ServiceOptions* sub = (struct google_protobuf_ServiceOptions*)google_protobuf_ServiceDescriptorProto_options(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_ServiceOptions*)_upb_Message_New(&google__protobuf__ServiceOptions_msg_init, arena);
+    sub = (struct google_protobuf_ServiceOptions*)upb_Message_New(&google__protobuf__ServiceOptions_msg_init, arena);
     if (sub) google_protobuf_ServiceDescriptorProto_set_options(msg, sub);
   }
   return sub;
@@ -7621,7 +7616,7 @@ UPB_INLINE struct google_protobuf_ServiceOptions* google_protobuf_ServiceDescrip
 /* google.protobuf.MethodDescriptorProto */
 
 UPB_INLINE google_protobuf_MethodDescriptorProto* google_protobuf_MethodDescriptorProto_new(upb_Arena* arena) {
-  return (google_protobuf_MethodDescriptorProto*)_upb_Message_New(&google__protobuf__MethodDescriptorProto_msg_init, arena);
+  return (google_protobuf_MethodDescriptorProto*)upb_Message_New(&google__protobuf__MethodDescriptorProto_msg_init, arena);
 }
 UPB_INLINE google_protobuf_MethodDescriptorProto* google_protobuf_MethodDescriptorProto_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_MethodDescriptorProto* ret = google_protobuf_MethodDescriptorProto_new(arena);
@@ -7763,7 +7758,7 @@ UPB_INLINE void google_protobuf_MethodDescriptorProto_set_options(google_protobu
 UPB_INLINE struct google_protobuf_MethodOptions* google_protobuf_MethodDescriptorProto_mutable_options(google_protobuf_MethodDescriptorProto* msg, upb_Arena* arena) {
   struct google_protobuf_MethodOptions* sub = (struct google_protobuf_MethodOptions*)google_protobuf_MethodDescriptorProto_options(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_MethodOptions*)_upb_Message_New(&google__protobuf__MethodOptions_msg_init, arena);
+    sub = (struct google_protobuf_MethodOptions*)upb_Message_New(&google__protobuf__MethodOptions_msg_init, arena);
     if (sub) google_protobuf_MethodDescriptorProto_set_options(msg, sub);
   }
   return sub;
@@ -7780,7 +7775,7 @@ UPB_INLINE void google_protobuf_MethodDescriptorProto_set_server_streaming(googl
 /* google.protobuf.FileOptions */
 
 UPB_INLINE google_protobuf_FileOptions* google_protobuf_FileOptions_new(upb_Arena* arena) {
-  return (google_protobuf_FileOptions*)_upb_Message_New(&google__protobuf__FileOptions_msg_init, arena);
+  return (google_protobuf_FileOptions*)upb_Message_New(&google__protobuf__FileOptions_msg_init, arena);
 }
 UPB_INLINE google_protobuf_FileOptions* google_protobuf_FileOptions_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_FileOptions* ret = google_protobuf_FileOptions_new(arena);
@@ -8252,7 +8247,7 @@ UPB_INLINE void google_protobuf_FileOptions_set_features(google_protobuf_FileOpt
 UPB_INLINE struct google_protobuf_FeatureSet* google_protobuf_FileOptions_mutable_features(google_protobuf_FileOptions* msg, upb_Arena* arena) {
   struct google_protobuf_FeatureSet* sub = (struct google_protobuf_FeatureSet*)google_protobuf_FileOptions_features(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_FeatureSet*)_upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
+    sub = (struct google_protobuf_FeatureSet*)upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
     if (sub) google_protobuf_FileOptions_set_features(msg, sub);
   }
   return sub;
@@ -8278,7 +8273,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_FileOptio
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)_upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
+  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -8287,7 +8282,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_FileOptio
 /* google.protobuf.MessageOptions */
 
 UPB_INLINE google_protobuf_MessageOptions* google_protobuf_MessageOptions_new(upb_Arena* arena) {
-  return (google_protobuf_MessageOptions*)_upb_Message_New(&google__protobuf__MessageOptions_msg_init, arena);
+  return (google_protobuf_MessageOptions*)upb_Message_New(&google__protobuf__MessageOptions_msg_init, arena);
 }
 UPB_INLINE google_protobuf_MessageOptions* google_protobuf_MessageOptions_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_MessageOptions* ret = google_protobuf_MessageOptions_new(arena);
@@ -8474,7 +8469,7 @@ UPB_INLINE void google_protobuf_MessageOptions_set_features(google_protobuf_Mess
 UPB_INLINE struct google_protobuf_FeatureSet* google_protobuf_MessageOptions_mutable_features(google_protobuf_MessageOptions* msg, upb_Arena* arena) {
   struct google_protobuf_FeatureSet* sub = (struct google_protobuf_FeatureSet*)google_protobuf_MessageOptions_features(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_FeatureSet*)_upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
+    sub = (struct google_protobuf_FeatureSet*)upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
     if (sub) google_protobuf_MessageOptions_set_features(msg, sub);
   }
   return sub;
@@ -8500,7 +8495,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_MessageOp
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)_upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
+  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -8509,7 +8504,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_MessageOp
 /* google.protobuf.FieldOptions */
 
 UPB_INLINE google_protobuf_FieldOptions* google_protobuf_FieldOptions_new(upb_Arena* arena) {
-  return (google_protobuf_FieldOptions*)_upb_Message_New(&google__protobuf__FieldOptions_msg_init, arena);
+  return (google_protobuf_FieldOptions*)upb_Message_New(&google__protobuf__FieldOptions_msg_init, arena);
 }
 UPB_INLINE google_protobuf_FieldOptions* google_protobuf_FieldOptions_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_FieldOptions* ret = google_protobuf_FieldOptions_new(arena);
@@ -8884,7 +8879,7 @@ UPB_INLINE struct google_protobuf_FieldOptions_EditionDefault* google_protobuf_F
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_FieldOptions_EditionDefault* sub = (struct google_protobuf_FieldOptions_EditionDefault*)_upb_Message_New(&google__protobuf__FieldOptions__EditionDefault_msg_init, arena);
+  struct google_protobuf_FieldOptions_EditionDefault* sub = (struct google_protobuf_FieldOptions_EditionDefault*)upb_Message_New(&google__protobuf__FieldOptions__EditionDefault_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -8896,7 +8891,7 @@ UPB_INLINE void google_protobuf_FieldOptions_set_features(google_protobuf_FieldO
 UPB_INLINE struct google_protobuf_FeatureSet* google_protobuf_FieldOptions_mutable_features(google_protobuf_FieldOptions* msg, upb_Arena* arena) {
   struct google_protobuf_FeatureSet* sub = (struct google_protobuf_FeatureSet*)google_protobuf_FieldOptions_features(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_FeatureSet*)_upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
+    sub = (struct google_protobuf_FeatureSet*)upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
     if (sub) google_protobuf_FieldOptions_set_features(msg, sub);
   }
   return sub;
@@ -8922,7 +8917,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_FieldOpti
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)_upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
+  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -8931,7 +8926,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_FieldOpti
 /* google.protobuf.FieldOptions.EditionDefault */
 
 UPB_INLINE google_protobuf_FieldOptions_EditionDefault* google_protobuf_FieldOptions_EditionDefault_new(upb_Arena* arena) {
-  return (google_protobuf_FieldOptions_EditionDefault*)_upb_Message_New(&google__protobuf__FieldOptions__EditionDefault_msg_init, arena);
+  return (google_protobuf_FieldOptions_EditionDefault*)upb_Message_New(&google__protobuf__FieldOptions__EditionDefault_msg_init, arena);
 }
 UPB_INLINE google_protobuf_FieldOptions_EditionDefault* google_protobuf_FieldOptions_EditionDefault_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_FieldOptions_EditionDefault* ret = google_protobuf_FieldOptions_EditionDefault_new(arena);
@@ -9006,7 +9001,7 @@ UPB_INLINE void google_protobuf_FieldOptions_EditionDefault_set_edition(google_p
 /* google.protobuf.OneofOptions */
 
 UPB_INLINE google_protobuf_OneofOptions* google_protobuf_OneofOptions_new(upb_Arena* arena) {
-  return (google_protobuf_OneofOptions*)_upb_Message_New(&google__protobuf__OneofOptions_msg_init, arena);
+  return (google_protobuf_OneofOptions*)upb_Message_New(&google__protobuf__OneofOptions_msg_init, arena);
 }
 UPB_INLINE google_protobuf_OneofOptions* google_protobuf_OneofOptions_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_OneofOptions* ret = google_protobuf_OneofOptions_new(arena);
@@ -9098,7 +9093,7 @@ UPB_INLINE void google_protobuf_OneofOptions_set_features(google_protobuf_OneofO
 UPB_INLINE struct google_protobuf_FeatureSet* google_protobuf_OneofOptions_mutable_features(google_protobuf_OneofOptions* msg, upb_Arena* arena) {
   struct google_protobuf_FeatureSet* sub = (struct google_protobuf_FeatureSet*)google_protobuf_OneofOptions_features(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_FeatureSet*)_upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
+    sub = (struct google_protobuf_FeatureSet*)upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
     if (sub) google_protobuf_OneofOptions_set_features(msg, sub);
   }
   return sub;
@@ -9124,7 +9119,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_OneofOpti
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)_upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
+  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -9133,7 +9128,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_OneofOpti
 /* google.protobuf.EnumOptions */
 
 UPB_INLINE google_protobuf_EnumOptions* google_protobuf_EnumOptions_new(upb_Arena* arena) {
-  return (google_protobuf_EnumOptions*)_upb_Message_New(&google__protobuf__EnumOptions_msg_init, arena);
+  return (google_protobuf_EnumOptions*)upb_Message_New(&google__protobuf__EnumOptions_msg_init, arena);
 }
 UPB_INLINE google_protobuf_EnumOptions* google_protobuf_EnumOptions_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_EnumOptions* ret = google_protobuf_EnumOptions_new(arena);
@@ -9282,7 +9277,7 @@ UPB_INLINE void google_protobuf_EnumOptions_set_features(google_protobuf_EnumOpt
 UPB_INLINE struct google_protobuf_FeatureSet* google_protobuf_EnumOptions_mutable_features(google_protobuf_EnumOptions* msg, upb_Arena* arena) {
   struct google_protobuf_FeatureSet* sub = (struct google_protobuf_FeatureSet*)google_protobuf_EnumOptions_features(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_FeatureSet*)_upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
+    sub = (struct google_protobuf_FeatureSet*)upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
     if (sub) google_protobuf_EnumOptions_set_features(msg, sub);
   }
   return sub;
@@ -9308,7 +9303,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_EnumOptio
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)_upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
+  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -9317,7 +9312,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_EnumOptio
 /* google.protobuf.EnumValueOptions */
 
 UPB_INLINE google_protobuf_EnumValueOptions* google_protobuf_EnumValueOptions_new(upb_Arena* arena) {
-  return (google_protobuf_EnumValueOptions*)_upb_Message_New(&google__protobuf__EnumValueOptions_msg_init, arena);
+  return (google_protobuf_EnumValueOptions*)upb_Message_New(&google__protobuf__EnumValueOptions_msg_init, arena);
 }
 UPB_INLINE google_protobuf_EnumValueOptions* google_protobuf_EnumValueOptions_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_EnumValueOptions* ret = google_protobuf_EnumValueOptions_new(arena);
@@ -9443,7 +9438,7 @@ UPB_INLINE void google_protobuf_EnumValueOptions_set_features(google_protobuf_En
 UPB_INLINE struct google_protobuf_FeatureSet* google_protobuf_EnumValueOptions_mutable_features(google_protobuf_EnumValueOptions* msg, upb_Arena* arena) {
   struct google_protobuf_FeatureSet* sub = (struct google_protobuf_FeatureSet*)google_protobuf_EnumValueOptions_features(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_FeatureSet*)_upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
+    sub = (struct google_protobuf_FeatureSet*)upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
     if (sub) google_protobuf_EnumValueOptions_set_features(msg, sub);
   }
   return sub;
@@ -9473,7 +9468,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_EnumValue
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)_upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
+  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -9482,7 +9477,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_EnumValue
 /* google.protobuf.ServiceOptions */
 
 UPB_INLINE google_protobuf_ServiceOptions* google_protobuf_ServiceOptions_new(upb_Arena* arena) {
-  return (google_protobuf_ServiceOptions*)_upb_Message_New(&google__protobuf__ServiceOptions_msg_init, arena);
+  return (google_protobuf_ServiceOptions*)upb_Message_New(&google__protobuf__ServiceOptions_msg_init, arena);
 }
 UPB_INLINE google_protobuf_ServiceOptions* google_protobuf_ServiceOptions_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_ServiceOptions* ret = google_protobuf_ServiceOptions_new(arena);
@@ -9593,7 +9588,7 @@ UPB_INLINE void google_protobuf_ServiceOptions_set_features(google_protobuf_Serv
 UPB_INLINE struct google_protobuf_FeatureSet* google_protobuf_ServiceOptions_mutable_features(google_protobuf_ServiceOptions* msg, upb_Arena* arena) {
   struct google_protobuf_FeatureSet* sub = (struct google_protobuf_FeatureSet*)google_protobuf_ServiceOptions_features(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_FeatureSet*)_upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
+    sub = (struct google_protobuf_FeatureSet*)upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
     if (sub) google_protobuf_ServiceOptions_set_features(msg, sub);
   }
   return sub;
@@ -9619,7 +9614,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_ServiceOp
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)_upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
+  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -9628,7 +9623,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_ServiceOp
 /* google.protobuf.MethodOptions */
 
 UPB_INLINE google_protobuf_MethodOptions* google_protobuf_MethodOptions_new(upb_Arena* arena) {
-  return (google_protobuf_MethodOptions*)_upb_Message_New(&google__protobuf__MethodOptions_msg_init, arena);
+  return (google_protobuf_MethodOptions*)upb_Message_New(&google__protobuf__MethodOptions_msg_init, arena);
 }
 UPB_INLINE google_protobuf_MethodOptions* google_protobuf_MethodOptions_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_MethodOptions* ret = google_protobuf_MethodOptions_new(arena);
@@ -9758,7 +9753,7 @@ UPB_INLINE void google_protobuf_MethodOptions_set_features(google_protobuf_Metho
 UPB_INLINE struct google_protobuf_FeatureSet* google_protobuf_MethodOptions_mutable_features(google_protobuf_MethodOptions* msg, upb_Arena* arena) {
   struct google_protobuf_FeatureSet* sub = (struct google_protobuf_FeatureSet*)google_protobuf_MethodOptions_features(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_FeatureSet*)_upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
+    sub = (struct google_protobuf_FeatureSet*)upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
     if (sub) google_protobuf_MethodOptions_set_features(msg, sub);
   }
   return sub;
@@ -9784,7 +9779,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_MethodOpt
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)_upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
+  struct google_protobuf_UninterpretedOption* sub = (struct google_protobuf_UninterpretedOption*)upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -9793,7 +9788,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption* google_protobuf_MethodOpt
 /* google.protobuf.UninterpretedOption */
 
 UPB_INLINE google_protobuf_UninterpretedOption* google_protobuf_UninterpretedOption_new(upb_Arena* arena) {
-  return (google_protobuf_UninterpretedOption*)_upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
+  return (google_protobuf_UninterpretedOption*)upb_Message_New(&google__protobuf__UninterpretedOption_msg_init, arena);
 }
 UPB_INLINE google_protobuf_UninterpretedOption* google_protobuf_UninterpretedOption_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_UninterpretedOption* ret = google_protobuf_UninterpretedOption_new(arena);
@@ -9974,7 +9969,7 @@ UPB_INLINE struct google_protobuf_UninterpretedOption_NamePart* google_protobuf_
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_UninterpretedOption_NamePart* sub = (struct google_protobuf_UninterpretedOption_NamePart*)_upb_Message_New(&google__protobuf__UninterpretedOption__NamePart_msg_init, arena);
+  struct google_protobuf_UninterpretedOption_NamePart* sub = (struct google_protobuf_UninterpretedOption_NamePart*)upb_Message_New(&google__protobuf__UninterpretedOption__NamePart_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -10007,7 +10002,7 @@ UPB_INLINE void google_protobuf_UninterpretedOption_set_aggregate_value(google_p
 /* google.protobuf.UninterpretedOption.NamePart */
 
 UPB_INLINE google_protobuf_UninterpretedOption_NamePart* google_protobuf_UninterpretedOption_NamePart_new(upb_Arena* arena) {
-  return (google_protobuf_UninterpretedOption_NamePart*)_upb_Message_New(&google__protobuf__UninterpretedOption__NamePart_msg_init, arena);
+  return (google_protobuf_UninterpretedOption_NamePart*)upb_Message_New(&google__protobuf__UninterpretedOption__NamePart_msg_init, arena);
 }
 UPB_INLINE google_protobuf_UninterpretedOption_NamePart* google_protobuf_UninterpretedOption_NamePart_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_UninterpretedOption_NamePart* ret = google_protobuf_UninterpretedOption_NamePart_new(arena);
@@ -10082,7 +10077,7 @@ UPB_INLINE void google_protobuf_UninterpretedOption_NamePart_set_is_extension(go
 /* google.protobuf.FeatureSet */
 
 UPB_INLINE google_protobuf_FeatureSet* google_protobuf_FeatureSet_new(upb_Arena* arena) {
-  return (google_protobuf_FeatureSet*)_upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
+  return (google_protobuf_FeatureSet*)upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
 }
 UPB_INLINE google_protobuf_FeatureSet* google_protobuf_FeatureSet_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_FeatureSet* ret = google_protobuf_FeatureSet_new(arena);
@@ -10233,7 +10228,7 @@ UPB_INLINE void google_protobuf_FeatureSet_set_json_format(google_protobuf_Featu
 /* google.protobuf.FeatureSetDefaults */
 
 UPB_INLINE google_protobuf_FeatureSetDefaults* google_protobuf_FeatureSetDefaults_new(upb_Arena* arena) {
-  return (google_protobuf_FeatureSetDefaults*)_upb_Message_New(&google__protobuf__FeatureSetDefaults_msg_init, arena);
+  return (google_protobuf_FeatureSetDefaults*)upb_Message_New(&google__protobuf__FeatureSetDefaults_msg_init, arena);
 }
 UPB_INLINE google_protobuf_FeatureSetDefaults* google_protobuf_FeatureSetDefaults_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_FeatureSetDefaults* ret = google_protobuf_FeatureSetDefaults_new(arena);
@@ -10354,7 +10349,7 @@ UPB_INLINE struct google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault* g
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault* sub = (struct google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault*)_upb_Message_New(&google__protobuf__FeatureSetDefaults__FeatureSetEditionDefault_msg_init, arena);
+  struct google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault* sub = (struct google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault*)upb_Message_New(&google__protobuf__FeatureSetDefaults__FeatureSetEditionDefault_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -10371,7 +10366,7 @@ UPB_INLINE void google_protobuf_FeatureSetDefaults_set_maximum_edition(google_pr
 /* google.protobuf.FeatureSetDefaults.FeatureSetEditionDefault */
 
 UPB_INLINE google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault* google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault_new(upb_Arena* arena) {
-  return (google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault*)_upb_Message_New(&google__protobuf__FeatureSetDefaults__FeatureSetEditionDefault_msg_init, arena);
+  return (google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault*)upb_Message_New(&google__protobuf__FeatureSetDefaults__FeatureSetEditionDefault_msg_init, arena);
 }
 UPB_INLINE google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault* google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault* ret = google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault_new(arena);
@@ -10441,7 +10436,7 @@ UPB_INLINE void google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault_set_
 UPB_INLINE struct google_protobuf_FeatureSet* google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault_mutable_features(google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault* msg, upb_Arena* arena) {
   struct google_protobuf_FeatureSet* sub = (struct google_protobuf_FeatureSet*)google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault_features(msg);
   if (sub == NULL) {
-    sub = (struct google_protobuf_FeatureSet*)_upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
+    sub = (struct google_protobuf_FeatureSet*)upb_Message_New(&google__protobuf__FeatureSet_msg_init, arena);
     if (sub) google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault_set_features(msg, sub);
   }
   return sub;
@@ -10454,7 +10449,7 @@ UPB_INLINE void google_protobuf_FeatureSetDefaults_FeatureSetEditionDefault_set_
 /* google.protobuf.SourceCodeInfo */
 
 UPB_INLINE google_protobuf_SourceCodeInfo* google_protobuf_SourceCodeInfo_new(upb_Arena* arena) {
-  return (google_protobuf_SourceCodeInfo*)_upb_Message_New(&google__protobuf__SourceCodeInfo_msg_init, arena);
+  return (google_protobuf_SourceCodeInfo*)upb_Message_New(&google__protobuf__SourceCodeInfo_msg_init, arena);
 }
 UPB_INLINE google_protobuf_SourceCodeInfo* google_protobuf_SourceCodeInfo_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_SourceCodeInfo* ret = google_protobuf_SourceCodeInfo_new(arena);
@@ -10545,7 +10540,7 @@ UPB_INLINE struct google_protobuf_SourceCodeInfo_Location* google_protobuf_Sourc
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_SourceCodeInfo_Location* sub = (struct google_protobuf_SourceCodeInfo_Location*)_upb_Message_New(&google__protobuf__SourceCodeInfo__Location_msg_init, arena);
+  struct google_protobuf_SourceCodeInfo_Location* sub = (struct google_protobuf_SourceCodeInfo_Location*)upb_Message_New(&google__protobuf__SourceCodeInfo__Location_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -10554,7 +10549,7 @@ UPB_INLINE struct google_protobuf_SourceCodeInfo_Location* google_protobuf_Sourc
 /* google.protobuf.SourceCodeInfo.Location */
 
 UPB_INLINE google_protobuf_SourceCodeInfo_Location* google_protobuf_SourceCodeInfo_Location_new(upb_Arena* arena) {
-  return (google_protobuf_SourceCodeInfo_Location*)_upb_Message_New(&google__protobuf__SourceCodeInfo__Location_msg_init, arena);
+  return (google_protobuf_SourceCodeInfo_Location*)upb_Message_New(&google__protobuf__SourceCodeInfo__Location_msg_init, arena);
 }
 UPB_INLINE google_protobuf_SourceCodeInfo_Location* google_protobuf_SourceCodeInfo_Location_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_SourceCodeInfo_Location* ret = google_protobuf_SourceCodeInfo_Location_new(arena);
@@ -10812,7 +10807,7 @@ UPB_INLINE bool google_protobuf_SourceCodeInfo_Location_add_leading_detached_com
 /* google.protobuf.GeneratedCodeInfo */
 
 UPB_INLINE google_protobuf_GeneratedCodeInfo* google_protobuf_GeneratedCodeInfo_new(upb_Arena* arena) {
-  return (google_protobuf_GeneratedCodeInfo*)_upb_Message_New(&google__protobuf__GeneratedCodeInfo_msg_init, arena);
+  return (google_protobuf_GeneratedCodeInfo*)upb_Message_New(&google__protobuf__GeneratedCodeInfo_msg_init, arena);
 }
 UPB_INLINE google_protobuf_GeneratedCodeInfo* google_protobuf_GeneratedCodeInfo_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_GeneratedCodeInfo* ret = google_protobuf_GeneratedCodeInfo_new(arena);
@@ -10903,7 +10898,7 @@ UPB_INLINE struct google_protobuf_GeneratedCodeInfo_Annotation* google_protobuf_
   if (!arr || !_upb_Array_ResizeUninitialized(arr, arr->size + 1, arena)) {
     return NULL;
   }
-  struct google_protobuf_GeneratedCodeInfo_Annotation* sub = (struct google_protobuf_GeneratedCodeInfo_Annotation*)_upb_Message_New(&google__protobuf__GeneratedCodeInfo__Annotation_msg_init, arena);
+  struct google_protobuf_GeneratedCodeInfo_Annotation* sub = (struct google_protobuf_GeneratedCodeInfo_Annotation*)upb_Message_New(&google__protobuf__GeneratedCodeInfo__Annotation_msg_init, arena);
   if (!arr || !sub) return NULL;
   UPB_PRIVATE(_upb_Array_Set)(arr, arr->size - 1, &sub, sizeof(sub));
   return sub;
@@ -10912,7 +10907,7 @@ UPB_INLINE struct google_protobuf_GeneratedCodeInfo_Annotation* google_protobuf_
 /* google.protobuf.GeneratedCodeInfo.Annotation */
 
 UPB_INLINE google_protobuf_GeneratedCodeInfo_Annotation* google_protobuf_GeneratedCodeInfo_Annotation_new(upb_Arena* arena) {
-  return (google_protobuf_GeneratedCodeInfo_Annotation*)_upb_Message_New(&google__protobuf__GeneratedCodeInfo__Annotation_msg_init, arena);
+  return (google_protobuf_GeneratedCodeInfo_Annotation*)upb_Message_New(&google__protobuf__GeneratedCodeInfo__Annotation_msg_init, arena);
 }
 UPB_INLINE google_protobuf_GeneratedCodeInfo_Annotation* google_protobuf_GeneratedCodeInfo_Annotation_parse(const char* buf, size_t size, upb_Arena* arena) {
   google_protobuf_GeneratedCodeInfo_Annotation* ret = google_protobuf_GeneratedCodeInfo_Annotation_new(arena);
@@ -12185,9 +12180,12 @@ extern "C" {
 #endif
 
 // Deep clones a message using the provided target arena.
-upb_Message* upb_Message_DeepClone(const upb_Message* message,
-                                   const upb_MiniTable* mini_table,
-                                   upb_Arena* arena);
+upb_Message* upb_Message_DeepClone(const upb_Message* msg,
+                                   const upb_MiniTable* m, upb_Arena* arena);
+
+// Shallow clones a message using the provided target arena.
+upb_Message* upb_Message_ShallowClone(const upb_Message* msg,
+                                      const upb_MiniTable* m, upb_Arena* arena);
 
 // Deep clones array contents.
 upb_Array* upb_Array_DeepClone(const upb_Array* array, upb_CType value_type,
@@ -12201,7 +12199,11 @@ upb_Map* upb_Map_DeepClone(const upb_Map* map, upb_CType key_type,
 
 // Deep copies the message from src to dst.
 bool upb_Message_DeepCopy(upb_Message* dst, const upb_Message* src,
-                          const upb_MiniTable* mini_table, upb_Arena* arena);
+                          const upb_MiniTable* m, upb_Arena* arena);
+
+// Shallow copies the message from src to dst.
+void upb_Message_ShallowCopy(upb_Message* dst, const upb_Message* src,
+                             const upb_MiniTable* m);
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -13348,8 +13350,8 @@ UPB_INLINE const char* _upb_Decoder_BufferFlipCallback(
   if (!old_end) _upb_FastDecoder_ErrorJmp(d, kUpb_DecodeStatus_Malformed);
 
   if (d->unknown) {
-    if (!_upb_Message_AddUnknown(d->unknown_msg, d->unknown,
-                                 old_end - d->unknown, &d->arena)) {
+    if (!upb_Message_AddUnknown(d->unknown_msg, d->unknown,
+                                old_end - d->unknown, &d->arena)) {
       _upb_FastDecoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
     }
     d->unknown = new_start;
