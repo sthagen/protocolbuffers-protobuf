@@ -5035,6 +5035,9 @@ static void* upb_global_allocfunc(upb_alloc* alloc, void* ptr, size_t oldsize,
 upb_alloc upb_alloc_global = {&upb_global_allocfunc};
 
 
+#include <stddef.h>
+#include <stdint.h>
+
 
 // Must be last.
 
@@ -5045,15 +5048,59 @@ struct _upb_MemBlock {
   // Data follows.
 };
 
-static const size_t memblock_reserve =
+static const size_t kUpb_MemblockReserve =
     UPB_ALIGN_UP(sizeof(_upb_MemBlock), UPB_MALLOC_ALIGN);
 
-typedef struct _upb_ArenaRoot {
+typedef struct {
   upb_Arena* root;
   uintptr_t tagged_count;
-} _upb_ArenaRoot;
+} upb_ArenaRoot;
 
-static _upb_ArenaRoot _upb_Arena_FindRoot(upb_Arena* a) {
+static bool _upb_Arena_IsTaggedRefcount(uintptr_t parent_or_count) {
+  return (parent_or_count & 1) == 1;
+}
+
+static bool _upb_Arena_IsTaggedPointer(uintptr_t parent_or_count) {
+  return (parent_or_count & 1) == 0;
+}
+
+static uintptr_t _upb_Arena_RefCountFromTagged(uintptr_t parent_or_count) {
+  UPB_ASSERT(_upb_Arena_IsTaggedRefcount(parent_or_count));
+  return parent_or_count >> 1;
+}
+
+static uintptr_t _upb_Arena_TaggedFromRefcount(uintptr_t refcount) {
+  uintptr_t parent_or_count = (refcount << 1) | 1;
+  UPB_ASSERT(_upb_Arena_IsTaggedRefcount(parent_or_count));
+  return parent_or_count;
+}
+
+static upb_Arena* _upb_Arena_PointerFromTagged(uintptr_t parent_or_count) {
+  UPB_ASSERT(_upb_Arena_IsTaggedPointer(parent_or_count));
+  return (upb_Arena*)parent_or_count;
+}
+
+static uintptr_t _upb_Arena_TaggedFromPointer(upb_Arena* a) {
+  uintptr_t parent_or_count = (uintptr_t)a;
+  UPB_ASSERT(_upb_Arena_IsTaggedPointer(parent_or_count));
+  return parent_or_count;
+}
+
+static upb_alloc* _upb_Arena_BlockAlloc(upb_Arena* arena) {
+  return (upb_alloc*)(arena->block_alloc & ~0x1);
+}
+
+static uintptr_t _upb_Arena_MakeBlockAlloc(upb_alloc* alloc, bool has_initial) {
+  uintptr_t alloc_uint = (uintptr_t)alloc;
+  UPB_ASSERT((alloc_uint & 1) == 0);
+  return alloc_uint | (has_initial ? 1 : 0);
+}
+
+static bool _upb_Arena_HasInitialBlock(upb_Arena* arena) {
+  return arena->block_alloc & 0x1;
+}
+
+static upb_ArenaRoot _upb_Arena_FindRoot(upb_Arena* a) {
   uintptr_t poc = upb_Atomic_Load(&a->parent_or_count, memory_order_acquire);
   while (_upb_Arena_IsTaggedPointer(poc)) {
     upb_Arena* next = _upb_Arena_PointerFromTagged(poc);
@@ -5087,7 +5134,7 @@ static _upb_ArenaRoot _upb_Arena_FindRoot(upb_Arena* a) {
     a = next;
     poc = next_poc;
   }
-  return (_upb_ArenaRoot){.root = a, .tagged_count = poc};
+  return (upb_ArenaRoot){.root = a, .tagged_count = poc};
 }
 
 size_t upb_Arena_SpaceAllocated(upb_Arena* arena) {
@@ -5118,7 +5165,7 @@ uint32_t upb_Arena_DebugRefCount(upb_Arena* a) {
   return _upb_Arena_RefCountFromTagged(poc);
 }
 
-static void upb_Arena_AddBlock(upb_Arena* a, void* ptr, size_t size) {
+static void _upb_Arena_AddBlock(upb_Arena* a, void* ptr, size_t size) {
   _upb_MemBlock* block = ptr;
 
   // Insert into linked list.
@@ -5126,37 +5173,36 @@ static void upb_Arena_AddBlock(upb_Arena* a, void* ptr, size_t size) {
   upb_Atomic_Init(&block->next, a->blocks);
   upb_Atomic_Store(&a->blocks, block, memory_order_release);
 
-  a->head.ptr = UPB_PTR_AT(block, memblock_reserve, char);
-  a->head.end = UPB_PTR_AT(block, size, char);
+  a->head.UPB_PRIVATE(ptr) = UPB_PTR_AT(block, kUpb_MemblockReserve, char);
+  a->head.UPB_PRIVATE(end) = UPB_PTR_AT(block, size, char);
 
-  UPB_POISON_MEMORY_REGION(a->head.ptr, a->head.end - a->head.ptr);
+  UPB_POISON_MEMORY_REGION(a->head.UPB_PRIVATE(ptr),
+                           a->head.UPB_PRIVATE(end) - a->head.UPB_PRIVATE(ptr));
 }
 
-static bool upb_Arena_AllocBlock(upb_Arena* a, size_t size) {
+static bool _upb_Arena_AllocBlock(upb_Arena* a, size_t size) {
   if (!a->block_alloc) return false;
   _upb_MemBlock* last_block = upb_Atomic_Load(&a->blocks, memory_order_acquire);
   size_t last_size = last_block != NULL ? last_block->size : 128;
-  size_t block_size = UPB_MAX(size, last_size * 2) + memblock_reserve;
-  _upb_MemBlock* block = upb_malloc(upb_Arena_BlockAlloc(a), block_size);
+  size_t block_size = UPB_MAX(size, last_size * 2) + kUpb_MemblockReserve;
+  _upb_MemBlock* block = upb_malloc(_upb_Arena_BlockAlloc(a), block_size);
 
   if (!block) return false;
-  upb_Arena_AddBlock(a, block, block_size);
+  _upb_Arena_AddBlock(a, block, block_size);
+  UPB_ASSERT(UPB_PRIVATE(_upb_ArenaHas)(a) >= size);
   return true;
 }
 
-void* _upb_Arena_SlowMalloc(upb_Arena* a, size_t size) {
-  if (!upb_Arena_AllocBlock(a, size)) return NULL; /* Out of memory. */
-  UPB_ASSERT(_upb_ArenaHas(a) >= size);
-  return upb_Arena_Malloc(a, size);
+void* UPB_PRIVATE(_upb_Arena_SlowMalloc)(upb_Arena* a, size_t size) {
+  if (!_upb_Arena_AllocBlock(a, size)) return NULL;  // OOM
+  return upb_Arena_Malloc(a, size - UPB_ASAN_GUARD_SIZE);
 }
 
-/* Public Arena API ***********************************************************/
-
-static upb_Arena* upb_Arena_InitSlow(upb_alloc* alloc) {
-  const size_t first_block_overhead = sizeof(upb_Arena) + memblock_reserve;
+static upb_Arena* _upb_Arena_InitSlow(upb_alloc* alloc) {
+  const size_t first_block_overhead = sizeof(upb_Arena) + kUpb_MemblockReserve;
   upb_Arena* a;
 
-  /* We need to malloc the initial block. */
+  // We need to malloc the initial block.
   char* mem;
   size_t n = first_block_overhead + 256;
   if (!alloc || !(mem = upb_malloc(alloc, n))) {
@@ -5166,13 +5212,13 @@ static upb_Arena* upb_Arena_InitSlow(upb_alloc* alloc) {
   a = UPB_PTR_AT(mem, n - sizeof(*a), upb_Arena);
   n -= sizeof(*a);
 
-  a->block_alloc = upb_Arena_MakeBlockAlloc(alloc, 0);
+  a->block_alloc = _upb_Arena_MakeBlockAlloc(alloc, 0);
   upb_Atomic_Init(&a->parent_or_count, _upb_Arena_TaggedFromRefcount(1));
   upb_Atomic_Init(&a->next, NULL);
   upb_Atomic_Init(&a->tail, a);
   upb_Atomic_Init(&a->blocks, NULL);
 
-  upb_Arena_AddBlock(a, mem, n);
+  _upb_Arena_AddBlock(a, mem, n);
 
   return a;
 }
@@ -5193,7 +5239,7 @@ upb_Arena* upb_Arena_Init(void* mem, size_t n, upb_alloc* alloc) {
   n = UPB_ALIGN_DOWN(n, UPB_ALIGN_OF(upb_Arena));
 
   if (UPB_UNLIKELY(n < sizeof(upb_Arena))) {
-    return upb_Arena_InitSlow(alloc);
+    return _upb_Arena_InitSlow(alloc);
   }
 
   a = UPB_PTR_AT(mem, n - sizeof(*a), upb_Arena);
@@ -5202,21 +5248,21 @@ upb_Arena* upb_Arena_Init(void* mem, size_t n, upb_alloc* alloc) {
   upb_Atomic_Init(&a->next, NULL);
   upb_Atomic_Init(&a->tail, a);
   upb_Atomic_Init(&a->blocks, NULL);
-  a->block_alloc = upb_Arena_MakeBlockAlloc(alloc, 1);
-  a->head.ptr = mem;
-  a->head.end = UPB_PTR_AT(mem, n - sizeof(*a), char);
+  a->block_alloc = _upb_Arena_MakeBlockAlloc(alloc, 1);
+  a->head.UPB_PRIVATE(ptr) = mem;
+  a->head.UPB_PRIVATE(end) = UPB_PTR_AT(mem, n - sizeof(*a), char);
 
   return a;
 }
 
-static void arena_dofree(upb_Arena* a) {
+static void _upb_Arena_DoFree(upb_Arena* a) {
   UPB_ASSERT(_upb_Arena_RefCountFromTagged(a->parent_or_count) == 1);
 
   while (a != NULL) {
     // Load first since arena itself is likely from one of its blocks.
     upb_Arena* next_arena =
         (upb_Arena*)upb_Atomic_Load(&a->next, memory_order_acquire);
-    upb_alloc* block_alloc = upb_Arena_BlockAlloc(a);
+    upb_alloc* block_alloc = _upb_Arena_BlockAlloc(a);
     _upb_MemBlock* block = upb_Atomic_Load(&a->blocks, memory_order_acquire);
     while (block != NULL) {
       // Load first since we are deleting block.
@@ -5241,7 +5287,7 @@ retry:
   // expensive then direct loads.  As an optimization, we only do RMW ops
   // when we need to update things for other threads to see.
   if (poc == _upb_Arena_TaggedFromRefcount(1)) {
-    arena_dofree(a);
+    _upb_Arena_DoFree(a);
     return;
   }
 
@@ -5292,14 +5338,14 @@ static upb_Arena* _upb_Arena_DoFuse(upb_Arena* a1, upb_Arena* a2,
   // In parent pointer mode, it may change what pointer it refers to in the
   // tree, but it will always approach a root.  Any operation that walks the
   // tree to the root may collapse levels of the tree concurrently.
-  _upb_ArenaRoot r1 = _upb_Arena_FindRoot(a1);
-  _upb_ArenaRoot r2 = _upb_Arena_FindRoot(a2);
+  upb_ArenaRoot r1 = _upb_Arena_FindRoot(a1);
+  upb_ArenaRoot r2 = _upb_Arena_FindRoot(a2);
 
   if (r1.root == r2.root) return r1.root;  // Already fused.
 
   // Avoid cycles by always fusing into the root with the lower address.
   if ((uintptr_t)r1.root > (uintptr_t)r2.root) {
-    _upb_ArenaRoot tmp = r1;
+    upb_ArenaRoot tmp = r1;
     r1 = r2;
     r2 = tmp;
   }
@@ -5359,7 +5405,7 @@ bool upb_Arena_Fuse(upb_Arena* a1, upb_Arena* a2) {
 
   // Do not fuse initial blocks since we cannot lifetime extend them.
   // Any other fuse scenario is allowed.
-  if (upb_Arena_HasInitialBlock(a1) || upb_Arena_HasInitialBlock(a2)) {
+  if (_upb_Arena_HasInitialBlock(a1) || _upb_Arena_HasInitialBlock(a2)) {
     return false;
   }
 
@@ -5374,8 +5420,8 @@ bool upb_Arena_Fuse(upb_Arena* a1, upb_Arena* a2) {
 }
 
 bool upb_Arena_IncRefFor(upb_Arena* arena, const void* owner) {
-  _upb_ArenaRoot r;
-  if (upb_Arena_HasInitialBlock(arena)) return false;
+  upb_ArenaRoot r;
+  if (_upb_Arena_HasInitialBlock(arena)) return false;
 
 retry:
   r = _upb_Arena_FindRoot(arena);
@@ -5393,6 +5439,25 @@ retry:
 
 void upb_Arena_DecRefFor(upb_Arena* arena, const void* owner) {
   upb_Arena_Free(arena);
+}
+
+
+#include <stddef.h>
+#include <stdint.h>
+
+
+// Must be last.
+
+const upb_Message_Extension* upb_Message_FindExtensionByNumber(
+    const upb_Message* msg, uint32_t field_number) {
+  size_t count = 0;
+  const upb_Message_Extension* ext = _upb_Message_Getexts(msg, &count);
+
+  while (count--) {
+    if (upb_MiniTableExtension_Number(ext->ext) == field_number) return ext;
+    ext++;
+  }
+  return NULL;
 }
 
 
@@ -5711,7 +5776,7 @@ upb_Message* _upb_Message_Copy(upb_Message* dst, const upb_Message* src,
   if (unknown_size != 0) {
     UPB_ASSERT(ptr);
     // Make a copy into destination arena.
-    if (!_upb_Message_AddUnknown(dst, ptr, unknown_size, arena)) {
+    if (!UPB_PRIVATE(_upb_Message_AddUnknown)(dst, ptr, unknown_size, arena)) {
       return NULL;
     }
   }
@@ -6066,6 +6131,9 @@ upb_Map* _upb_Map_New(upb_Arena* a, size_t key_size, size_t value_size) {
 }
 
 
+#include <stdint.h>
+#include <string.h>
+
 
 // Must be last.
 
@@ -6147,8 +6215,10 @@ static bool _upb_mapsorter_resize(_upb_mapsorter* s, _upb_sortedmap* sorted,
   sorted->end = sorted->start + size;
 
   if (sorted->end > s->cap) {
+    const int oldsize = s->cap * sizeof(*s->entries);
     s->cap = upb_Log2CeilingSize(sorted->end);
-    s->entries = realloc(s->entries, s->cap * sizeof(*s->entries));
+    const int newsize = s->cap * sizeof(*s->entries);
+    s->entries = upb_grealloc(s->entries, oldsize, newsize);
     if (!s->entries) return false;
   }
 
@@ -6204,18 +6274,21 @@ bool _upb_mapsorter_pushexts(_upb_mapsorter* s,
 }
 
 
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+
 
 // Must be last.
 
 static const size_t message_overhead = sizeof(upb_Message_InternalData);
 
-upb_Message* upb_Message_New(const upb_MiniTable* mini_table,
-                             upb_Arena* arena) {
-  return _upb_Message_New(mini_table, arena);
+upb_Message* upb_Message_New(const upb_MiniTable* m, upb_Arena* arena) {
+  return _upb_Message_New(m, arena);
 }
 
-bool _upb_Message_AddUnknown(upb_Message* msg, const char* data, size_t len,
-                             upb_Arena* arena) {
+bool UPB_PRIVATE(_upb_Message_AddUnknown)(upb_Message* msg, const char* data,
+                                          size_t len, upb_Arena* arena) {
   if (!UPB_PRIVATE(_upb_Message_Realloc)(msg, len, arena)) return false;
   upb_Message_Internal* in = upb_Message_Getinternal(msg);
   memcpy(UPB_PTR_AT(in->internal, in->internal->unknown_end, char), data, len);
@@ -8341,7 +8414,7 @@ const upb_FieldDef** upb_DefPool_GetAllExtensions(const upb_DefPool* s,
     const upb_FieldDef* f = upb_value_getconstptr(val);
     if (upb_FieldDef_ContainingType(f) == m) n++;
   }
-  const upb_FieldDef** exts = malloc(n * sizeof(*exts));
+  const upb_FieldDef** exts = upb_gmalloc(n * sizeof(*exts));
   iter = UPB_INTTABLE_BEGIN;
   size_t i = 0;
   while (upb_inttable_next(&s->exts, &key, &val, &iter)) {
@@ -10433,15 +10506,15 @@ const void* _upb_DefBuilder_ResolveAny(upb_DefBuilder* ctx,
   if (sym.size == 0) goto notfound;
   upb_value v;
   if (sym.data[0] == '.') {
-    /* Symbols starting with '.' are absolute, so we do a single lookup.
-     * Slice to omit the leading '.' */
+    // Symbols starting with '.' are absolute, so we do a single lookup.
+    // Slice to omit the leading '.'
     if (!_upb_DefPool_LookupSym(ctx->symtab, sym.data + 1, sym.size - 1, &v)) {
       goto notfound;
     }
   } else {
-    /* Remove components from base until we find an entry or run out. */
+    // Remove components from base until we find an entry or run out.
     size_t baselen = base ? strlen(base) : 0;
-    char* tmp = malloc(sym.size + baselen + 1);
+    char* tmp = upb_gmalloc(sym.size + baselen + 1);
     while (1) {
       char* p = tmp;
       if (baselen) {
@@ -10455,11 +10528,11 @@ const void* _upb_DefBuilder_ResolveAny(upb_DefBuilder* ctx,
         break;
       }
       if (!remove_component(tmp, &baselen)) {
-        free(tmp);
+        upb_gfree(tmp);
         goto notfound;
       }
     }
-    free(tmp);
+    upb_gfree(tmp);
   }
 
   *type = _upb_DefType_Type(v);
@@ -10863,7 +10936,8 @@ bool upb_Message_Next(const upb_Message* msg, const upb_MessageDef* m,
           if (!val.array_val || upb_Array_Size(val.array_val) == 0) continue;
           break;
         case kUpb_FieldMode_Scalar:
-          if (!_upb_MiniTable_ValueIsNonZero(&val, field)) continue;
+          if (UPB_PRIVATE(_upb_MiniTableField_DataIsZero)(field, &val))
+            continue;
           break;
       }
     }
@@ -12484,7 +12558,7 @@ static void _upb_Decoder_AddUnknownVarints(upb_Decoder* d, upb_Message* msg,
   end = upb_Decoder_EncodeVarint32(val1, end);
   end = upb_Decoder_EncodeVarint32(val2, end);
 
-  if (!_upb_Message_AddUnknown(msg, buf, end - buf, &d->arena)) {
+  if (!UPB_PRIVATE(_upb_Message_AddUnknown)(msg, buf, end - buf, &d->arena)) {
     _upb_Decoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
   }
 }
@@ -12770,7 +12844,7 @@ static const char* _upb_Decoder_DecodeToMap(upb_Decoder* d, const char* ptr,
       _upb_Decoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
     }
     _upb_Decoder_AddUnknownVarints(d, msg, tag, size);
-    if (!_upb_Message_AddUnknown(msg, buf, size, &d->arena)) {
+    if (!UPB_PRIVATE(_upb_Message_AddUnknown)(msg, buf, size, &d->arena)) {
       _upb_Decoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
     }
   } else {
@@ -12948,9 +13022,11 @@ static void upb_Decoder_AddUnknownMessageSetItem(upb_Decoder* d,
   ptr = upb_Decoder_EncodeVarint32(kEndItemTag, ptr);
   char* end = ptr;
 
-  if (!_upb_Message_AddUnknown(msg, buf, split - buf, &d->arena) ||
-      !_upb_Message_AddUnknown(msg, message_data, message_size, &d->arena) ||
-      !_upb_Message_AddUnknown(msg, split, end - split, &d->arena)) {
+  if (!UPB_PRIVATE(_upb_Message_AddUnknown)(msg, buf, split - buf, &d->arena) ||
+      !UPB_PRIVATE(_upb_Message_AddUnknown)(msg, message_data, message_size,
+                                            &d->arena) ||
+      !UPB_PRIVATE(_upb_Message_AddUnknown)(msg, split, end - split,
+                                            &d->arena)) {
     _upb_Decoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
   }
 }
@@ -13335,7 +13411,8 @@ static const char* _upb_Decoder_DecodeUnknownField(upb_Decoder* d,
       start = d->unknown;
       d->unknown = NULL;
     }
-    if (!_upb_Message_AddUnknown(msg, start, ptr - start, &d->arena)) {
+    if (!UPB_PRIVATE(_upb_Message_AddUnknown)(msg, start, ptr - start,
+                                              &d->arena)) {
       _upb_Decoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
     }
   } else if (wire_type == kUpb_WireType_StartGroup) {
@@ -14141,7 +14218,7 @@ UPB_FORCEINLINE
 static void fastdecode_docopy(upb_Decoder* d, const char* ptr, uint32_t size,
                               int copy, char* data, size_t data_offset,
                               upb_StringView* dst) {
-  d->arena.head.ptr += copy;
+  d->arena.head.UPB_PRIVATE(ptr) += copy;
   dst->data = data + data_offset;
   UPB_UNPOISON_MEMORY_REGION(data, copy);
   memcpy(data, ptr, copy);
@@ -14173,8 +14250,8 @@ static void fastdecode_docopy(upb_Decoder* d, const char* ptr, uint32_t size,
   ptr += tagbytes + 1;                                                         \
   dst->size = size;                                                            \
                                                                                \
-  buf = d->arena.head.ptr;                                                     \
-  arena_has = _upb_ArenaHas(&d->arena);                                        \
+  buf = d->arena.head.UPB_PRIVATE(ptr);                                        \
+  arena_has = UPB_PRIVATE(_upb_ArenaHas)(&d->arena);                           \
   common_has = UPB_MIN(arena_has,                                              \
                        upb_EpsCopyInputStream_BytesAvailable(&d->input, ptr)); \
                                                                                \
@@ -14351,10 +14428,10 @@ upb_Message* decode_newmsg_ceil(upb_Decoder* d, const upb_MiniTable* m,
   size_t size = m->UPB_PRIVATE(size) + sizeof(upb_Message_Internal);
   char* msg_data;
   if (UPB_LIKELY(msg_ceil_bytes > 0 &&
-                 _upb_ArenaHas(&d->arena) >= msg_ceil_bytes)) {
+                 UPB_PRIVATE(_upb_ArenaHas)(&d->arena) >= msg_ceil_bytes)) {
     UPB_ASSERT(size <= (size_t)msg_ceil_bytes);
-    msg_data = d->arena.head.ptr;
-    d->arena.head.ptr += size;
+    msg_data = d->arena.head.UPB_PRIVATE(ptr);
+    d->arena.head.UPB_PRIVATE(ptr) += size;
     UPB_UNPOISON_MEMORY_REGION(msg_data, msg_ceil_bytes);
     memset(msg_data, 0, msg_ceil_bytes);
     UPB_POISON_MEMORY_REGION(msg_data + size, msg_ceil_bytes - size);
