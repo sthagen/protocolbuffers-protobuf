@@ -9,7 +9,7 @@
 
 use crate::ProtoStr;
 use crate::__internal::{Private, PtrAndLen, RawArena, RawMap, RawMessage, RawRepeatedField};
-use crate::{Mut, ProxiedInRepeated, Repeated, View};
+use crate::{Mut, Proxied, ProxiedInRepeated, Repeated, SettableValue, View};
 use core::fmt::Debug;
 use paste::paste;
 use std::alloc::Layout;
@@ -136,6 +136,15 @@ impl Drop for SerializedData {
 impl fmt::Debug for SerializedData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(self.deref(), f)
+    }
+}
+
+impl SettableValue<[u8]> for SerializedData {
+    fn set_on<'msg>(self, _private: Private, mut mutator: Mut<'msg, [u8]>)
+    where
+        [u8]: 'msg,
+    {
+        mutator.set(self.as_ref())
     }
 }
 
@@ -305,14 +314,12 @@ macro_rules! generate_map_with_key_ops_traits {
     ($($t:ty, $sized_t:ty;)*) => {
         paste! {
             $(
-                pub trait [< MapWith $t:camel KeyOps >] {
-                    type Value<'msg>: Sized;
-
+                pub trait [< MapWith $t:camel KeyOps >] : Proxied {
                     fn new_map() -> RawMap;
                     fn clear(m: RawMap);
                     fn size(m: RawMap) -> usize;
-                    fn insert(m: RawMap, key: $sized_t, value: Self::Value<'_>) -> bool;
-                    fn get<'msg>(m: RawMap, key: $sized_t) -> Option<Self::Value<'msg>>;
+                    fn insert(m: RawMap, key: $sized_t, value: View<'_, Self>) -> bool;
+                    fn get<'msg>(m: RawMap, key: $sized_t) -> Option<View<'msg, Self>>;
                     fn remove(m: RawMap, key: $sized_t) -> bool;
                 }
 
@@ -335,7 +342,7 @@ macro_rules! generate_map_with_key_ops_traits {
                         V::clear(self.raw)
                     }
 
-                    pub fn get<'a>(&self, key: $sized_t) -> Option<V::Value<'a>> {
+                    pub fn get<'a>(&self, key: $sized_t) -> Option<View<'a, V>> {
                         V::get(self.raw, key)
                     }
 
@@ -343,7 +350,7 @@ macro_rules! generate_map_with_key_ops_traits {
                         V::remove(self.raw, key)
                     }
 
-                    pub fn insert(&mut self, key: $sized_t, value: V::Value<'_>) -> bool {
+                    pub fn insert(&mut self, key: $sized_t, value: View<'_, V>) -> bool {
                         V::insert(self.raw, key, value);
                         true
                     }
@@ -363,7 +370,7 @@ generate_map_with_key_ops_traits!(
 );
 
 macro_rules! impl_scalar_map_with_key_op_for_scalar_values {
-    ($key_t:ty, $sized_key_t:ty, $ffi_key_t:ty, $to_ffi_key:expr, $trait:ident for $($t:ty, $sized_t:ty, $ffi_t:ty, $to_ffi_value:expr, $from_ffi_value:expr, $zero_val:literal;)*) => {
+    ($key_t:ty, $sized_key_t:ty, $ffi_key_t:ty, $to_ffi_key:expr, $trait:ident for $($t:ty, $ffi_t:ty, $to_ffi_value:expr, $from_ffi_value:expr, $zero_val:literal;)*) => {
         paste! { $(
             extern "C" {
                 fn [< __pb_rust_Map_ $key_t _ $t _new >]() -> RawMap;
@@ -374,8 +381,6 @@ macro_rules! impl_scalar_map_with_key_op_for_scalar_values {
                 fn [< __pb_rust_Map_ $key_t _ $t _remove >](m: RawMap, key: $ffi_key_t, value: *mut $ffi_t) -> bool;
             }
             impl $trait for $t {
-                type Value<'msg> = $sized_t;
-
                 fn new_map() -> RawMap {
                     unsafe { [< __pb_rust_Map_ $key_t _ $t _new >]() }
                 }
@@ -388,14 +393,14 @@ macro_rules! impl_scalar_map_with_key_op_for_scalar_values {
                     unsafe { [< __pb_rust_Map_ $key_t _ $t _size >](m) }
                 }
 
-                fn insert(m: RawMap, key: $sized_key_t, value: Self::Value<'_>) -> bool {
+                fn insert(m: RawMap, key: $sized_key_t, value: View<'_, Self>) -> bool {
                     let ffi_key = $to_ffi_key(key);
                     let ffi_value = $to_ffi_value(value);
                     unsafe { [< __pb_rust_Map_ $key_t _ $t _insert >](m, ffi_key, ffi_value) }
                     true
                 }
 
-                fn get<'msg>(m: RawMap, key: $sized_key_t) -> Option<Self::Value<'msg>> {
+                fn get<'msg>(m: RawMap, key: $sized_key_t) -> Option<View<'msg, Self>> {
                     let ffi_key = $to_ffi_key(key);
                     let mut ffi_value = $to_ffi_value($zero_val);
                     let found = unsafe { [< __pb_rust_Map_ $key_t _ $t _get >](m, ffi_key, &mut ffi_value) };
@@ -428,14 +433,14 @@ macro_rules! impl_map_with_key_ops_for_scalar_values {
         paste! {
             $(
                 impl_scalar_map_with_key_op_for_scalar_values!($t, $t_sized, $ffi_t, $to_ffi_key, [< MapWith $t:camel KeyOps >] for
-                    f32, f32, f32, identity, identity, 0f32;
-                    f64, f64, f64, identity, identity, 0f64;
-                    i32, i32, i32, identity, identity, 0i32;
-                    u32, u32, u32, identity, identity, 0u32;
-                    i64, i64, i64, identity, identity, 0i64;
-                    u64, u64, u64, identity, identity, 0u64;
-                    bool, bool, bool, identity, identity, false;
-                    ProtoStr, &'msg ProtoStr, PtrAndLen, str_to_ptrlen, ptrlen_to_str, "";
+                    f32, f32, identity, identity, 0f32;
+                    f64, f64, identity, identity, 0f64;
+                    i32, i32, identity, identity, 0i32;
+                    u32, u32, identity, identity, 0u32;
+                    i64, i64, identity, identity, 0i64;
+                    u64, u64, identity, identity, 0u64;
+                    bool, bool, identity, identity, false;
+                    ProtoStr, PtrAndLen, str_to_ptrlen, ptrlen_to_str, "";
                 );
             )*
         }
