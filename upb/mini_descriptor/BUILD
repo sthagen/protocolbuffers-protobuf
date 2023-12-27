@@ -25,6 +25,7 @@ cc_library(
         "//upb:mem",
         "//upb:mini_table",
         "//upb:port",
+        "//upb/mini_table:internal",
     ],
 )
 
@@ -83,5 +84,17 @@ filegroup(
         "//upb/cmake:__pkg__",
         "//python/dist:__pkg__",
     ]
+)
+# end:github_only
+
+# begin:github_only
+filegroup(
+    name = "test_srcs",
+    srcs = glob(
+        [
+            "**/*test.cc",
+        ],
+    ),
+    visibility = ["//pkg:__pkg__"],
 )
 # end:github_only

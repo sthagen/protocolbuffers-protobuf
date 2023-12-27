@@ -17,6 +17,18 @@ cc_library(
         "alloc.h",
         "arena.h",
         "arena.hpp",
+    ],
+    copts = UPB_DEFAULT_COPTS,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":internal",
+        "//upb:port",
+    ],
+)
+
+cc_library(
+    name = "internal",
+    hdrs = [
         "internal/arena.h",
     ],
     copts = UPB_DEFAULT_COPTS,
@@ -54,5 +66,17 @@ filegroup(
         "//upb/cmake:__pkg__",
         "//python/dist:__pkg__",
     ]
+)
+# end:github_only
+
+# begin:github_only
+filegroup(
+    name = "test_srcs",
+    srcs = glob(
+        [
+            "**/*test.cc",
+        ],
+    ),
+    visibility = ["//pkg:__pkg__"],
 )
 # end:github_only

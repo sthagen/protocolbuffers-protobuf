@@ -153,7 +153,6 @@ cc_library(
         "//upb:mem",
         "//upb:port",
         "//upb:wire_reader",
-        "//upb:wire_types",
     ],
 )
 
@@ -163,8 +162,8 @@ cc_test(
     deps = [
         ":compare",
         "@com_google_googletest//:gtest_main",
-        "//upb:wire_internal",
-        "//upb:wire_types",
+        "//upb:port",
+        "//upb:wire_reader",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -181,5 +180,26 @@ filegroup(
         "required_fields.h",
     ],
     visibility = ["//python/dist:__pkg__"],
+)
+# end:github_only
+
+# begin:github_only
+filegroup(
+    name = "test_srcs",
+    srcs = glob(
+        [
+            "**/*test.cc",
+        ],
+    ),
+    visibility = ["//pkg:__pkg__"],
+)
+filegroup(
+    name = "test_utils",
+    srcs = glob(
+        [
+            "**/*test.proto",
+        ],
+    ),
+    visibility = ["//pkg:__pkg__"],
 )
 # end:github_only

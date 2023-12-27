@@ -14,7 +14,6 @@ cc_library(
     name = "mini_table",
     srcs = [
         "extension_registry.c",
-        "internal/message.c",
         "message.c",
     ],
     hdrs = [
@@ -23,13 +22,6 @@ cc_library(
         "extension_registry.h",
         "field.h",
         "file.h",
-        "internal/enum.h",
-        "internal/extension.h",
-        "internal/field.h",
-        "internal/file.h",
-        "internal/message.h",
-        "internal/size_log2.h",
-        "internal/sub.h",
         "message.h",
         "sub.h",
         "types.h",
@@ -37,10 +29,34 @@ cc_library(
     copts = UPB_DEFAULT_COPTS,
     visibility = ["//visibility:public"],
     deps = [
+        ":internal",
         "//upb:base",
         "//upb:hash",
         "//upb:mem",
-        "//upb:message_types",
+        "//upb:port",
+    ],
+)
+
+cc_library(
+    name = "internal",
+    srcs = [
+        "internal/message.c",
+    ],
+    hdrs = [
+        "internal/enum.h",
+        "internal/extension.h",
+        "internal/field.h",
+        "internal/file.h",
+        "internal/message.h",
+        "internal/size_log2.h",
+        "internal/sub.h",
+    ],
+    copts = UPB_DEFAULT_COPTS,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//upb:base",
+        "//upb:hash",
+        "//upb:mem",
         "//upb:port",
     ],
 )
@@ -89,5 +105,17 @@ filegroup(
         "//upb/cmake:__pkg__",
         "//python/dist:__pkg__",
     ]
+)
+# end:github_only
+
+# begin:github_only
+filegroup(
+    name = "test_srcs",
+    srcs = glob(
+        [
+            "**/*test.cc",
+        ],
+    ),
+    visibility = ["//pkg:__pkg__"],
 )
 # end:github_only

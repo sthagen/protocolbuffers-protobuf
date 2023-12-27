@@ -117,7 +117,6 @@ cc_library(
         ":mini_descriptor",
         ":mini_table",
         ":wire",
-        ":wire_internal",
     ],
 )
 
@@ -328,20 +327,8 @@ alias(
 )
 
 alias(
-    name = "wire_internal",
-    actual = "//upb/wire:internal",
-    visibility = ["//visibility:public"],
-)
-
-alias(
     name = "wire_reader",
     actual = "//upb/wire:reader",
-    visibility = ["//visibility:public"],
-)
-
-alias(
-    name = "wire_types",
-    actual = "//upb/wire:types",
     visibility = ["//visibility:public"],
 )
 
@@ -407,9 +394,9 @@ upb_amalgamation(
         ":reflection",
         ":reflection_internal",
         ":wire",
-        ":wire_internal",
         ":wire_reader",
-        ":wire_types",
+        "//upb/mem:internal",
+        "//upb/mini_table:internal",
     ],
     strip_import_prefix = ["src"],
 )
@@ -451,13 +438,14 @@ upb_amalgamation(
         ":mini_descriptor",
         ":mini_descriptor_internal",
         ":mini_table",
+        ":mini_table_compat",
         ":port",
         ":reflection",
         ":reflection_internal",
         ":wire",
-        ":wire_internal",
         ":wire_reader",
-        ":wire_types",
+        "//upb/mem:internal",
+        "//upb/mini_table:internal",
     ],
     prefix = "php-",
     strip_import_prefix = ["src"],
@@ -500,13 +488,14 @@ upb_amalgamation(
         ":mini_descriptor",
         ":mini_descriptor_internal",
         ":mini_table",
+        ":mini_table_compat",
         ":port",
         ":reflection",
         ":reflection_internal",
         ":wire",
-        ":wire_internal",
         ":wire_reader",
-        ":wire_types",
+        "//upb/mem:internal",
+        "//upb/mini_table:internal",
     ],
     prefix = "ruby-",
     strip_import_prefix = ["src"],
