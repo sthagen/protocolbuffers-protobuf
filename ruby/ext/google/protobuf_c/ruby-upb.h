@@ -1612,16 +1612,21 @@ UPB_PRIVATE(_upb_MiniTableField_CType)(const struct upb_MiniTableField* f) {
   return upb_FieldType_CType(UPB_PRIVATE(_upb_MiniTableField_Type)(f));
 }
 
+UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_HasHasbit)(
+    const struct upb_MiniTableField* f) {
+  return f->presence > 0;
+}
+
 UPB_INLINE char UPB_PRIVATE(_upb_MiniTableField_HasbitMask)(
     const struct upb_MiniTableField* f) {
-  UPB_ASSERT(f->presence > 0);
+  UPB_ASSERT(UPB_PRIVATE(_upb_MiniTableField_HasHasbit)(f));
   const size_t index = f->presence;
   return 1 << (index % 8);
 }
 
 UPB_INLINE size_t UPB_PRIVATE(_upb_MiniTableField_HasbitOffset)(
     const struct upb_MiniTableField* f) {
-  UPB_ASSERT(f->presence > 0);
+  UPB_ASSERT(UPB_PRIVATE(_upb_MiniTableField_HasHasbit)(f));
   const size_t index = f->presence;
   return index / 8;
 }
@@ -2555,65 +2560,54 @@ UPB_INLINE uint32_t* UPB_PRIVATE(_upb_Message_OneofCasePtr)(
 
 UPB_INLINE uint32_t UPB_PRIVATE(_upb_Message_GetOneofCase)(
     const struct upb_Message* msg, const upb_MiniTableField* f) {
-  return *UPB_PRIVATE(_upb_Message_OneofCasePtr)((struct upb_Message*)msg, f);
+  const uint32_t* ptr =
+      UPB_PRIVATE(_upb_Message_OneofCasePtr)((struct upb_Message*)msg, f);
+
+  return *ptr;
 }
 
 UPB_INLINE void UPB_PRIVATE(_upb_Message_SetOneofCase)(
     struct upb_Message* msg, const upb_MiniTableField* f) {
-  *UPB_PRIVATE(_upb_Message_OneofCasePtr)(msg, f) =
-      upb_MiniTableField_Number(f);
+  uint32_t* ptr = UPB_PRIVATE(_upb_Message_OneofCasePtr)(msg, f);
+
+  *ptr = upb_MiniTableField_Number(f);
 }
 
-// TODO: implement _upb_Message_ClearOneofCase()
+// Returns true if the given field is the current oneof case.
+// Does nothing if it is not the current oneof case.
+UPB_INLINE bool UPB_PRIVATE(_upb_Message_ClearOneofCase)(
+    struct upb_Message* msg, const upb_MiniTableField* f) {
+  uint32_t* ptr = UPB_PRIVATE(_upb_Message_OneofCasePtr)(msg, f);
+
+  if (*ptr != upb_MiniTableField_Number(f)) return false;
+  *ptr = 0;
+  return true;
+}
 
 // LINT.ThenChange(GoogleInternalName2)
 
-UPB_INLINE void* _upb_MiniTableField_GetPtr(struct upb_Message* msg,
-                                            const upb_MiniTableField* field) {
-  return (char*)msg + field->UPB_ONLYBITS(offset);
+UPB_INLINE void* UPB_PRIVATE(_upb_Message_DataPtr)(
+    struct upb_Message* msg, const upb_MiniTableField* f) {
+  return (char*)msg + f->UPB_ONLYBITS(offset);
 }
 
-UPB_INLINE const void* _upb_MiniTableField_GetConstPtr(
-    const struct upb_Message* msg, const upb_MiniTableField* field) {
-  return (char*)msg + field->UPB_ONLYBITS(offset);
+UPB_INLINE const void* UPB_PRIVATE(_upb_Message_ConstDataPtr)(
+    const struct upb_Message* msg, const upb_MiniTableField* f) {
+  return (const char*)msg + f->UPB_ONLYBITS(offset);
 }
 
 UPB_INLINE void UPB_PRIVATE(_upb_Message_SetPresence)(
-    struct upb_Message* msg, const upb_MiniTableField* field) {
-  if (field->presence > 0) {
-    UPB_PRIVATE(_upb_Message_SetHasbit)(msg, field);
-  } else if (upb_MiniTableField_IsInOneof(field)) {
-    UPB_PRIVATE(_upb_Message_SetOneofCase)(msg, field);
+    struct upb_Message* msg, const upb_MiniTableField* f) {
+  if (UPB_PRIVATE(_upb_MiniTableField_HasHasbit)(f)) {
+    UPB_PRIVATE(_upb_Message_SetHasbit)(msg, f);
+  } else if (upb_MiniTableField_IsInOneof(f)) {
+    UPB_PRIVATE(_upb_Message_SetOneofCase)(msg, f);
   }
-}
-
-UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_DataEquals)(
-    const upb_MiniTableField* field, const void* a, const void* b) {
-  switch (UPB_PRIVATE(_upb_MiniTableField_GetRep)(field)) {
-    case kUpb_FieldRep_1Byte:
-      return memcmp(a, b, 1) == 0;
-    case kUpb_FieldRep_4Byte:
-      return memcmp(a, b, 4) == 0;
-    case kUpb_FieldRep_8Byte:
-      return memcmp(a, b, 8) == 0;
-    case kUpb_FieldRep_StringView: {
-      const upb_StringView sa = *(const upb_StringView*)a;
-      const upb_StringView sb = *(const upb_StringView*)b;
-      return upb_StringView_IsEqual(sa, sb);
-    }
-  }
-  UPB_UNREACHABLE();
-}
-
-UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_DataIsZero)(
-    const upb_MiniTableField* field, const void* val) {
-  const char zero[16] = {0};
-  return UPB_PRIVATE(_upb_MiniTableField_DataEquals)(field, val, zero);
 }
 
 UPB_INLINE void UPB_PRIVATE(_upb_MiniTableField_DataCopy)(
-    const upb_MiniTableField* field, void* to, const void* from) {
-  switch (UPB_PRIVATE(_upb_MiniTableField_GetRep)(field)) {
+    const upb_MiniTableField* f, void* to, const void* from) {
+  switch (UPB_PRIVATE(_upb_MiniTableField_GetRep)(f)) {
     case kUpb_FieldRep_1Byte:
       memcpy(to, from, 1);
       return;
@@ -2629,6 +2623,36 @@ UPB_INLINE void UPB_PRIVATE(_upb_MiniTableField_DataCopy)(
     }
   }
   UPB_UNREACHABLE();
+}
+
+UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_DataEquals)(
+    const upb_MiniTableField* f, const void* a, const void* b) {
+  switch (UPB_PRIVATE(_upb_MiniTableField_GetRep)(f)) {
+    case kUpb_FieldRep_1Byte:
+      return memcmp(a, b, 1) == 0;
+    case kUpb_FieldRep_4Byte:
+      return memcmp(a, b, 4) == 0;
+    case kUpb_FieldRep_8Byte:
+      return memcmp(a, b, 8) == 0;
+    case kUpb_FieldRep_StringView: {
+      const upb_StringView sa = *(const upb_StringView*)a;
+      const upb_StringView sb = *(const upb_StringView*)b;
+      return upb_StringView_IsEqual(sa, sb);
+    }
+  }
+  UPB_UNREACHABLE();
+}
+
+UPB_INLINE void UPB_PRIVATE(_upb_MiniTableField_DataClear)(
+    const upb_MiniTableField* f, void* val) {
+  const char zero[16] = {0};
+  return UPB_PRIVATE(_upb_MiniTableField_DataCopy)(f, val, zero);
+}
+
+UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_DataIsZero)(
+    const upb_MiniTableField* f, const void* val) {
+  const char zero[16] = {0};
+  return UPB_PRIVATE(_upb_MiniTableField_DataEquals)(f, val, zero);
 }
 
 // Here we define universal getter/setter functions for message fields.
@@ -2693,7 +2717,7 @@ static UPB_FORCEINLINE void _upb_Message_GetNonExtensionField(
     return;
   }
   UPB_PRIVATE(_upb_MiniTableField_DataCopy)
-  (field, val, _upb_MiniTableField_GetConstPtr(msg, field));
+  (field, val, UPB_PRIVATE(_upb_Message_ConstDataPtr)(msg, field));
 }
 
 UPB_INLINE void _upb_Message_GetExtensionField(
@@ -2715,7 +2739,7 @@ UPB_INLINE void _upb_Message_SetNonExtensionField(
   UPB_ASSUME(!upb_MiniTableField_IsExtension(field));
   UPB_PRIVATE(_upb_Message_SetPresence)(msg, field);
   UPB_PRIVATE(_upb_MiniTableField_DataCopy)
-  (field, _upb_MiniTableField_GetPtr(msg, field), val);
+  (field, UPB_PRIVATE(_upb_Message_DataPtr)(msg, field), val);
 }
 
 UPB_INLINE bool _upb_Message_SetExtensionField(
@@ -2744,17 +2768,14 @@ UPB_INLINE void _upb_Message_ClearExtensionField(
 }
 
 UPB_INLINE void _upb_Message_ClearNonExtensionField(
-    struct upb_Message* msg, const upb_MiniTableField* field) {
-  if (field->presence > 0) {
-    UPB_PRIVATE(_upb_Message_ClearHasbit)(msg, field);
-  } else if (upb_MiniTableField_IsInOneof(field)) {
-    uint32_t* ptr = UPB_PRIVATE(_upb_Message_OneofCasePtr)(msg, field);
-    if (*ptr != upb_MiniTableField_Number(field)) return;
-    *ptr = 0;
+    struct upb_Message* msg, const upb_MiniTableField* f) {
+  if (UPB_PRIVATE(_upb_MiniTableField_HasHasbit)(f)) {
+    UPB_PRIVATE(_upb_Message_ClearHasbit)(msg, f);
+  } else if (upb_MiniTableField_IsInOneof(f)) {
+    if (!UPB_PRIVATE(_upb_Message_ClearOneofCase)(msg, f)) return;
   }
-  const char zeros[16] = {0};
-  UPB_PRIVATE(_upb_MiniTableField_DataCopy)
-  (field, _upb_MiniTableField_GetPtr(msg, field), zeros);
+  void* data = UPB_PRIVATE(_upb_Message_DataPtr)(msg, f);
+  UPB_PRIVATE(_upb_MiniTableField_DataClear)(f, data);
 }
 
 UPB_INLINE void _upb_Message_AssertMapIsUntagged(
@@ -4106,8 +4127,8 @@ UPB_API upb_EncodeStatus upb_Encode(const upb_Message* msg,
 //   - '1' for one-byte tags (field numbers 1-15)
 //   - '2' for two-byte tags (field numbers 16-2048)
 
-#ifndef UPB_WIRE_DECODE_INTERNAL_FAST_H_
-#define UPB_WIRE_DECODE_INTERNAL_FAST_H_
+#ifndef UPB_WIRE_INTERNAL_DECODE_FAST_H_
+#define UPB_WIRE_INTERNAL_DECODE_FAST_H_
 
 
 // Must be last.
@@ -4175,6 +4196,7 @@ TAGBYTES(o)
 TAGBYTES(r)
 
 #undef F
+#undef UTF8
 #undef TAGBYTES
 
 /* sub-message fields *********************************************************/
@@ -4197,9 +4219,9 @@ TAGBYTES(s)
 TAGBYTES(o)
 TAGBYTES(r)
 
-#undef TAGBYTES
-#undef SIZES
 #undef F
+#undef SIZES
+#undef TAGBYTES
 
 #undef UPB_PARSE_PARAMS
 
@@ -4208,7 +4230,7 @@ TAGBYTES(r)
 #endif
 
 
-#endif /* UPB_WIRE_DECODE_INTERNAL_FAST_H_ */
+#endif /* UPB_WIRE_INTERNAL_DECODE_FAST_H_ */
 // IWYU pragma: end_exports
 
 #endif  // UPB_GENERATED_CODE_SUPPORT_H_
@@ -4683,108 +4705,6 @@ static UPB_FORCEINLINE bool upb_EpsCopyInputStream_TryParseDelimitedFast(
 
 
 #endif  // UPB_WIRE_EPS_COPY_INPUT_STREAM_H_
-
-#ifndef UPB_BASE_INTERNAL_LOG2_H_
-#define UPB_BASE_INTERNAL_LOG2_H_
-
-// Must be last.
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-UPB_INLINE int upb_Log2Ceiling(int x) {
-  if (x <= 1) return 0;
-#ifdef __GNUC__
-  return 32 - __builtin_clz(x - 1);
-#else
-  int lg2 = 0;
-  while ((1 << lg2) < x) lg2++;
-  return lg2;
-#endif
-}
-
-UPB_INLINE int upb_Log2CeilingSize(int x) { return 1 << upb_Log2Ceiling(x); }
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_BASE_INTERNAL_LOG2_H_ */
-
-#ifndef UPB_HASH_INT_TABLE_H_
-#define UPB_HASH_INT_TABLE_H_
-
-
-// Must be last.
-
-typedef struct {
-  upb_table t;              // For entries that don't fit in the array part.
-  const upb_tabval* array;  // Array part of the table. See const note above.
-  size_t array_size;        // Array part size.
-  size_t array_count;       // Array part number of elements.
-} upb_inttable;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Initialize a table. If memory allocation failed, false is returned and
-// the table is uninitialized.
-bool upb_inttable_init(upb_inttable* table, upb_Arena* a);
-
-// Returns the number of values in the table.
-size_t upb_inttable_count(const upb_inttable* t);
-
-// Inserts the given key into the hashtable with the given value.
-// The key must not already exist in the hash table.
-// The value must not be UINTPTR_MAX.
-//
-// If a table resize was required but memory allocation failed, false is
-// returned and the table is unchanged.
-bool upb_inttable_insert(upb_inttable* t, uintptr_t key, upb_value val,
-                         upb_Arena* a);
-
-// Looks up key in this table, returning "true" if the key was found.
-// If v is non-NULL, copies the value for this key into *v.
-bool upb_inttable_lookup(const upb_inttable* t, uintptr_t key, upb_value* v);
-
-// Removes an item from the table. Returns true if the remove was successful,
-// and stores the removed item in *val if non-NULL.
-bool upb_inttable_remove(upb_inttable* t, uintptr_t key, upb_value* val);
-
-// Updates an existing entry in an inttable.
-// If the entry does not exist, returns false and does nothing.
-// Unlike insert/remove, this does not invalidate iterators.
-bool upb_inttable_replace(upb_inttable* t, uintptr_t key, upb_value val);
-
-// Optimizes the table for the current set of entries, for both memory use and
-// lookup time. Client should call this after all entries have been inserted;
-// inserting more entries is legal, but will likely require a table resize.
-void upb_inttable_compact(upb_inttable* t, upb_Arena* a);
-
-// Iteration over inttable:
-//
-//   intptr_t iter = UPB_INTTABLE_BEGIN;
-//   uintptr_t key;
-//   upb_value val;
-//   while (upb_inttable_next(t, &key, &val, &iter)) {
-//      // ...
-//   }
-
-#define UPB_INTTABLE_BEGIN -1
-
-bool upb_inttable_next(const upb_inttable* t, uintptr_t* key, upb_value* val,
-                       intptr_t* iter);
-void upb_inttable_removeiter(upb_inttable* t, intptr_t* iter);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_HASH_INT_TABLE_H_ */
 
 #ifndef UPB_JSON_DECODE_H_
 #define UPB_JSON_DECODE_H_
@@ -12208,24 +12128,6 @@ UPB_INLINE int _upb_vsnprintf(char* buf, size_t size, const char* fmt,
 
 #endif  // UPB_PORT_VSNPRINTF_COMPAT_H_
 
-#ifndef UPB_LEX_STRTOD_H_
-#define UPB_LEX_STRTOD_H_
-
-// Must be last.
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-double _upb_NoLocaleStrtod(const char *str, char **endptr);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_LEX_STRTOD_H_ */
-
 #ifndef UPB_PORT_ATOMIC_H_
 #define UPB_PORT_ATOMIC_H_
 
@@ -12446,6 +12348,35 @@ bool _upb_mapsorter_pushexts(_upb_mapsorter* s,
 
 
 #endif /* UPB_MESSAGE_INTERNAL_MAP_SORTER_H_ */
+
+#ifndef UPB_BASE_INTERNAL_LOG2_H_
+#define UPB_BASE_INTERNAL_LOG2_H_
+
+// Must be last.
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UPB_INLINE int upb_Log2Ceiling(int x) {
+  if (x <= 1) return 0;
+#ifdef __GNUC__
+  return 32 - __builtin_clz(x - 1);
+#else
+  int lg2 = 0;
+  while ((1 << lg2) < x) lg2++;
+  return lg2;
+#endif
+}
+
+UPB_INLINE int upb_Log2CeilingSize(int x) { return 1 << upb_Log2Ceiling(x); }
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_BASE_INTERNAL_LOG2_H_ */
 
 #ifndef UPB_MESSAGE_COMPARE_H_
 #define UPB_MESSAGE_COMPARE_H_
@@ -12731,6 +12662,588 @@ upb_MiniTableEquals_Status upb_MiniTable_Equals(const upb_MiniTable* src,
 
 
 #endif /* UPB_MINI_TABLE_COMPAT_H_ */
+
+#ifndef UPB_HASH_INT_TABLE_H_
+#define UPB_HASH_INT_TABLE_H_
+
+
+// Must be last.
+
+typedef struct {
+  upb_table t;              // For entries that don't fit in the array part.
+  const upb_tabval* array;  // Array part of the table. See const note above.
+  size_t array_size;        // Array part size.
+  size_t array_count;       // Array part number of elements.
+} upb_inttable;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Initialize a table. If memory allocation failed, false is returned and
+// the table is uninitialized.
+bool upb_inttable_init(upb_inttable* table, upb_Arena* a);
+
+// Returns the number of values in the table.
+size_t upb_inttable_count(const upb_inttable* t);
+
+// Inserts the given key into the hashtable with the given value.
+// The key must not already exist in the hash table.
+// The value must not be UINTPTR_MAX.
+//
+// If a table resize was required but memory allocation failed, false is
+// returned and the table is unchanged.
+bool upb_inttable_insert(upb_inttable* t, uintptr_t key, upb_value val,
+                         upb_Arena* a);
+
+// Looks up key in this table, returning "true" if the key was found.
+// If v is non-NULL, copies the value for this key into *v.
+bool upb_inttable_lookup(const upb_inttable* t, uintptr_t key, upb_value* v);
+
+// Removes an item from the table. Returns true if the remove was successful,
+// and stores the removed item in *val if non-NULL.
+bool upb_inttable_remove(upb_inttable* t, uintptr_t key, upb_value* val);
+
+// Updates an existing entry in an inttable.
+// If the entry does not exist, returns false and does nothing.
+// Unlike insert/remove, this does not invalidate iterators.
+bool upb_inttable_replace(upb_inttable* t, uintptr_t key, upb_value val);
+
+// Optimizes the table for the current set of entries, for both memory use and
+// lookup time. Client should call this after all entries have been inserted;
+// inserting more entries is legal, but will likely require a table resize.
+void upb_inttable_compact(upb_inttable* t, upb_Arena* a);
+
+// Iteration over inttable:
+//
+//   intptr_t iter = UPB_INTTABLE_BEGIN;
+//   uintptr_t key;
+//   upb_value val;
+//   while (upb_inttable_next(t, &key, &val, &iter)) {
+//      // ...
+//   }
+
+#define UPB_INTTABLE_BEGIN -1
+
+bool upb_inttable_next(const upb_inttable* t, uintptr_t* key, upb_value* val,
+                       intptr_t* iter);
+void upb_inttable_removeiter(upb_inttable* t, intptr_t* iter);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_HASH_INT_TABLE_H_ */
+
+#ifndef UPB_BASE_INTERNAL_ENDIAN_H_
+#define UPB_BASE_INTERNAL_ENDIAN_H_
+
+#include <stdint.h>
+
+// Must be last.
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UPB_INLINE bool upb_IsLittleEndian(void) {
+  const int x = 1;
+  return *(char*)&x == 1;
+}
+
+UPB_INLINE uint32_t upb_BigEndian32(uint32_t val) {
+  if (upb_IsLittleEndian()) return val;
+
+  return ((val & 0xff) << 24) | ((val & 0xff00) << 8) |
+         ((val & 0xff0000) >> 8) | ((val & 0xff000000) >> 24);
+}
+
+UPB_INLINE uint64_t upb_BigEndian64(uint64_t val) {
+  if (upb_IsLittleEndian()) return val;
+
+  const uint64_t hi = ((uint64_t)upb_BigEndian32((uint32_t)val)) << 32;
+  const uint64_t lo = upb_BigEndian32((uint32_t)(val >> 32));
+  return hi | lo;
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_BASE_INTERNAL_ENDIAN_H_ */
+
+#ifndef UPB_WIRE_INTERNAL_CONSTANTS_H_
+#define UPB_WIRE_INTERNAL_CONSTANTS_H_
+
+#define kUpb_WireFormat_DefaultDepthLimit 100
+
+// MessageSet wire format is:
+//   message MessageSet {
+//     repeated group Item = 1 {
+//       required int32 type_id = 2;
+//       required bytes message = 3;
+//     }
+//   }
+
+enum {
+  kUpb_MsgSet_Item = 1,
+  kUpb_MsgSet_TypeId = 2,
+  kUpb_MsgSet_Message = 3,
+};
+
+#endif /* UPB_WIRE_INTERNAL_CONSTANTS_H_ */
+
+/*
+ * Internal implementation details of the decoder that are shared between
+ * decode.c and decode_fast.c.
+ */
+
+#ifndef UPB_WIRE_INTERNAL_DECODER_H_
+#define UPB_WIRE_INTERNAL_DECODER_H_
+
+#include "utf8_range.h"
+
+// Must be last.
+
+#define DECODE_NOGROUP (uint32_t) - 1
+
+typedef struct upb_Decoder {
+  upb_EpsCopyInputStream input;
+  const upb_ExtensionRegistry* extreg;
+  const char* unknown;       // Start of unknown data, preserve at buffer flip
+  upb_Message* unknown_msg;  // Pointer to preserve data to
+  int depth;                 // Tracks recursion depth to bound stack usage.
+  uint32_t end_group;  // field number of END_GROUP tag, else DECODE_NOGROUP.
+  uint16_t options;
+  bool missing_required;
+  union {
+    upb_Arena arena;
+    void* foo[UPB_ARENA_SIZE_HACK];
+  };
+  upb_DecodeStatus status;
+  jmp_buf err;
+
+#ifndef NDEBUG
+  const char* debug_tagstart;
+  const char* debug_valstart;
+#endif
+} upb_Decoder;
+
+/* Error function that will abort decoding with longjmp(). We can't declare this
+ * UPB_NORETURN, even though it is appropriate, because if we do then compilers
+ * will "helpfully" refuse to tailcall to it
+ * (see: https://stackoverflow.com/a/55657013), which will defeat a major goal
+ * of our optimizations. That is also why we must declare it in a separate file,
+ * otherwise the compiler will see that it calls longjmp() and deduce that it is
+ * noreturn. */
+const char* _upb_FastDecoder_ErrorJmp(upb_Decoder* d, int status);
+
+extern const uint8_t upb_utf8_offsets[];
+
+UPB_INLINE
+bool _upb_Decoder_VerifyUtf8Inline(const char* ptr, int len) {
+  return utf8_range_IsValid(ptr, len);
+}
+
+const char* _upb_Decoder_CheckRequired(upb_Decoder* d, const char* ptr,
+                                       const upb_Message* msg,
+                                       const upb_MiniTable* m);
+
+/* x86-64 pointers always have the high 16 bits matching. So we can shift
+ * left 8 and right 8 without loss of information. */
+UPB_INLINE intptr_t decode_totable(const upb_MiniTable* tablep) {
+  return ((intptr_t)tablep << 8) | tablep->UPB_PRIVATE(table_mask);
+}
+
+UPB_INLINE const upb_MiniTable* decode_totablep(intptr_t table) {
+  return (const upb_MiniTable*)(table >> 8);
+}
+
+const char* _upb_Decoder_IsDoneFallback(upb_EpsCopyInputStream* e,
+                                        const char* ptr, int overrun);
+
+UPB_INLINE bool _upb_Decoder_IsDone(upb_Decoder* d, const char** ptr) {
+  return upb_EpsCopyInputStream_IsDoneWithCallback(
+      &d->input, ptr, &_upb_Decoder_IsDoneFallback);
+}
+
+UPB_INLINE const char* _upb_Decoder_BufferFlipCallback(
+    upb_EpsCopyInputStream* e, const char* old_end, const char* new_start) {
+  upb_Decoder* d = (upb_Decoder*)e;
+  if (!old_end) _upb_FastDecoder_ErrorJmp(d, kUpb_DecodeStatus_Malformed);
+
+  if (d->unknown) {
+    if (!UPB_PRIVATE(_upb_Message_AddUnknown)(
+            d->unknown_msg, d->unknown, old_end - d->unknown, &d->arena)) {
+      _upb_FastDecoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
+    }
+    d->unknown = new_start;
+  }
+  return new_start;
+}
+
+#if UPB_FASTTABLE
+UPB_INLINE
+const char* _upb_FastDecoder_TagDispatch(upb_Decoder* d, const char* ptr,
+                                         upb_Message* msg, intptr_t table,
+                                         uint64_t hasbits, uint64_t tag) {
+  const upb_MiniTable* table_p = decode_totablep(table);
+  uint8_t mask = table;
+  uint64_t data;
+  size_t idx = tag & mask;
+  UPB_ASSUME((idx & 7) == 0);
+  idx >>= 3;
+  data = table_p->UPB_PRIVATE(fasttable)[idx].field_data ^ tag;
+  UPB_MUSTTAIL return table_p->UPB_PRIVATE(fasttable)[idx].field_parser(
+      d, ptr, msg, table, hasbits, data);
+}
+#endif
+
+UPB_INLINE uint32_t _upb_FastDecoder_LoadTag(const char* ptr) {
+  uint16_t tag;
+  memcpy(&tag, ptr, 2);
+  return tag;
+}
+
+
+#endif /* UPB_WIRE_INTERNAL_DECODER_H_ */
+
+#ifndef UPB_WIRE_READER_H_
+#define UPB_WIRE_READER_H_
+
+
+#ifndef UPB_WIRE_INTERNAL_READER_H_
+#define UPB_WIRE_INTERNAL_READER_H_
+
+// Must be last.
+
+#define kUpb_WireReader_WireTypeBits 3
+#define kUpb_WireReader_WireTypeMask 7
+
+typedef struct {
+  const char* ptr;
+  uint64_t val;
+} UPB_PRIVATE(_upb_WireReader_LongVarint);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UPB_PRIVATE(_upb_WireReader_LongVarint)
+UPB_PRIVATE(_upb_WireReader_ReadLongVarint)(const char* ptr, uint64_t val);
+
+static UPB_FORCEINLINE const char* UPB_PRIVATE(_upb_WireReader_ReadVarint)(
+    const char* ptr, uint64_t* val, int maxlen, uint64_t maxval) {
+  uint64_t byte = (uint8_t)*ptr;
+  if (UPB_LIKELY((byte & 0x80) == 0)) {
+    *val = (uint32_t)byte;
+    return ptr + 1;
+  }
+  const char* start = ptr;
+  UPB_PRIVATE(_upb_WireReader_LongVarint)
+  res = UPB_PRIVATE(_upb_WireReader_ReadLongVarint)(ptr, byte);
+  if (!res.ptr || (maxlen < 10 && res.ptr - start > maxlen) ||
+      res.val > maxval) {
+    return NULL;  // Malformed.
+  }
+  *val = res.val;
+  return res.ptr;
+}
+
+UPB_INLINE uint32_t UPB_PRIVATE(_upb_WireReader_GetFieldNumber)(uint32_t tag) {
+  return tag >> kUpb_WireReader_WireTypeBits;
+}
+
+UPB_INLINE uint8_t UPB_PRIVATE(_upb_WireReader_GetWireType)(uint32_t tag) {
+  return tag & kUpb_WireReader_WireTypeMask;
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif  // UPB_WIRE_INTERNAL_READER_H_
+
+#ifndef UPB_WIRE_TYPES_H_
+#define UPB_WIRE_TYPES_H_
+
+// A list of types as they are encoded on the wire.
+typedef enum {
+  kUpb_WireType_Varint = 0,
+  kUpb_WireType_64Bit = 1,
+  kUpb_WireType_Delimited = 2,
+  kUpb_WireType_StartGroup = 3,
+  kUpb_WireType_EndGroup = 4,
+  kUpb_WireType_32Bit = 5
+} upb_WireType;
+
+#endif /* UPB_WIRE_TYPES_H_ */
+
+// Must be last.
+
+// The upb_WireReader interface is suitable for general-purpose parsing of
+// protobuf binary wire format. It is designed to be used along with
+// upb_EpsCopyInputStream for buffering, and all parsing routines in this file
+// assume that at least kUpb_EpsCopyInputStream_SlopBytes worth of data is
+// available to read without any bounds checks.
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Parses a tag into `tag`, and returns a pointer past the end of the tag, or
+// NULL if there was an error in the tag data.
+//
+// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
+// Bounds checks must be performed before calling this function, preferably
+// by calling upb_EpsCopyInputStream_IsDone().
+static UPB_FORCEINLINE const char* upb_WireReader_ReadTag(const char* ptr,
+                                                          uint32_t* tag) {
+  uint64_t val;
+  ptr = UPB_PRIVATE(_upb_WireReader_ReadVarint)(ptr, &val, 5, UINT32_MAX);
+  if (!ptr) return NULL;
+  *tag = val;
+  return ptr;
+}
+
+// Given a tag, returns the field number.
+UPB_INLINE uint32_t upb_WireReader_GetFieldNumber(uint32_t tag) {
+  return UPB_PRIVATE(_upb_WireReader_GetFieldNumber)(tag);
+}
+
+// Given a tag, returns the wire type.
+UPB_INLINE uint8_t upb_WireReader_GetWireType(uint32_t tag) {
+  return UPB_PRIVATE(_upb_WireReader_GetWireType)(tag);
+}
+
+UPB_INLINE const char* upb_WireReader_ReadVarint(const char* ptr,
+                                                 uint64_t* val) {
+  return UPB_PRIVATE(_upb_WireReader_ReadVarint)(ptr, val, 10, UINT64_MAX);
+}
+
+// Skips data for a varint, returning a pointer past the end of the varint, or
+// NULL if there was an error in the varint data.
+//
+// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
+// Bounds checks must be performed before calling this function, preferably
+// by calling upb_EpsCopyInputStream_IsDone().
+UPB_INLINE const char* upb_WireReader_SkipVarint(const char* ptr) {
+  uint64_t val;
+  return upb_WireReader_ReadVarint(ptr, &val);
+}
+
+// Reads a varint indicating the size of a delimited field into `size`, or
+// NULL if there was an error in the varint data.
+//
+// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
+// Bounds checks must be performed before calling this function, preferably
+// by calling upb_EpsCopyInputStream_IsDone().
+UPB_INLINE const char* upb_WireReader_ReadSize(const char* ptr, int* size) {
+  uint64_t size64;
+  ptr = upb_WireReader_ReadVarint(ptr, &size64);
+  if (!ptr || size64 >= INT32_MAX) return NULL;
+  *size = size64;
+  return ptr;
+}
+
+// Reads a fixed32 field, performing byte swapping if necessary.
+//
+// REQUIRES: there must be at least 4 bytes of data available at `ptr`.
+// Bounds checks must be performed before calling this function, preferably
+// by calling upb_EpsCopyInputStream_IsDone().
+UPB_INLINE const char* upb_WireReader_ReadFixed32(const char* ptr, void* val) {
+  uint32_t uval;
+  memcpy(&uval, ptr, 4);
+  uval = upb_BigEndian32(uval);
+  memcpy(val, &uval, 4);
+  return ptr + 4;
+}
+
+// Reads a fixed64 field, performing byte swapping if necessary.
+//
+// REQUIRES: there must be at least 4 bytes of data available at `ptr`.
+// Bounds checks must be performed before calling this function, preferably
+// by calling upb_EpsCopyInputStream_IsDone().
+UPB_INLINE const char* upb_WireReader_ReadFixed64(const char* ptr, void* val) {
+  uint64_t uval;
+  memcpy(&uval, ptr, 8);
+  uval = upb_BigEndian64(uval);
+  memcpy(val, &uval, 8);
+  return ptr + 8;
+}
+
+const char* UPB_PRIVATE(_upb_WireReader_SkipGroup)(
+    const char* ptr, uint32_t tag, int depth_limit,
+    upb_EpsCopyInputStream* stream);
+
+// Skips data for a group, returning a pointer past the end of the group, or
+// NULL if there was an error parsing the group.  The `tag` argument should be
+// the start group tag that begins the group.  The `depth_limit` argument
+// indicates how many levels of recursion the group is allowed to have before
+// reporting a parse error (this limit exists to protect against stack
+// overflow).
+//
+// TODO: evaluate how the depth_limit should be specified. Do users need
+// control over this?
+UPB_INLINE const char* upb_WireReader_SkipGroup(
+    const char* ptr, uint32_t tag, upb_EpsCopyInputStream* stream) {
+  return UPB_PRIVATE(_upb_WireReader_SkipGroup)(ptr, tag, 100, stream);
+}
+
+UPB_INLINE const char* _upb_WireReader_SkipValue(
+    const char* ptr, uint32_t tag, int depth_limit,
+    upb_EpsCopyInputStream* stream) {
+  switch (upb_WireReader_GetWireType(tag)) {
+    case kUpb_WireType_Varint:
+      return upb_WireReader_SkipVarint(ptr);
+    case kUpb_WireType_32Bit:
+      return ptr + 4;
+    case kUpb_WireType_64Bit:
+      return ptr + 8;
+    case kUpb_WireType_Delimited: {
+      int size;
+      ptr = upb_WireReader_ReadSize(ptr, &size);
+      if (!ptr) return NULL;
+      ptr += size;
+      return ptr;
+    }
+    case kUpb_WireType_StartGroup:
+      return UPB_PRIVATE(_upb_WireReader_SkipGroup)(ptr, tag, depth_limit,
+                                                    stream);
+    case kUpb_WireType_EndGroup:
+      return NULL;  // Should be handled before now.
+    default:
+      return NULL;  // Unknown wire type.
+  }
+}
+
+// Skips data for a wire value of any type, returning a pointer past the end of
+// the data, or NULL if there was an error parsing the group. The `tag` argument
+// should be the tag that was just parsed. The `depth_limit` argument indicates
+// how many levels of recursion a group is allowed to have before reporting a
+// parse error (this limit exists to protect against stack overflow).
+//
+// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
+// Bounds checks must be performed before calling this function, preferably
+// by calling upb_EpsCopyInputStream_IsDone().
+//
+// TODO: evaluate how the depth_limit should be specified. Do users need
+// control over this?
+UPB_INLINE const char* upb_WireReader_SkipValue(
+    const char* ptr, uint32_t tag, upb_EpsCopyInputStream* stream) {
+  return _upb_WireReader_SkipValue(ptr, tag, 100, stream);
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif  // UPB_WIRE_READER_H_
+
+#ifndef UPB_LEX_STRTOD_H_
+#define UPB_LEX_STRTOD_H_
+
+// Must be last.
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+double _upb_NoLocaleStrtod(const char *str, char **endptr);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_LEX_STRTOD_H_ */
+
+#ifndef UPB_MINI_DESCRIPTOR_INTERNAL_ENCODE_H_
+#define UPB_MINI_DESCRIPTOR_INTERNAL_ENCODE_H_
+
+#include <stdint.h>
+
+
+// Must be last.
+
+// If the input buffer has at least this many bytes available, the encoder call
+// is guaranteed to succeed (as long as field number order is maintained).
+#define kUpb_MtDataEncoder_MinSize 16
+
+typedef struct {
+  char* end;  // Limit of the buffer passed as a parameter.
+  // Aliased to internal-only members in .cc.
+  char internal[32];
+} upb_MtDataEncoder;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Encodes field/oneof information for a given message.  The sequence of calls
+// should look like:
+//
+//   upb_MtDataEncoder e;
+//   char buf[256];
+//   char* ptr = buf;
+//   e.end = ptr + sizeof(buf);
+//   unit64_t msg_mod = ...; // bitwise & of kUpb_MessageModifiers or zero
+//   ptr = upb_MtDataEncoder_StartMessage(&e, ptr, msg_mod);
+//   // Fields *must* be in field number order.
+//   ptr = upb_MtDataEncoder_PutField(&e, ptr, ...);
+//   ptr = upb_MtDataEncoder_PutField(&e, ptr, ...);
+//   ptr = upb_MtDataEncoder_PutField(&e, ptr, ...);
+//
+//   // If oneofs are present.  Oneofs must be encoded after regular fields.
+//   ptr = upb_MiniTable_StartOneof(&e, ptr)
+//   ptr = upb_MiniTable_PutOneofField(&e, ptr, ...);
+//   ptr = upb_MiniTable_PutOneofField(&e, ptr, ...);
+//
+//   ptr = upb_MiniTable_StartOneof(&e, ptr);
+//   ptr = upb_MiniTable_PutOneofField(&e, ptr, ...);
+//   ptr = upb_MiniTable_PutOneofField(&e, ptr, ...);
+//
+// Oneofs must be encoded after all regular fields.
+char* upb_MtDataEncoder_StartMessage(upb_MtDataEncoder* e, char* ptr,
+                                     uint64_t msg_mod);
+char* upb_MtDataEncoder_PutField(upb_MtDataEncoder* e, char* ptr,
+                                 upb_FieldType type, uint32_t field_num,
+                                 uint64_t field_mod);
+char* upb_MtDataEncoder_StartOneof(upb_MtDataEncoder* e, char* ptr);
+char* upb_MtDataEncoder_PutOneofField(upb_MtDataEncoder* e, char* ptr,
+                                      uint32_t field_num);
+
+// Encodes the set of values for a given enum. The values must be given in
+// order (after casting to uint32_t), and repeats are not allowed.
+char* upb_MtDataEncoder_StartEnum(upb_MtDataEncoder* e, char* ptr);
+char* upb_MtDataEncoder_PutEnumValue(upb_MtDataEncoder* e, char* ptr,
+                                     uint32_t val);
+char* upb_MtDataEncoder_EndEnum(upb_MtDataEncoder* e, char* ptr);
+
+// Encodes an entire mini descriptor for an extension.
+char* upb_MtDataEncoder_EncodeExtension(upb_MtDataEncoder* e, char* ptr,
+                                        upb_FieldType type, uint32_t field_num,
+                                        uint64_t field_mod);
+
+// Encodes an entire mini descriptor for a map.
+char* upb_MtDataEncoder_EncodeMap(upb_MtDataEncoder* e, char* ptr,
+                                  upb_FieldType key_type,
+                                  upb_FieldType value_type, uint64_t key_mod,
+                                  uint64_t value_mod);
+
+// Encodes an entire mini descriptor for a message set.
+char* upb_MtDataEncoder_EncodeMessageSet(upb_MtDataEncoder* e, char* ptr);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_MINI_DESCRIPTOR_INTERNAL_ENCODE_H_ */
 
 #ifndef UPB_REFLECTION_DEF_POOL_INTERNAL_H_
 #define UPB_REFLECTION_DEF_POOL_INTERNAL_H_
@@ -13144,89 +13657,6 @@ upb_ServiceDef* _upb_ServiceDefs_New(upb_DefBuilder* ctx, int n,
 #define UPB_REFLECTION_DESC_STATE_INTERNAL_H_
 
 
-#ifndef UPB_MINI_DESCRIPTOR_INTERNAL_ENCODE_H_
-#define UPB_MINI_DESCRIPTOR_INTERNAL_ENCODE_H_
-
-#include <stdint.h>
-
-
-// Must be last.
-
-// If the input buffer has at least this many bytes available, the encoder call
-// is guaranteed to succeed (as long as field number order is maintained).
-#define kUpb_MtDataEncoder_MinSize 16
-
-typedef struct {
-  char* end;  // Limit of the buffer passed as a parameter.
-  // Aliased to internal-only members in .cc.
-  char internal[32];
-} upb_MtDataEncoder;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Encodes field/oneof information for a given message.  The sequence of calls
-// should look like:
-//
-//   upb_MtDataEncoder e;
-//   char buf[256];
-//   char* ptr = buf;
-//   e.end = ptr + sizeof(buf);
-//   unit64_t msg_mod = ...; // bitwise & of kUpb_MessageModifiers or zero
-//   ptr = upb_MtDataEncoder_StartMessage(&e, ptr, msg_mod);
-//   // Fields *must* be in field number order.
-//   ptr = upb_MtDataEncoder_PutField(&e, ptr, ...);
-//   ptr = upb_MtDataEncoder_PutField(&e, ptr, ...);
-//   ptr = upb_MtDataEncoder_PutField(&e, ptr, ...);
-//
-//   // If oneofs are present.  Oneofs must be encoded after regular fields.
-//   ptr = upb_MiniTable_StartOneof(&e, ptr)
-//   ptr = upb_MiniTable_PutOneofField(&e, ptr, ...);
-//   ptr = upb_MiniTable_PutOneofField(&e, ptr, ...);
-//
-//   ptr = upb_MiniTable_StartOneof(&e, ptr);
-//   ptr = upb_MiniTable_PutOneofField(&e, ptr, ...);
-//   ptr = upb_MiniTable_PutOneofField(&e, ptr, ...);
-//
-// Oneofs must be encoded after all regular fields.
-char* upb_MtDataEncoder_StartMessage(upb_MtDataEncoder* e, char* ptr,
-                                     uint64_t msg_mod);
-char* upb_MtDataEncoder_PutField(upb_MtDataEncoder* e, char* ptr,
-                                 upb_FieldType type, uint32_t field_num,
-                                 uint64_t field_mod);
-char* upb_MtDataEncoder_StartOneof(upb_MtDataEncoder* e, char* ptr);
-char* upb_MtDataEncoder_PutOneofField(upb_MtDataEncoder* e, char* ptr,
-                                      uint32_t field_num);
-
-// Encodes the set of values for a given enum. The values must be given in
-// order (after casting to uint32_t), and repeats are not allowed.
-char* upb_MtDataEncoder_StartEnum(upb_MtDataEncoder* e, char* ptr);
-char* upb_MtDataEncoder_PutEnumValue(upb_MtDataEncoder* e, char* ptr,
-                                     uint32_t val);
-char* upb_MtDataEncoder_EndEnum(upb_MtDataEncoder* e, char* ptr);
-
-// Encodes an entire mini descriptor for an extension.
-char* upb_MtDataEncoder_EncodeExtension(upb_MtDataEncoder* e, char* ptr,
-                                        upb_FieldType type, uint32_t field_num,
-                                        uint64_t field_mod);
-
-// Encodes an entire mini descriptor for a map.
-char* upb_MtDataEncoder_EncodeMap(upb_MtDataEncoder* e, char* ptr,
-                                  upb_FieldType key_type,
-                                  upb_FieldType value_type, uint64_t key_mod,
-                                  uint64_t value_mod);
-
-// Encodes an entire mini descriptor for a message set.
-char* upb_MtDataEncoder_EncodeMessageSet(upb_MtDataEncoder* e, char* ptr);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_MINI_DESCRIPTOR_INTERNAL_ENCODE_H_ */
-
 // Must be last.
 
 // Manages the storage for mini descriptor strings as they are being encoded.
@@ -13456,413 +13886,6 @@ upb_MethodDef* _upb_MethodDefs_New(upb_DefBuilder* ctx, int n,
 
 
 #endif /* UPB_REFLECTION_METHOD_DEF_INTERNAL_H_ */
-
-#ifndef UPB_WIRE_INTERNAL_CONSTANTS_H_
-#define UPB_WIRE_INTERNAL_CONSTANTS_H_
-
-#define kUpb_WireFormat_DefaultDepthLimit 100
-
-// MessageSet wire format is:
-//   message MessageSet {
-//     repeated group Item = 1 {
-//       required int32 type_id = 2;
-//       required bytes message = 3;
-//     }
-//   }
-
-enum {
-  kUpb_MsgSet_Item = 1,
-  kUpb_MsgSet_TypeId = 2,
-  kUpb_MsgSet_Message = 3,
-};
-
-#endif /* UPB_WIRE_INTERNAL_CONSTANTS_H_ */
-
-/*
- * Internal implementation details of the decoder that are shared between
- * decode.c and decode_fast.c.
- */
-
-#ifndef UPB_WIRE_INTERNAL_DECODER_H_
-#define UPB_WIRE_INTERNAL_DECODER_H_
-
-#include "utf8_range.h"
-
-// Must be last.
-
-#define DECODE_NOGROUP (uint32_t) - 1
-
-typedef struct upb_Decoder {
-  upb_EpsCopyInputStream input;
-  const upb_ExtensionRegistry* extreg;
-  const char* unknown;       // Start of unknown data, preserve at buffer flip
-  upb_Message* unknown_msg;  // Pointer to preserve data to
-  int depth;                 // Tracks recursion depth to bound stack usage.
-  uint32_t end_group;  // field number of END_GROUP tag, else DECODE_NOGROUP.
-  uint16_t options;
-  bool missing_required;
-  union {
-    upb_Arena arena;
-    void* foo[UPB_ARENA_SIZE_HACK];
-  };
-  upb_DecodeStatus status;
-  jmp_buf err;
-
-#ifndef NDEBUG
-  const char* debug_tagstart;
-  const char* debug_valstart;
-#endif
-} upb_Decoder;
-
-/* Error function that will abort decoding with longjmp(). We can't declare this
- * UPB_NORETURN, even though it is appropriate, because if we do then compilers
- * will "helpfully" refuse to tailcall to it
- * (see: https://stackoverflow.com/a/55657013), which will defeat a major goal
- * of our optimizations. That is also why we must declare it in a separate file,
- * otherwise the compiler will see that it calls longjmp() and deduce that it is
- * noreturn. */
-const char* _upb_FastDecoder_ErrorJmp(upb_Decoder* d, int status);
-
-extern const uint8_t upb_utf8_offsets[];
-
-UPB_INLINE
-bool _upb_Decoder_VerifyUtf8Inline(const char* ptr, int len) {
-  return utf8_range_IsValid(ptr, len);
-}
-
-const char* _upb_Decoder_CheckRequired(upb_Decoder* d, const char* ptr,
-                                       const upb_Message* msg,
-                                       const upb_MiniTable* m);
-
-/* x86-64 pointers always have the high 16 bits matching. So we can shift
- * left 8 and right 8 without loss of information. */
-UPB_INLINE intptr_t decode_totable(const upb_MiniTable* tablep) {
-  return ((intptr_t)tablep << 8) | tablep->UPB_PRIVATE(table_mask);
-}
-
-UPB_INLINE const upb_MiniTable* decode_totablep(intptr_t table) {
-  return (const upb_MiniTable*)(table >> 8);
-}
-
-const char* _upb_Decoder_IsDoneFallback(upb_EpsCopyInputStream* e,
-                                        const char* ptr, int overrun);
-
-UPB_INLINE bool _upb_Decoder_IsDone(upb_Decoder* d, const char** ptr) {
-  return upb_EpsCopyInputStream_IsDoneWithCallback(
-      &d->input, ptr, &_upb_Decoder_IsDoneFallback);
-}
-
-UPB_INLINE const char* _upb_Decoder_BufferFlipCallback(
-    upb_EpsCopyInputStream* e, const char* old_end, const char* new_start) {
-  upb_Decoder* d = (upb_Decoder*)e;
-  if (!old_end) _upb_FastDecoder_ErrorJmp(d, kUpb_DecodeStatus_Malformed);
-
-  if (d->unknown) {
-    if (!UPB_PRIVATE(_upb_Message_AddUnknown)(
-            d->unknown_msg, d->unknown, old_end - d->unknown, &d->arena)) {
-      _upb_FastDecoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
-    }
-    d->unknown = new_start;
-  }
-  return new_start;
-}
-
-#if UPB_FASTTABLE
-UPB_INLINE
-const char* _upb_FastDecoder_TagDispatch(upb_Decoder* d, const char* ptr,
-                                         upb_Message* msg, intptr_t table,
-                                         uint64_t hasbits, uint64_t tag) {
-  const upb_MiniTable* table_p = decode_totablep(table);
-  uint8_t mask = table;
-  uint64_t data;
-  size_t idx = tag & mask;
-  UPB_ASSUME((idx & 7) == 0);
-  idx >>= 3;
-  data = table_p->UPB_PRIVATE(fasttable)[idx].field_data ^ tag;
-  UPB_MUSTTAIL return table_p->UPB_PRIVATE(fasttable)[idx].field_parser(
-      d, ptr, msg, table, hasbits, data);
-}
-#endif
-
-UPB_INLINE uint32_t _upb_FastDecoder_LoadTag(const char* ptr) {
-  uint16_t tag;
-  memcpy(&tag, ptr, 2);
-  return tag;
-}
-
-
-#endif /* UPB_WIRE_INTERNAL_DECODER_H_ */
-
-#ifndef UPB_WIRE_INTERNAL_ENDIAN_H_
-#define UPB_WIRE_INTERNAL_ENDIAN_H_
-
-#include <stdint.h>
-
-// Must be last.
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-UPB_INLINE bool UPB_PRIVATE(_upb_IsLittleEndian)(void) {
-  const int x = 1;
-  return *(char*)&x == 1;
-}
-
-UPB_INLINE uint32_t UPB_PRIVATE(_upb_BigEndian32)(uint32_t val) {
-  if (UPB_PRIVATE(_upb_IsLittleEndian)()) return val;
-
-  return ((val & 0xff) << 24) | ((val & 0xff00) << 8) |
-         ((val & 0xff0000) >> 8) | ((val & 0xff000000) >> 24);
-}
-
-UPB_INLINE uint64_t UPB_PRIVATE(_upb_BigEndian64)(uint64_t val) {
-  if (UPB_PRIVATE(_upb_IsLittleEndian)()) return val;
-
-  return ((uint64_t)UPB_PRIVATE(_upb_BigEndian32)((uint32_t)val) << 32) |
-         UPB_PRIVATE(_upb_BigEndian32)((uint32_t)(val >> 32));
-}
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_WIRE_INTERNAL_ENDIAN_H_ */
-
-#ifndef UPB_WIRE_READER_H_
-#define UPB_WIRE_READER_H_
-
-
-#ifndef UPB_WIRE_INTERNAL_READER_H_
-#define UPB_WIRE_INTERNAL_READER_H_
-
-// Must be last.
-
-#define kUpb_WireReader_WireTypeBits 3
-#define kUpb_WireReader_WireTypeMask 7
-
-typedef struct {
-  const char* ptr;
-  uint64_t val;
-} UPB_PRIVATE(_upb_WireReader_LongVarint);
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-UPB_PRIVATE(_upb_WireReader_LongVarint)
-UPB_PRIVATE(_upb_WireReader_ReadLongVarint)(const char* ptr, uint64_t val);
-
-static UPB_FORCEINLINE const char* UPB_PRIVATE(_upb_WireReader_ReadVarint)(
-    const char* ptr, uint64_t* val, int maxlen, uint64_t maxval) {
-  uint64_t byte = (uint8_t)*ptr;
-  if (UPB_LIKELY((byte & 0x80) == 0)) {
-    *val = (uint32_t)byte;
-    return ptr + 1;
-  }
-  const char* start = ptr;
-  UPB_PRIVATE(_upb_WireReader_LongVarint)
-  res = UPB_PRIVATE(_upb_WireReader_ReadLongVarint)(ptr, byte);
-  if (!res.ptr || (maxlen < 10 && res.ptr - start > maxlen) ||
-      res.val > maxval) {
-    return NULL;  // Malformed.
-  }
-  *val = res.val;
-  return res.ptr;
-}
-
-UPB_INLINE uint32_t UPB_PRIVATE(_upb_WireReader_GetFieldNumber)(uint32_t tag) {
-  return tag >> kUpb_WireReader_WireTypeBits;
-}
-
-UPB_INLINE uint8_t UPB_PRIVATE(_upb_WireReader_GetWireType)(uint32_t tag) {
-  return tag & kUpb_WireReader_WireTypeMask;
-}
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif  // UPB_WIRE_INTERNAL_READER_H_
-
-#ifndef UPB_WIRE_TYPES_H_
-#define UPB_WIRE_TYPES_H_
-
-// A list of types as they are encoded on the wire.
-typedef enum {
-  kUpb_WireType_Varint = 0,
-  kUpb_WireType_64Bit = 1,
-  kUpb_WireType_Delimited = 2,
-  kUpb_WireType_StartGroup = 3,
-  kUpb_WireType_EndGroup = 4,
-  kUpb_WireType_32Bit = 5
-} upb_WireType;
-
-#endif /* UPB_WIRE_TYPES_H_ */
-
-// Must be last.
-
-// The upb_WireReader interface is suitable for general-purpose parsing of
-// protobuf binary wire format. It is designed to be used along with
-// upb_EpsCopyInputStream for buffering, and all parsing routines in this file
-// assume that at least kUpb_EpsCopyInputStream_SlopBytes worth of data is
-// available to read without any bounds checks.
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Parses a tag into `tag`, and returns a pointer past the end of the tag, or
-// NULL if there was an error in the tag data.
-//
-// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
-// Bounds checks must be performed before calling this function, preferably
-// by calling upb_EpsCopyInputStream_IsDone().
-static UPB_FORCEINLINE const char* upb_WireReader_ReadTag(const char* ptr,
-                                                          uint32_t* tag) {
-  uint64_t val;
-  ptr = UPB_PRIVATE(_upb_WireReader_ReadVarint)(ptr, &val, 5, UINT32_MAX);
-  if (!ptr) return NULL;
-  *tag = val;
-  return ptr;
-}
-
-// Given a tag, returns the field number.
-UPB_INLINE uint32_t upb_WireReader_GetFieldNumber(uint32_t tag) {
-  return UPB_PRIVATE(_upb_WireReader_GetFieldNumber)(tag);
-}
-
-// Given a tag, returns the wire type.
-UPB_INLINE uint8_t upb_WireReader_GetWireType(uint32_t tag) {
-  return UPB_PRIVATE(_upb_WireReader_GetWireType)(tag);
-}
-
-UPB_INLINE const char* upb_WireReader_ReadVarint(const char* ptr,
-                                                 uint64_t* val) {
-  return UPB_PRIVATE(_upb_WireReader_ReadVarint)(ptr, val, 10, UINT64_MAX);
-}
-
-// Skips data for a varint, returning a pointer past the end of the varint, or
-// NULL if there was an error in the varint data.
-//
-// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
-// Bounds checks must be performed before calling this function, preferably
-// by calling upb_EpsCopyInputStream_IsDone().
-UPB_INLINE const char* upb_WireReader_SkipVarint(const char* ptr) {
-  uint64_t val;
-  return upb_WireReader_ReadVarint(ptr, &val);
-}
-
-// Reads a varint indicating the size of a delimited field into `size`, or
-// NULL if there was an error in the varint data.
-//
-// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
-// Bounds checks must be performed before calling this function, preferably
-// by calling upb_EpsCopyInputStream_IsDone().
-UPB_INLINE const char* upb_WireReader_ReadSize(const char* ptr, int* size) {
-  uint64_t size64;
-  ptr = upb_WireReader_ReadVarint(ptr, &size64);
-  if (!ptr || size64 >= INT32_MAX) return NULL;
-  *size = size64;
-  return ptr;
-}
-
-// Reads a fixed32 field, performing byte swapping if necessary.
-//
-// REQUIRES: there must be at least 4 bytes of data available at `ptr`.
-// Bounds checks must be performed before calling this function, preferably
-// by calling upb_EpsCopyInputStream_IsDone().
-UPB_INLINE const char* upb_WireReader_ReadFixed32(const char* ptr, void* val) {
-  uint32_t uval;
-  memcpy(&uval, ptr, 4);
-  uval = UPB_PRIVATE(_upb_BigEndian32)(uval);
-  memcpy(val, &uval, 4);
-  return ptr + 4;
-}
-
-// Reads a fixed64 field, performing byte swapping if necessary.
-//
-// REQUIRES: there must be at least 4 bytes of data available at `ptr`.
-// Bounds checks must be performed before calling this function, preferably
-// by calling upb_EpsCopyInputStream_IsDone().
-UPB_INLINE const char* upb_WireReader_ReadFixed64(const char* ptr, void* val) {
-  uint64_t uval;
-  memcpy(&uval, ptr, 8);
-  uval = UPB_PRIVATE(_upb_BigEndian64)(uval);
-  memcpy(val, &uval, 8);
-  return ptr + 8;
-}
-
-const char* UPB_PRIVATE(_upb_WireReader_SkipGroup)(
-    const char* ptr, uint32_t tag, int depth_limit,
-    upb_EpsCopyInputStream* stream);
-
-// Skips data for a group, returning a pointer past the end of the group, or
-// NULL if there was an error parsing the group.  The `tag` argument should be
-// the start group tag that begins the group.  The `depth_limit` argument
-// indicates how many levels of recursion the group is allowed to have before
-// reporting a parse error (this limit exists to protect against stack
-// overflow).
-//
-// TODO: evaluate how the depth_limit should be specified. Do users need
-// control over this?
-UPB_INLINE const char* upb_WireReader_SkipGroup(
-    const char* ptr, uint32_t tag, upb_EpsCopyInputStream* stream) {
-  return UPB_PRIVATE(_upb_WireReader_SkipGroup)(ptr, tag, 100, stream);
-}
-
-UPB_INLINE const char* _upb_WireReader_SkipValue(
-    const char* ptr, uint32_t tag, int depth_limit,
-    upb_EpsCopyInputStream* stream) {
-  switch (upb_WireReader_GetWireType(tag)) {
-    case kUpb_WireType_Varint:
-      return upb_WireReader_SkipVarint(ptr);
-    case kUpb_WireType_32Bit:
-      return ptr + 4;
-    case kUpb_WireType_64Bit:
-      return ptr + 8;
-    case kUpb_WireType_Delimited: {
-      int size;
-      ptr = upb_WireReader_ReadSize(ptr, &size);
-      if (!ptr) return NULL;
-      ptr += size;
-      return ptr;
-    }
-    case kUpb_WireType_StartGroup:
-      return UPB_PRIVATE(_upb_WireReader_SkipGroup)(ptr, tag, depth_limit,
-                                                    stream);
-    case kUpb_WireType_EndGroup:
-      return NULL;  // Should be handled before now.
-    default:
-      return NULL;  // Unknown wire type.
-  }
-}
-
-// Skips data for a wire value of any type, returning a pointer past the end of
-// the data, or NULL if there was an error parsing the group. The `tag` argument
-// should be the tag that was just parsed. The `depth_limit` argument indicates
-// how many levels of recursion a group is allowed to have before reporting a
-// parse error (this limit exists to protect against stack overflow).
-//
-// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
-// Bounds checks must be performed before calling this function, preferably
-// by calling upb_EpsCopyInputStream_IsDone().
-//
-// TODO: evaluate how the depth_limit should be specified. Do users need
-// control over this?
-UPB_INLINE const char* upb_WireReader_SkipValue(
-    const char* ptr, uint32_t tag, upb_EpsCopyInputStream* stream) {
-  return _upb_WireReader_SkipValue(ptr, tag, 100, stream);
-}
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif  // UPB_WIRE_READER_H_
 
 // This should #undef all macros #defined in def.inc
 
