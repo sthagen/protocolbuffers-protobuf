@@ -1558,13 +1558,14 @@ static const upb_MiniTable *messages_layout[32] = {
 
 const upb_MiniTableEnum google_protobuf_Edition_enum_init = {
     64,
-    7,
+    8,
     {
         0x7,
         0x0,
         0x3e6,
         0x3e7,
         0x3e8,
+        0x3e9,
         0x1869d,
         0x1869e,
         0x1869f,
@@ -7702,6 +7703,15 @@ static void _upb_Decoder_CheckUnlinked(upb_Decoder* d, const upb_MiniTable* mt,
   *op = kUpb_DecodeOp_UnknownField;
 }
 
+UPB_FORCEINLINE
+static void _upb_Decoder_MaybeVerifyUtf8(upb_Decoder* d,
+                                         const upb_MiniTableField* field,
+                                         int* op) {
+  if ((field->UPB_ONLYBITS(mode) & kUpb_LabelFlags_IsAlternate) &&
+      UPB_UNLIKELY(d->options & kUpb_DecodeOption_AlwaysValidateUtf8))
+    *op = kUpb_DecodeOp_String;
+}
+
 static int _upb_Decoder_GetDelimitedOp(upb_Decoder* d, const upb_MiniTable* mt,
                                        const upb_MiniTableField* field) {
   enum { kRepeatedBase = 19 };
@@ -7758,6 +7768,8 @@ static int _upb_Decoder_GetDelimitedOp(upb_Decoder* d, const upb_MiniTable* mt,
 
   if (op == kUpb_DecodeOp_SubMessage) {
     _upb_Decoder_CheckUnlinked(d, mt, field, &op);
+  } else if (op == kUpb_DecodeOp_Bytes) {
+    _upb_Decoder_MaybeVerifyUtf8(d, field, &op);
   }
 
   return op;
