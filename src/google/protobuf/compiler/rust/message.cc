@@ -11,10 +11,10 @@
 
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
-#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/compiler/cpp/helpers.h"
 #include "google/protobuf/compiler/cpp/names.h"
+#include "google/protobuf/compiler/rust/accessors/accessor_case.h"
 #include "google/protobuf/compiler/rust/accessors/accessors.h"
 #include "google/protobuf/compiler/rust/context.h"
 #include "google/protobuf/compiler/rust/enum.h"
@@ -61,7 +61,7 @@ void MessageSerialize(Context& ctx, const Descriptor& msg) {
   switch (ctx.opts().kernel) {
     case Kernel::kCpp:
       ctx.Emit({{"serialize_thunk", ThunkName(ctx, msg, "serialize")}}, R"rs(
-        unsafe { $serialize_thunk$(self.inner.msg) }
+        unsafe { $serialize_thunk$(self.raw_msg()) }
       )rs");
       return;
 
@@ -70,7 +70,7 @@ void MessageSerialize(Context& ctx, const Descriptor& msg) {
         let arena = $pbr$::Arena::new();
         let mut len = 0;
         unsafe {
-          let data = $serialize_thunk$(self.inner.msg, arena.raw(), &mut len);
+          let data = $serialize_thunk$(self.raw_msg(), arena.raw(), &mut len);
           $pbr$::SerializedData::from_raw_parts(arena, data, len)
         }
       )rs");
@@ -94,7 +94,7 @@ void MessageDeserialize(Context& ctx, const Descriptor& msg) {
               data.len(),
             );
 
-            $deserialize_thunk$(self.inner.msg, data)
+            $deserialize_thunk$(self.raw_msg(), data)
           };
           success.then_some(()).ok_or($pb$::ParseError)
         )rs");
@@ -174,12 +174,8 @@ void MessageDrop(Context& ctx, const Descriptor& msg) {
   }
 
   ctx.Emit({{"delete_thunk", ThunkName(ctx, msg, "delete")}}, R"rs(
-    unsafe { $delete_thunk$(self.inner.msg); }
+    unsafe { $delete_thunk$(self.raw_msg()); }
   )rs");
-}
-
-bool IsStringOrBytes(FieldDescriptor::Type t) {
-  return t == FieldDescriptor::TYPE_STRING || t == FieldDescriptor::TYPE_BYTES;
 }
 
 void MessageSettableValue(Context& ctx, const Descriptor& msg) {
@@ -206,7 +202,7 @@ void MessageSettableValue(Context& ctx, const Descriptor& msg) {
               mutator.inner.msg(),
               self.msg,
               $std$::ptr::addr_of!($minitable$),
-              mutator.inner.raw_arena($pbi$::Private),
+              mutator.inner.arena($pbi$::Private).raw(),
             ) };
           }
         }
@@ -215,136 +211,6 @@ void MessageSettableValue(Context& ctx, const Descriptor& msg) {
   }
 
   ABSL_LOG(FATAL) << "unreachable";
-}
-
-void GetterForViewOrMut(Context& ctx, const FieldDescriptor& field,
-                        bool is_mut) {
-  auto fieldName = field.name();
-  auto fieldType = field.type();
-  auto getter_thunk = ThunkName(ctx, field, "get");
-  auto setter_thunk = ThunkName(ctx, field, "set");
-  // If we're dealing with a Mut, the getter must be supplied
-  // self.inner.msg() whereas a View has to be supplied self.msg
-  auto self = is_mut ? "self.inner.msg()" : "self.msg";
-
-  if (fieldType == FieldDescriptor::TYPE_MESSAGE) {
-    const Descriptor& msg = *field.message_type();
-    // TODO: support messages which are defined in other crates.
-    if (!IsInCurrentlyGeneratingCrate(ctx, msg)) {
-      return;
-    }
-    auto prefix = RsTypePath(ctx, field);
-    ctx.Emit(
-        {
-            {"prefix", prefix},
-            {"field", fieldName},
-            {"self", self},
-            {"getter_thunk", getter_thunk},
-            // TODO: dedupe with singular_message.cc
-            {
-                "view_body",
-                [&] {
-                  if (ctx.is_upb()) {
-                    ctx.Emit({}, R"rs(
-                      let submsg = unsafe { $getter_thunk$($self$) };
-                      match submsg {
-                        None => $prefix$View::new($pbi$::Private,
-                          $pbr$::ScratchSpace::zeroed_block($pbi$::Private)),
-                        Some(field) => $prefix$View::new($pbi$::Private, field),
-                      }
-                )rs");
-                  } else {
-                    ctx.Emit({}, R"rs(
-                      let submsg = unsafe { $getter_thunk$($self$) };
-                      $prefix$View::new($pbi$::Private, submsg)
-                )rs");
-                  }
-                },
-            },
-        },
-        R"rs(
-              pub fn r#$field$(&self) -> $prefix$View {
-                $view_body$
-              }
-            )rs");
-    return;
-  }
-
-  auto rsType = RsTypePath(ctx, field);
-  auto asRef = IsStringOrBytes(fieldType) ? ".as_ref()" : "";
-  auto vtable =
-      IsStringOrBytes(fieldType) ? "BytesMutVTable" : "PrimitiveVTable";
-  // PrimitiveVtable is parameterized based on the underlying primitive, like
-  // u32 so we need to provide this additional type arg
-  auto optionalTypeArgs =
-      IsStringOrBytes(fieldType) ? "" : absl::StrFormat("<%s>", rsType);
-  // need to stuff ProtoStr and [u8] behind a reference since they are DSTs
-  auto stringTransform =
-      IsStringOrBytes(fieldType)
-          ? "unsafe { __pb::ProtoStr::from_utf8_unchecked(res).into() }"
-          : "res";
-
-  // TODO: support enums which are defined in other crates.
-  auto enum_ = field.enum_type();
-  if (enum_ != nullptr && !IsInCurrentlyGeneratingCrate(ctx, *enum_)) {
-    return;
-  }
-
-  ctx.Emit({{"field", fieldName},
-            {"getter_thunk", getter_thunk},
-            {"setter_thunk", setter_thunk},
-            {"self", self},
-            {"RsType", rsType},
-            {"as_ref", asRef},
-            {"vtable", vtable},
-            {"optional_type_args", optionalTypeArgs},
-            {"string_transform", stringTransform},
-            {"maybe_mutator",
-             [&] {
-               // TODO: check mutational pathway genn'd correctly
-               if (is_mut) {
-                 ctx.Emit({}, R"rs(
-                  pub fn r#$field$_mut(&mut self) -> $pb$::Mut<'_, $RsType$> {
-                    static VTABLE: $pbi$::$vtable$$optional_type_args$ =
-                      $pbi$::$vtable$::new(
-                        $pbi$::Private,
-                        $getter_thunk$,
-                        $setter_thunk$);
-                    unsafe {
-                      <$pb$::Mut<$RsType$>>::from_inner(
-                        $pbi$::Private,
-                        $pbi$::RawVTableMutator::new(
-                          $pbi$::Private,
-                          self.inner,
-                          &VTABLE
-                        ),
-                      )
-                    }
-                  }
-                  )rs");
-               }
-             }}},
-           R"rs(
-          pub fn r#$field$(&self) -> $pb$::View<'_, $RsType$> {
-            let res = unsafe { $getter_thunk$($self$)$as_ref$ };
-            $string_transform$
-          }
-
-          $maybe_mutator$
-        )rs");
-}
-
-void AccessorsForViewOrMut(Context& ctx, const Descriptor& msg, bool is_mut) {
-  for (int i = 0; i < msg.field_count(); ++i) {
-    const FieldDescriptor& field = *msg.field(i);
-    if (field.is_repeated()) continue;
-    // TODO - add cord support
-    if (field.options().has_ctype()) continue;
-    // TODO
-    if (field.type() == FieldDescriptor::TYPE_GROUP) continue;
-    GetterForViewOrMut(ctx, field, is_mut);
-    ctx.printer().PrintRaw("\n");
-  }
 }
 
 }  // namespace
@@ -363,29 +229,26 @@ void GenerateRs(Context& ctx, const Descriptor& msg) {
             {"accessor_fns",
              [&] {
                for (int i = 0; i < msg.field_count(); ++i) {
-                 GenerateAccessorMsgImpl(ctx, *msg.field(i));
-                 ctx.printer().PrintRaw("\n");
+                 GenerateAccessorMsgImpl(ctx, *msg.field(i),
+                                         AccessorCase::OWNED);
                }
              }},
             {"oneof_accessor_fns",
              [&] {
                for (int i = 0; i < msg.real_oneof_decl_count(); ++i) {
                  GenerateOneofAccessors(ctx, *msg.real_oneof_decl(i));
-                 ctx.printer().PrintRaw("\n");
                }
              }},
             {"accessor_externs",
              [&] {
                for (int i = 0; i < msg.field_count(); ++i) {
                  GenerateAccessorExternC(ctx, *msg.field(i));
-                 ctx.printer().PrintRaw("\n");
                }
              }},
             {"oneof_externs",
              [&] {
                for (int i = 0; i < msg.real_oneof_decl_count(); ++i) {
                  GenerateOneofExternC(ctx, *msg.real_oneof_decl(i));
-                 ctx.printer().PrintRaw("\n");
                }
              }},
             {"nested_in_msg",
@@ -426,10 +289,39 @@ void GenerateRs(Context& ctx, const Descriptor& msg) {
                  }  // mod $Msg$_
                 )rs");
              }},
+            {"raw_arena_getter_for_message",
+             [&] {
+               if (ctx.is_upb()) {
+                 ctx.Emit({}, R"rs(
+                  fn arena(&self) -> &$pbr$::Arena {
+                    &self.inner.arena
+                  }
+                  )rs");
+               }
+             }},
+            {"raw_arena_getter_for_msgmut",
+             [&] {
+               if (ctx.is_upb()) {
+                 ctx.Emit({}, R"rs(
+                  fn arena(&self) -> &$pbr$::Arena {
+                    self.inner.arena($pbi$::Private)
+                  }
+                  )rs");
+               }
+             }},
             {"accessor_fns_for_views",
-             [&] { AccessorsForViewOrMut(ctx, msg, false); }},
+             [&] {
+               for (int i = 0; i < msg.field_count(); ++i) {
+                 GenerateAccessorMsgImpl(ctx, *msg.field(i),
+                                         AccessorCase::VIEW);
+               }
+             }},
             {"accessor_fns_for_muts",
-             [&] { AccessorsForViewOrMut(ctx, msg, true); }},
+             [&] {
+               for (int i = 0; i < msg.field_count(); ++i) {
+                 GenerateAccessorMsgImpl(ctx, *msg.field(i), AccessorCase::MUT);
+               }
+             }},
             {"settable_impl", [&] { MessageSettableValue(ctx, msg); }}},
            R"rs(
         #[allow(non_camel_case_types)]
@@ -458,11 +350,17 @@ void GenerateRs(Context& ctx, const Descriptor& msg) {
           _phantom: $Phantom$<&'a ()>,
         }
 
+        #[allow(dead_code)]
         impl<'a> $Msg$View<'a> {
           #[doc(hidden)]
           pub fn new(_private: $pbi$::Private, msg: $pbi$::RawMessage) -> Self {
             Self { msg, _phantom: std::marker::PhantomData }
           }
+
+          fn raw_msg(&self) -> $pbi$::RawMessage {
+            self.msg
+          }
+
           $accessor_fns_for_views$
         }
 
@@ -495,10 +393,12 @@ void GenerateRs(Context& ctx, const Descriptor& msg) {
           inner: $pbr$::MutatorMessageRef<'a>,
         }
 
+        #[allow(dead_code)]
         impl<'a> $Msg$Mut<'a> {
           #[doc(hidden)]
-          pub fn from_parent(_private: $pbi$::Private,
-                     parent: &'a mut $pbr$::MessageInner,
+          pub fn from_parent(
+                     _private: $pbi$::Private,
+                     parent: $pbr$::MutatorMessageRef<'a>,
                      msg: $pbi$::RawMessage)
             -> Self {
             Self {
@@ -506,10 +406,22 @@ void GenerateRs(Context& ctx, const Descriptor& msg) {
                        $pbi$::Private, parent, msg)
             }
           }
+
           #[doc(hidden)]
           pub fn new(_private: $pbi$::Private, msg: &'a mut $pbr$::MessageInner) -> Self {
             Self{ inner: $pbr$::MutatorMessageRef::new(_private, msg) }
           }
+
+          fn raw_msg(&self) -> $pbi$::RawMessage {
+            self.inner.msg()
+          }
+
+          fn as_mutator_message_ref(&mut self) -> $pbr$::MutatorMessageRef<'a> {
+            self.inner
+          }
+
+          $raw_arena_getter_for_msgmut$
+
           $accessor_fns_for_muts$
         }
 
@@ -529,17 +441,28 @@ void GenerateRs(Context& ctx, const Descriptor& msg) {
         impl<'a> $pb$::ViewProxy<'a> for $Msg$Mut<'a> {
           type Proxied = $Msg$;
           fn as_view(&self) -> $pb$::View<'_, $Msg$> {
-            $Msg$View { msg: self.inner.msg(), _phantom: std::marker::PhantomData }
+            $Msg$View { msg: self.raw_msg(), _phantom: std::marker::PhantomData }
           }
           fn into_view<'shorter>(self) -> $pb$::View<'shorter, $Msg$> where 'a: 'shorter {
-            $Msg$View { msg: self.inner.msg(), _phantom: std::marker::PhantomData }
+            $Msg$View { msg: self.raw_msg(), _phantom: std::marker::PhantomData }
           }
         }
 
+        #[allow(dead_code)]
         impl $Msg$ {
           pub fn new() -> Self {
             $Msg::new$
           }
+
+          fn raw_msg(&self) -> $pbi$::RawMessage {
+            self.inner.msg
+          }
+
+          fn as_mutator_message_ref(&mut self) -> $pbr$::MutatorMessageRef {
+            $pbr$::MutatorMessageRef::new($pbi$::Private, &mut self.inner)
+          }
+
+          $raw_arena_getter_for_message$
 
           pub fn serialize(&self) -> $pbr$::SerializedData {
             $Msg::serialize$
@@ -588,7 +511,7 @@ void GenerateRs(Context& ctx, const Descriptor& msg) {
           Self { inner: $pbr$::MessageInner { msg } }
         }
         pub fn __unstable_cpp_repr_grant_permission_to_break(&mut self) -> $pbi$::RawMessage {
-          self.inner.msg
+          self.raw_msg()
         }
       }
     )rs");

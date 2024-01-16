@@ -6,6 +6,7 @@
 // https://developers.google.com/open-source/licenses/bsd
 
 #include "google/protobuf/compiler/cpp/helpers.h"
+#include "google/protobuf/compiler/rust/accessors/accessor_case.h"
 #include "google/protobuf/compiler/rust/accessors/accessor_generator.h"
 #include "google/protobuf/compiler/rust/context.h"
 #include "google/protobuf/compiler/rust/naming.h"
@@ -17,7 +18,8 @@ namespace protobuf {
 namespace compiler {
 namespace rust {
 
-void Map::InMsgImpl(Context& ctx, const FieldDescriptor& field) const {
+void Map::InMsgImpl(Context& ctx, const FieldDescriptor& field,
+                    AccessorCase accessor_case) const {
   auto& key_type = *field.message_type()->map_key();
   auto& value_type = *field.message_type()->map_value();
 
@@ -33,7 +35,7 @@ void Map::InMsgImpl(Context& ctx, const FieldDescriptor& field) const {
                     pub fn r#$field$(&self)
                       -> $pb$::MapView<'_, $Key$, $Value$> {
                       unsafe {
-                        $getter_thunk$(self.inner.msg)
+                        $getter_thunk$(self.raw_msg())
                           .map_or_else(
                             $pbr$::empty_map::<$Key$, $Value$>,
                             |raw| $pb$::MapView::from_raw($pbi$::Private, raw)
@@ -46,23 +48,26 @@ void Map::InMsgImpl(Context& ctx, const FieldDescriptor& field) const {
                       -> $pb$::MapView<'_, $Key$, $Value$> {
                       unsafe {
                         $pb$::MapView::from_raw($pbi$::Private,
-                          $getter_thunk$(self.inner.msg))
+                          $getter_thunk$(self.raw_msg()))
                       }
                     })rs");
                }
              }},
             {"getter_mut",
              [&] {
+               if (accessor_case == AccessorCase::VIEW) {
+                 return;
+               }
                if (ctx.is_upb()) {
                  ctx.Emit({}, R"rs(
                     pub fn r#$field$_mut(&mut self)
                       -> $pb$::MapMut<'_, $Key$, $Value$> {
                       let raw = unsafe {
-                        $getter_mut_thunk$(self.inner.msg,
-                                           self.inner.arena.raw())
+                        $getter_mut_thunk$(self.raw_msg(),
+                                           self.arena().raw())
                       };
                       let inner = $pbr$::InnerMapMut::new($pbi$::Private,
-                        raw, self.inner.arena.raw());
+                        raw, self.arena().raw());
                       unsafe { $pb$::MapMut::from_inner($pbi$::Private, inner) }
                     })rs");
                } else {
@@ -70,7 +75,7 @@ void Map::InMsgImpl(Context& ctx, const FieldDescriptor& field) const {
                     pub fn r#$field$_mut(&mut self)
                       -> $pb$::MapMut<'_, $Key$, $Value$> {
                       let inner = $pbr$::InnerMapMut::new($pbi$::Private,
-                        unsafe { $getter_mut_thunk$(self.inner.msg) });
+                        unsafe { $getter_mut_thunk$(self.raw_msg()) });
                       unsafe { $pb$::MapMut::from_inner($pbi$::Private, inner) }
                     })rs");
                }

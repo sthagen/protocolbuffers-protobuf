@@ -9,6 +9,7 @@
 
 #include "absl/strings/string_view.h"
 #include "google/protobuf/compiler/cpp/helpers.h"
+#include "google/protobuf/compiler/rust/accessors/accessor_case.h"
 #include "google/protobuf/compiler/rust/accessors/accessor_generator.h"
 #include "google/protobuf/compiler/rust/accessors/helpers.h"
 #include "google/protobuf/compiler/rust/context.h"
@@ -20,8 +21,8 @@ namespace protobuf {
 namespace compiler {
 namespace rust {
 
-void SingularString::InMsgImpl(Context& ctx,
-                               const FieldDescriptor& field) const {
+void SingularString::InMsgImpl(Context& ctx, const FieldDescriptor& field,
+                               AccessorCase accessor_case) const {
   std::string hazzer_thunk = ThunkName(ctx, field, "has");
   std::string getter_thunk = ThunkName(ctx, field, "get");
   std::string setter_thunk = ThunkName(ctx, field, "set");
@@ -53,16 +54,19 @@ void SingularString::InMsgImpl(Context& ctx,
                        {"transform_view", transform_view}},
                       R"rs(
             pub fn $field$_opt(&self) -> $pb$::Optional<&$proxied_type$> {
-                let view = unsafe { $getter_thunk$(self.inner.msg).as_ref() };
+                let view = unsafe { $getter_thunk$(self.raw_msg()).as_ref() };
                 $pb$::Optional::new(
                   $transform_view$ ,
-                  unsafe { $hazzer_thunk$(self.inner.msg) }
+                  unsafe { $hazzer_thunk$(self.raw_msg()) }
                 )
               }
           )rs");
            }},
           {"field_mutator_getter",
            [&] {
+             if (accessor_case == AccessorCase::VIEW) {
+               return;
+             }
              if (field.has_presence()) {
                ctx.Emit(
                    {
@@ -99,11 +103,10 @@ void SingularString::InMsgImpl(Context& ctx,
                 )
               };
               let out = unsafe {
-                let has = $hazzer_thunk$(self.inner.msg);
+                let has = $hazzer_thunk$(self.raw_msg());
                 $pbi$::new_vtable_field_entry(
                   $pbi$::Private,
-                  $pbr$::MutatorMessageRef::new(
-                    $pbi$::Private, &mut self.inner),
+                  self.as_mutator_message_ref(),
                   &VTABLE,
                   has,
                 )
@@ -129,8 +132,7 @@ void SingularString::InMsgImpl(Context& ctx,
                     $pbi$::Private,
                     $pbi$::RawVTableMutator::new(
                       $pbi$::Private,
-                      $pbr$::MutatorMessageRef::new(
-                        $pbi$::Private, &mut self.inner),
+                      self.as_mutator_message_ref(),
                       &VTABLE,
                     )
                   )
@@ -142,7 +144,7 @@ void SingularString::InMsgImpl(Context& ctx,
       },
       R"rs(
         pub fn r#$field$(&self) -> &$proxied_type$ {
-          let view = unsafe { $getter_thunk$(self.inner.msg).as_ref() };
+          let view = unsafe { $getter_thunk$(self.raw_msg()).as_ref() };
           $transform_view$
         }
 
