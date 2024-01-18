@@ -25,7 +25,9 @@ void SingularMessage::InMsgImpl(Context& ctx, const FieldDescriptor& field,
   // fully qualified message name with modules prefixed
   std::string msg_type = RsTypePath(ctx, field);
   ctx.Emit({{"msg_type", msg_type},
-            {"field", field.name()},
+            {"field", RsSafeName(field.name())},
+            {"view_lifetime", ViewLifetime(accessor_case)},
+            {"view_self", ViewReceiver(accessor_case)},
             {"getter_thunk", ThunkName(ctx, field, "get")},
             {"getter_mut_thunk", ThunkName(ctx, field, "get_mut")},
             {"clearer_thunk", ThunkName(ctx, field, "clear")},
@@ -58,7 +60,7 @@ void SingularMessage::InMsgImpl(Context& ctx, const FieldDescriptor& field,
             {"getter",
              [&] {
                ctx.Emit({}, R"rs(
-                pub fn r#$field$(&self) -> $msg_type$View {
+                pub fn $field$($view_self$) -> $msg_type$View<$view_lifetime$> {
                   $getter_body$
                 }
               )rs");
@@ -87,7 +89,15 @@ void SingularMessage::InMsgImpl(Context& ctx, const FieldDescriptor& field,
                ctx.Emit({}, R"rs(
                 pub fn $field$_mut(&mut self) -> $msg_type$Mut {
                   $getter_mut_body$
-                })rs");
+                }
+
+                //~ TODO: b/319472103 - delete $field_mut$, then rename
+                //~ this to $field$_mut and update all unit tests
+                pub fn $field$_entry(&mut self)
+                    -> $pb$::FieldEntry<'_, $msg_type$> {
+                  todo!()
+                }
+                )rs");
              }},
             {"clearer",
              [&] {

@@ -233,6 +233,8 @@ impl SettableValue<[u8]> for SerializedData {
 }
 
 // TODO: Investigate replacing this with direct access to UPB bits.
+pub type MessagePresentMutData<'msg, T> = crate::vtable::RawVTableOptionalMutatorData<'msg, T>;
+pub type MessageAbsentMutData<'msg, T> = crate::vtable::RawVTableOptionalMutatorData<'msg, T>;
 pub type BytesPresentMutData<'msg> = crate::vtable::RawVTableOptionalMutatorData<'msg, [u8]>;
 pub type BytesAbsentMutData<'msg> = crate::vtable::RawVTableOptionalMutatorData<'msg, [u8]>;
 pub type InnerBytesMut<'msg> = crate::vtable::RawVTableMutator<'msg, [u8]>;
@@ -342,6 +344,11 @@ extern "C" {
         mini_table: *const OpaqueMiniTable,
         arena: RawArena,
     );
+    pub fn upb_Message_DeepClone(
+        m: RawMessage,
+        mini_table: *const OpaqueMiniTable,
+        arena: RawArena,
+    ) -> Option<RawMessage>;
 }
 
 /// The raw type-erased pointer version of `RepeatedMut`.
@@ -373,17 +380,28 @@ impl<'msg> InnerRepeatedMut<'msg> {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union upb_MessageValue {
-    bool_val: bool,
-    float_val: std::ffi::c_float,
-    double_val: std::ffi::c_double,
-    uint32_val: u32,
-    int32_val: i32,
-    uint64_val: u64,
-    int64_val: i64,
-    array_val: *const std::ffi::c_void,
-    map_val: *const std::ffi::c_void,
-    msg_val: *const std::ffi::c_void,
-    str_val: PtrAndLen,
+    pub bool_val: bool,
+    pub float_val: std::ffi::c_float,
+    pub double_val: std::ffi::c_double,
+    pub uint32_val: u32,
+    pub int32_val: i32,
+    pub uint64_val: u64,
+    pub int64_val: i64,
+    pub array_val: Option<RawRepeatedField>,
+    pub map_val: Option<RawMap>,
+    // TODO: Replace this `RawMessage` with the const type.
+    pub msg_val: Option<RawMessage>,
+    pub str_val: PtrAndLen,
+
+    tagged_msg_val: *const std::ffi::c_void,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub union upb_MutableMessageValue {
+    pub array: Option<RawRepeatedField>,
+    pub map: Option<RawMap>,
+    pub msg: Option<RawMessage>,
 }
 
 // Transcribed from google3/third_party/upb/upb/base/descriptor_constants.h
@@ -405,13 +423,14 @@ pub enum UpbCType {
 
 extern "C" {
     fn upb_Array_New(a: RawArena, r#type: std::ffi::c_int) -> RawRepeatedField;
-    fn upb_Array_Size(arr: RawRepeatedField) -> usize;
-    fn upb_Array_Set(arr: RawRepeatedField, i: usize, val: upb_MessageValue);
-    fn upb_Array_Get(arr: RawRepeatedField, i: usize) -> upb_MessageValue;
-    fn upb_Array_Append(arr: RawRepeatedField, val: upb_MessageValue, arena: RawArena);
-    fn upb_Array_Resize(arr: RawRepeatedField, size: usize, arena: RawArena) -> bool;
+    pub fn upb_Array_Size(arr: RawRepeatedField) -> usize;
+    pub fn upb_Array_Set(arr: RawRepeatedField, i: usize, val: upb_MessageValue);
+    pub fn upb_Array_Get(arr: RawRepeatedField, i: usize) -> upb_MessageValue;
+    pub fn upb_Array_Append(arr: RawRepeatedField, val: upb_MessageValue, arena: RawArena);
+    pub fn upb_Array_Resize(arr: RawRepeatedField, size: usize, arena: RawArena) -> bool;
     fn upb_Array_MutableDataPtr(arr: RawRepeatedField) -> *mut std::ffi::c_void;
     fn upb_Array_DataPtr(arr: RawRepeatedField) -> *const std::ffi::c_void;
+    pub fn upb_Array_GetMutable(arr: RawRepeatedField, i: usize) -> upb_MutableMessageValue;
 }
 
 macro_rules! impl_repeated_primitives {
@@ -498,6 +517,37 @@ impl_repeated_primitives!(
     (i64, int64_val, UpbCType::Int64),
     (u64, uint64_val, UpbCType::UInt64),
 );
+
+/// Copy the contents of `src` into `dest`.
+///
+/// # Safety
+/// - `minitable` must be a pointer to the minitable for message `T`.
+pub unsafe fn repeated_message_copy_from<T: ProxiedInRepeated>(
+    src: View<Repeated<T>>,
+    mut dest: Mut<Repeated<T>>,
+    minitable: *const OpaqueMiniTable,
+) {
+    // SAFETY:
+    // - `src.as_raw()` is a valid `const upb_Array*`.
+    // - `dest.as_raw()` is a valid `upb_Array*`.
+    // - Elements of `src` and have message minitable `$minitable$`.
+    unsafe {
+        let size = upb_Array_Size(src.as_raw(Private));
+        if !upb_Array_Resize(dest.as_raw(Private), size, dest.raw_arena(Private)) {
+            panic!("upb_Array_Resize failed.");
+        }
+        for i in 0..size {
+            let src_msg = upb_Array_Get(src.as_raw(Private), i)
+                .msg_val
+                .expect("upb_Array* element should not be NULL");
+            // Avoid the use of `upb_Array_DeepClone` as it creates an
+            // entirely new `upb_Array*` at a new memory address.
+            let cloned_msg = upb_Message_DeepClone(src_msg, minitable, dest.raw_arena(Private))
+                .expect("upb_Message_DeepClone failed.");
+            upb_Array_Set(dest.as_raw(Private), i, upb_MessageValue { msg_val: Some(cloned_msg) });
+        }
+    }
+}
 
 /// Cast a `RepeatedView<SomeEnum>` to `RepeatedView<i32>`.
 pub fn cast_enum_repeated_view<E: Enum + ProxiedInRepeated>(
@@ -843,5 +893,20 @@ mod tests {
             )
         };
         assert_that!(&*serialized_data, eq(b"Hello world"));
+    }
+
+    #[test]
+    fn assert_c_type_sizes() {
+        // TODO: add these same asserts in C++.
+        use std::ffi::c_void;
+        use std::mem::{align_of, size_of};
+        assert_that!(
+            size_of::<upb_MessageValue>(),
+            eq(size_of::<*const c_void>() + size_of::<usize>())
+        );
+        assert_that!(align_of::<upb_MessageValue>(), eq(align_of::<*const c_void>()));
+
+        assert_that!(size_of::<upb_MutableMessageValue>(), eq(size_of::<*const c_void>()));
+        assert_that!(align_of::<upb_MutableMessageValue>(), eq(align_of::<*const c_void>()));
     }
 }
