@@ -8,7 +8,7 @@
 use googletest::prelude::*;
 use paste::paste;
 use protobuf::ViewProxy;
-use unittest_proto::proto2_unittest::{TestAllTypes, TestAllTypes_, TestAllTypes_::NestedMessage};
+use unittest_proto::{TestAllTypes, TestAllTypes_, TestAllTypes_::NestedMessage};
 
 macro_rules! generate_repeated_numeric_test {
   ($(($t: ty, $field: ident)),*) => {
@@ -191,4 +191,50 @@ fn test_repeated_message() {
         msg.repeated_nested_message().iter().map(|m| m.bb()).collect::<Vec<_>>(),
         eq(vec![2]),
     );
+}
+
+#[test]
+fn test_repeated_strings() {
+    let mut older_msg = TestAllTypes::new();
+    {
+        let mut msg = TestAllTypes::new();
+        assert_that!(msg.repeated_string(), empty());
+        {
+            // TODO: b/320936046 - Test SettableValue once available
+            msg.repeated_string_mut().push("set from Mut".into());
+        }
+        assert_that!(msg.repeated_string().len(), eq(1));
+        // TODO: b/87654321 - Use elements_are! when ready
+        assert_that!(msg.repeated_string().get(0).unwrap(), eq("set from Mut"));
+        older_msg.repeated_string_mut().copy_from(msg.repeated_string());
+    }
+
+    // TODO: b/87654321 - Use elements_are! when ready
+    assert_that!(older_msg.repeated_string().len(), eq(1));
+
+    older_msg.repeated_string_mut().clear();
+    assert_that!(older_msg.repeated_string(), empty());
+}
+
+#[test]
+fn test_repeated_bytes() {
+    let mut older_msg = TestAllTypes::new();
+    {
+        let mut msg = TestAllTypes::new();
+        assert_that!(msg.repeated_bytes(), empty());
+        {
+            // TODO: b/320936046 - Test SettableValue once available
+            msg.repeated_bytes_mut().push(b"set from Mut");
+        }
+        assert_that!(msg.repeated_bytes().len(), eq(1));
+        // TODO: b/87654321 - Use elements_are! when ready
+        assert_that!(msg.repeated_bytes().get(0).unwrap(), eq(b"set from Mut"));
+        older_msg.repeated_bytes_mut().copy_from(msg.repeated_bytes());
+    }
+
+    // TODO: b/87654321 - Use elements_are! when ready
+    assert_that!(older_msg.repeated_bytes().len(), eq(1));
+
+    older_msg.repeated_bytes_mut().clear();
+    assert_that!(older_msg.repeated_bytes(), empty());
 }
