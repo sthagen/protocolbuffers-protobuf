@@ -20,11 +20,15 @@
 #include "upb/message/internal/extension.h"
 #include "upb/message/message.h"
 #include "upb/message/promote.h"
+#include "upb/message/value.h"
 #include "upb/mini_table/extension.h"
 #include "upb/mini_table/extension_registry.h"
 #include "upb/mini_table/message.h"
 #include "upb/wire/decode.h"
 #include "upb/wire/encode.h"
+
+// Must be last.
+#include "upb/port/def.inc"
 
 namespace protos {
 
@@ -114,24 +118,17 @@ class MessageLock {
 bool HasExtensionOrUnknown(const upb_Message* msg,
                            const upb_MiniTableExtension* eid) {
   MessageLock msg_lock(msg);
-  return _upb_Message_Getext(msg, eid) != nullptr ||
+  return UPB_PRIVATE(_upb_Message_Getext)(msg, eid) != nullptr ||
          upb_Message_FindUnknown(msg, upb_MiniTableExtension_Number(eid), 0)
                  .status == kUpb_FindUnknown_Ok;
 }
 
-const upb_Extension* GetOrPromoteExtension(upb_Message* msg,
-                                           const upb_MiniTableExtension* eid,
-                                           upb_Arena* arena) {
+bool GetOrPromoteExtension(upb_Message* msg, const upb_MiniTableExtension* eid,
+                           upb_Arena* arena, upb_MessageValue* value) {
   MessageLock msg_lock(msg);
-  const upb_Extension* ext = _upb_Message_Getext(msg, eid);
-  if (ext == nullptr) {
-    upb_GetExtension_Status ext_status = upb_MiniTable_GetOrPromoteExtension(
-        (upb_Message*)msg, eid, 0, arena, &ext);
-    if (ext_status != kUpb_GetExtension_Ok) {
-      ext = nullptr;
-    }
-  }
-  return ext;
+  upb_GetExtension_Status ext_status = upb_Message_GetOrPromoteExtension(
+      (upb_Message*)msg, eid, 0, arena, value);
+  return ext_status == kUpb_GetExtension_Ok;
 }
 
 absl::StatusOr<absl::string_view> Serialize(const upb_Message* message,
@@ -177,11 +174,6 @@ absl::Status MoveExtension(upb_Message* message, upb_Arena* message_arena,
 absl::Status SetExtension(upb_Message* message, upb_Arena* message_arena,
                           const upb_MiniTableExtension* ext,
                           const upb_Message* extension) {
-  upb_Extension* msg_ext =
-      _upb_Message_GetOrCreateExtension(message, ext, message_arena);
-  if (!msg_ext) {
-    return MessageAllocationError();
-  }
   // Clone extension into target message arena.
   extension = DeepClone(extension, upb_MiniTableExtension_GetSubMessage(ext),
                         message_arena);
