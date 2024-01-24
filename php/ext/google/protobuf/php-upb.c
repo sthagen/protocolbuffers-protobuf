@@ -5057,13 +5057,13 @@ bool UPB_PRIVATE(_upb_Array_Realloc)(upb_Array* array, size_t min_capacity,
 
 // Must be last.
 
-const upb_Extension* upb_Message_ExtensionByIndex(const upb_Message* msg,
-                                                  size_t index) {
+const upb_MiniTableExtension* upb_Message_ExtensionByIndex(
+    const upb_Message* msg, size_t index) {
   size_t count;
   const upb_Extension* ext = UPB_PRIVATE(_upb_Message_Getexts)(msg, &count);
 
   UPB_ASSERT(index < count);
-  return &ext[index];
+  return ext[index].ext;
 }
 
 const upb_Extension* upb_Message_FindExtensionByNumber(const upb_Message* msg,
@@ -5289,6 +5289,7 @@ static bool _upb_mapsorter_resize(_upb_mapsorter* s, _upb_sortedmap* sorted,
 bool _upb_mapsorter_pushmap(_upb_mapsorter* s, upb_FieldType key_type,
                             const upb_Map* map, _upb_sortedmap* sorted) {
   int map_size = _upb_Map_Size(map);
+  UPB_ASSERT(map_size);
 
   if (!_upb_mapsorter_resize(s, sorted, map_size)) return false;
 
@@ -8841,7 +8842,7 @@ static void encode_map(upb_encstate* e, const upb_Message* msg,
       upb_MiniTableSub_Message(subs[f->UPB_PRIVATE(submsg_index)]);
   UPB_ASSERT(layout->UPB_PRIVATE(field_count) == 2);
 
-  if (map == NULL) return;
+  if (!map || !upb_Map_Size(map)) return;
 
   if (e->options & kUpb_EncodeOption_Deterministic) {
     _upb_sortedmap sorted;
