@@ -675,9 +675,29 @@ fn test_singular_msg_field() {
     // testing reading an int inside a view
     assert_that!(msg_view.bb(), eq(0));
 
-    let msg_mut: NestedMessageMut = msg.optional_nested_message_mut();
+    let msg_mut: NestedMessageMut = msg.optional_nested_message_mut().or_default();
     // test reading an int inside a mut
     assert_that!(msg_mut.bb(), eq(0));
+}
+
+#[test]
+fn test_message_opt() {
+    let msg = TestAllTypes::new();
+    let opt: Optional<
+        unittest_proto::TestAllTypes_::NestedMessageView<'_>,
+        unittest_proto::TestAllTypes_::NestedMessageView<'_>,
+    > = msg.optional_nested_message_opt();
+    assert_that!(opt.is_set(), eq(false));
+    assert_that!(opt.into_inner().bb(), eq(0));
+}
+
+#[test]
+fn test_message_opt_set() {
+    let mut msg = TestAllTypes::new();
+    //let opt = msg.optional_nested_message_mut().or_default();
+    //assert_that!(opt.is_set(), eq(false));
+    //todo: check for set after prereq cl
+    //assert_that!(opt.into_inner().bb(), eq(0));
 }
 
 #[test]
