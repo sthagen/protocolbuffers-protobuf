@@ -383,6 +383,14 @@ bool IsLazy(const FieldDescriptor* field, const Options& options,
 // Is this an explicit (non-profile driven) lazy field, as denoted by
 // lazy/unverified_lazy in the descriptor?
 inline bool IsExplicitLazy(const FieldDescriptor* field) {
+  if (field->is_map() || field->is_repeated()) {
+    return false;
+  }
+
+  if (field->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE) {
+    return false;
+  }
+
   return field->options().lazy() || field->options().unverified_lazy();
 }
 
@@ -1149,6 +1157,14 @@ bool IsFileDescriptorProto(const FileDescriptor* file, const Options& options);
 // Some descriptors, like some map entries, are not represented as a generated
 // class.
 bool ShouldGenerateClass(const Descriptor* descriptor, const Options& options);
+
+
+// Determine if we need a PostLoopHandler function to inject into TcParseTable's
+// ParseLoop.
+// If this returns true, the parse table generation will use
+// `&ClassName::PostLoopHandler` which should be a static function of the right
+// signature.
+bool NeedsPostLoopHandler(const Descriptor* descriptor, const Options& options);
 
 }  // namespace cpp
 }  // namespace compiler

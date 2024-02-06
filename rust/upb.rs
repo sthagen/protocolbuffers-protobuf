@@ -9,8 +9,8 @@
 
 use crate::__internal::{Enum, Private, PtrAndLen, RawArena, RawMap, RawMessage, RawRepeatedField};
 use crate::{
-    Map, MapView, Mut, ProtoStr, Proxied, ProxiedInMapValue, ProxiedInRepeated, Repeated,
-    RepeatedMut, RepeatedView, SettableValue, View, ViewProxy,
+    Map, MapIter, MapMut, MapView, Mut, ProtoStr, Proxied, ProxiedInMapValue, ProxiedInRepeated,
+    Repeated, RepeatedMut, RepeatedView, SettableValue, View, ViewProxy,
 };
 use core::fmt::Debug;
 use std::alloc;
@@ -511,7 +511,7 @@ macro_rules! impl_repeated_primitives {
                     // - `copy_nonoverlapping` is unsafe but here we guarantee that both pointers
                     //   are valid, the pointers are `#[repr(u8)]`, and the size is correct.
                     unsafe {
-                        if (!upb_Array_Resize(dest.as_raw(Private), src.len(), dest.inner.arena)) {
+                        if (!upb_Array_Resize(dest.as_raw(Private), src.len(), dest.raw_arena(Private))) {
                             panic!("upb_Array_Resize failed.");
                         }
                         ptr::copy_nonoverlapping(
@@ -528,7 +528,7 @@ macro_rules! impl_repeated_primitives {
 impl<'msg, T: ?Sized> RepeatedMut<'msg, T> {
     // Returns a `RawArena` which is live for at least `'msg`
     #[doc(hidden)]
-    pub fn raw_arena(&self, _private: Private) -> RawArena {
+    pub fn raw_arena(&mut self, _private: Private) -> RawArena {
         self.inner.arena
     }
 }
@@ -598,7 +598,7 @@ pub fn cast_enum_repeated_mut<E: Enum + ProxiedInRepeated>(
     // - Reading an enum array as an i32 array is sound.
     // - No shared mutation is possible through the output.
     unsafe {
-        let InnerRepeatedMut { arena, raw, .. } = repeated.into_inner();
+        let InnerRepeatedMut { arena, raw, .. } = repeated.inner;
         RepeatedMut::from_inner(private, InnerRepeatedMut { arena, raw, _phantom: PhantomData })
     }
 }
@@ -646,6 +646,14 @@ where
                 .get_or_init(|| Box::leak(Box::new(Map::new())).as_mut().into_view())
                 .as_raw(Private),
         )
+    }
+}
+
+impl<'msg, K: ?Sized, V: ?Sized> MapMut<'msg, K, V> {
+    // Returns a `RawArena` which is live for at least `'msg`
+    #[doc(hidden)]
+    pub fn raw_arena(&mut self, _private: Private) -> RawArena {
+        self.inner.raw_arena
     }
 }
 
@@ -786,6 +794,34 @@ impl UpbTypeConversions for ProtoStr {
     }
 }
 
+pub struct RawMapIter {
+    // TODO: Replace this `RawMap` with the const type.
+    map: RawMap,
+    iter: usize,
+}
+
+impl RawMapIter {
+    pub fn new(_private: Private, map: RawMap) -> Self {
+        // SAFETY: __rust_proto_kUpb_Map_Begin is never modified
+        RawMapIter { map, iter: unsafe { __rust_proto_kUpb_Map_Begin } }
+    }
+
+    /// # Safety
+    /// - `self.map` must be valid, and remain valid while the return value is
+    ///   in use.
+    pub(crate) unsafe fn next_unchecked(
+        &mut self,
+        _private: Private,
+    ) -> Option<(upb_MessageValue, upb_MessageValue)> {
+        let mut key = MaybeUninit::uninit();
+        let mut value = MaybeUninit::uninit();
+        // SAFETY: the `map` is valid as promised by the caller
+        unsafe { upb_Map_Next(self.map, key.as_mut_ptr(), value.as_mut_ptr(), &mut self.iter) }
+            // SAFETY: if upb_Map_Next returns true, then key and value have been populated.
+            .then(|| unsafe { (key.assume_init(), value.assume_init()) })
+    }
+}
+
 macro_rules! impl_ProxiedInMapValue_for_non_generated_value_types {
     ($key_t:ty ; $($t:ty),*) => {
          $(
@@ -814,29 +850,30 @@ macro_rules! impl_ProxiedInMapValue_for_non_generated_value_types {
                     // - `map.inner.raw_arena` is a live `upb_Arena*`
                     // - This function is only called once for `map` in `Drop`.
                     unsafe {
-                        upb_Arena_Free(map.inner.raw_arena);
+                        upb_Arena_Free(map.as_mut().raw_arena(Private));
                     }
                 }
 
-                fn map_clear(map: Mut<'_, Map<$key_t, Self>>) {
+                fn map_clear(mut map: Mut<'_, Map<$key_t, Self>>) {
                     unsafe {
-                        upb_Map_Clear(map.inner.raw);
+                        upb_Map_Clear(map.as_raw(Private));
                     }
                 }
 
                 fn map_len(map: View<'_, Map<$key_t, Self>>) -> usize {
                     unsafe {
-                        upb_Map_Size(map.raw)
+                        upb_Map_Size(map.as_raw(Private))
                     }
                 }
 
-                fn map_insert(map: Mut<'_, Map<$key_t, Self>>, key: View<'_, $key_t>, value: View<'_, Self>) -> bool {
+                fn map_insert(mut map: Mut<'_, Map<$key_t, Self>>, key: View<'_, $key_t>, value: View<'_, Self>) -> bool {
+                    let arena = map.raw_arena(Private);
                     unsafe {
                         upb_Map_InsertAndReturnIfInserted(
-                            map.inner.raw,
+                            map.as_raw(Private),
                             <$key_t as UpbTypeConversions>::to_message_value(key),
-                            <$t as UpbTypeConversions>::to_message_value_copy_if_required(map.inner.raw_arena, value),
-                            map.inner.raw_arena
+                            <$t as UpbTypeConversions>::to_message_value_copy_if_required(arena, value),
+                            arena
                         )
                     }
                 }
@@ -844,7 +881,7 @@ macro_rules! impl_ProxiedInMapValue_for_non_generated_value_types {
                 fn map_get<'a>(map: View<'a, Map<$key_t, Self>>, key: View<'_, $key_t>) -> Option<View<'a, Self>> {
                     let mut val = <$t as UpbTypeConversions>::empty_message_value();
                     let found = unsafe {
-                        upb_Map_Get(map.raw, <$key_t as UpbTypeConversions>::to_message_value(key),
+                        upb_Map_Get(map.as_raw(Private), <$key_t as UpbTypeConversions>::to_message_value(key),
                             &mut val)
                     };
                     if !found {
@@ -853,13 +890,33 @@ macro_rules! impl_ProxiedInMapValue_for_non_generated_value_types {
                     Some(unsafe { <$t as UpbTypeConversions>::from_message_value(val) })
                 }
 
-                fn map_remove(map: Mut<'_, Map<$key_t, Self>>, key: View<'_, $key_t>) -> bool {
+                fn map_remove(mut map: Mut<'_, Map<$key_t, Self>>, key: View<'_, $key_t>) -> bool {
                     let mut val = <$t as UpbTypeConversions>::empty_message_value();
                     unsafe {
-                        upb_Map_Delete(map.inner.raw,
+                        upb_Map_Delete(map.as_raw(Private),
                             <$key_t as UpbTypeConversions>::to_message_value(key),
                             &mut val)
                     }
+                }
+
+                fn map_iter(map: View<'_, Map<$key_t, Self>>) -> MapIter<'_, $key_t, Self> {
+                    // SAFETY: View<Map<'_,..>> guarantees its RawMap outlives '_.
+                    unsafe {
+                        MapIter::from_raw(Private, RawMapIter::new(Private, map.as_raw(Private)))
+                    }
+                }
+
+                fn map_iter_next<'a>(
+                    iter: &mut MapIter<'a, $key_t, Self>
+                ) -> Option<(View<'a, $key_t>, View<'a, Self>)> {
+                    // SAFETY: MapIter<'a, ..> guarantees its RawMapIter outlives 'a.
+                    unsafe { iter.as_raw_mut(Private).next_unchecked(Private) }
+                        // SAFETY: MapIter<K, V> returns key and values message values
+                        //         with the variants for K and V active.
+                        .map(|(k, v)| unsafe {(
+                            <$key_t as UpbTypeConversions>::from_message_value(k),
+                            <$t as UpbTypeConversions>::from_message_value(v),
+                        )})
                 }
             }
          )*
@@ -928,6 +985,15 @@ extern "C" {
         removed_value: *mut upb_MessageValue,
     ) -> bool;
     fn upb_Map_Clear(map: RawMap);
+
+    static __rust_proto_kUpb_Map_Begin: usize;
+
+    fn upb_Map_Next(
+        map: RawMap,
+        key: *mut upb_MessageValue,
+        value: *mut upb_MessageValue,
+        iter: &mut usize,
+    ) -> bool;
 }
 
 #[cfg(test)]

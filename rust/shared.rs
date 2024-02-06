@@ -23,7 +23,7 @@ use std::fmt;
 #[doc(hidden)]
 pub mod __public {
     pub use crate::r#enum::UnknownEnumValue;
-    pub use crate::map::{Map, MapMut, MapView, ProxiedInMapValue};
+    pub use crate::map::{Map, MapIter, MapMut, MapView, ProxiedInMapValue};
     pub use crate::optional::{AbsentField, FieldEntry, Optional, PresentField};
     pub use crate::primitive::PrimitiveMut;
     pub use crate::proxied::{
@@ -31,6 +31,7 @@ pub mod __public {
     };
     pub use crate::repeated::{ProxiedInRepeated, Repeated, RepeatedMut, RepeatedView};
     pub use crate::string::{BytesMut, ProtoStr, ProtoStrMut};
+    pub use crate::ParseError;
 }
 pub use __public::*;
 
