@@ -689,6 +689,11 @@ void UPB_PRIVATE(_upb_Arena_SwapIn)(struct upb_Arena* des,
 void UPB_PRIVATE(_upb_Arena_SwapOut)(struct upb_Arena* des,
                                      const struct upb_Arena* src);
 
+// Returns whether |ptr| was allocated directly by |a| (so care must be used
+// with fused arenas).
+UPB_API bool UPB_ONLYBITS(_upb_Arena_Contains)(const struct upb_Arena* a,
+                                               void* ptr);
+
 UPB_INLINE size_t UPB_PRIVATE(_upb_ArenaHas)(const struct upb_Arena* a) {
   return (size_t)(a->UPB_ONLYBITS(end) - a->UPB_ONLYBITS(ptr));
 }
@@ -12684,11 +12689,6 @@ UPB_API bool upb_Message_IsEmpty(const upb_Message* msg,
 UPB_API bool upb_Message_IsEqual(const upb_Message* msg1,
                                  const upb_Message* msg2,
                                  const upb_MiniTable* m);
-
-// Compares two messages by serializing them and calling memcmp().
-UPB_API bool upb_Message_IsExactlyEqual(const upb_Message* msg1,
-                                        const upb_Message* msg2,
-                                        const upb_MiniTable* m);
 
 // If |ctype| is a message then |m| must point to its minitable.
 UPB_API_INLINE bool upb_MessageValue_IsEqual(upb_MessageValue val1,
