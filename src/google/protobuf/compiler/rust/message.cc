@@ -875,11 +875,14 @@ void GenerateRs(Context& ctx, const Descriptor& msg) {
         }
 
         // SAFETY:
-        // - `$Msg$` does not provide shared mutation with its arena.
-        // - `$Msg$Mut` is not `Send`, and so even in the presence of mutator
-        //   splitting, synchronous access of an arena that would conflict with
-        //   field access is impossible.
+        // - `$Msg$` is `Sync` because it does not implement interior mutability.
+        //    Neither does `$Msg$Mut`.
         unsafe impl Sync for $Msg$ {}
+
+        // SAFETY:
+        // - `$Msg$` is `Send` because it uniquely owns its arena and does
+        //   not use thread-local data.
+        unsafe impl Send for $Msg$ {}
 
         impl $pb$::Proxied for $Msg$ {
           type View<'msg> = $Msg$View<'msg>;
@@ -904,16 +907,20 @@ void GenerateRs(Context& ctx, const Descriptor& msg) {
             self.msg
           }
 
+          pub fn serialize(&self) -> $pbr$::SerializedData {
+            $Msg::serialize$
+          }
+
           $accessor_fns_for_views$
         }
 
         // SAFETY:
-        // - `$Msg$View` does not perform any mutation.
-        // - While a `$Msg$View` exists, a `$Msg$Mut` can't exist to mutate
-        //   the arena that would conflict with field access.
-        // - `$Msg$Mut` is not `Send`, and so even in the presence of mutator
-        //   splitting, synchronous access of an arena is impossible.
+        // - `$Msg$View` is `Sync` because it does not support mutation.
         unsafe impl Sync for $Msg$View<'_> {}
+
+        // SAFETY:
+        // - `$Msg$View` is `Send` because while its alive a `$Msg$Mut` cannot.
+        // - `$Msg$View` does not use thread-local data.
         unsafe impl Send for $Msg$View<'_> {}
 
         impl<'msg> $pb$::ViewProxy<'msg> for $Msg$View<'msg> {
@@ -1034,6 +1041,10 @@ void GenerateRs(Context& ctx, const Descriptor& msg) {
             self.inner
           }
 
+          pub fn serialize(&self) -> $pbr$::SerializedData {
+            $pb$::ViewProxy::as_view(self).serialize()
+          }
+
           $raw_arena_getter_for_msgmut$
 
           $accessor_fns_for_muts$
@@ -1079,7 +1090,7 @@ void GenerateRs(Context& ctx, const Descriptor& msg) {
           $raw_arena_getter_for_message$
 
           pub fn serialize(&self) -> $pbr$::SerializedData {
-            $Msg::serialize$
+            self.as_view().serialize()
           }
           pub fn deserialize(&mut self, data: &[u8]) -> Result<(), $pb$::ParseError> {
             $Msg::deserialize$
