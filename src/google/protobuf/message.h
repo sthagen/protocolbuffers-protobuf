@@ -101,6 +101,7 @@
 #include "absl/memory/memory.h"
 #include "absl/strings/cord.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/generated_message_reflection.h"
@@ -601,6 +602,9 @@ class PROTOBUF_EXPORT Reflection final {
     friend class Reflection;
 
     absl::string_view CopyFromCord(const absl::Cord& cord) {
+      if (absl::optional<absl::string_view> flat = cord.TryFlat()) {
+        return *flat;
+      }
       if (!buffer_) {
         buffer_ = absl::make_unique<std::string>();
       }
@@ -1412,7 +1416,7 @@ const T* DynamicCastToGenerated(const Message* from) {
   (void)unused;
 
 #if PROTOBUF_RTTI
-  internal::StrongReferenceToType<T>();
+  internal::StrongReference(T::default_instance());
   return dynamic_cast<const T*>(from);
 #else
   bool ok = from != nullptr &&
@@ -1451,7 +1455,7 @@ T& DynamicCastToGenerated(Message& from) {
 // instance T and T is a type derived from base Message class.
 template <typename T>
 const T* DownCastToGenerated(const Message* from) {
-  internal::StrongReferenceToType<T>();
+  internal::StrongReference(T::default_instance());
   ABSL_DCHECK(DynamicCastToGenerated<T>(from) == from)
       << "Cannot downcast " << from->GetTypeName() << " to "
       << T::default_instance().GetTypeName();
@@ -1499,7 +1503,7 @@ T& DownCastToGenerated(Message& from) {
 // of loops (on x86-64 it compiles into two "mov" instructions).
 template <typename T>
 void LinkMessageReflection() {
-  internal::StrongReferenceToType<T>();
+  internal::StrongReference(T::default_instance);
 }
 
 // =============================================================================
