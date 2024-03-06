@@ -183,6 +183,7 @@ set(libprotobuf_hdrs
   ${protobuf_SOURCE_DIR}/src/google/protobuf/reflection_visit_fields.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/repeated_field.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/repeated_ptr_field.h
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/runtime_version.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/serial_arena.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/service.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/string_block.h
@@ -275,6 +276,7 @@ set(libprotobuf_lite_hdrs
   ${protobuf_SOURCE_DIR}/src/google/protobuf/raw_ptr.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/repeated_field.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/repeated_ptr_field.h
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/runtime_version.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/serial_arena.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/string_block.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/stubs/callback.h
@@ -768,6 +770,7 @@ set(protobuf_test_protos_files
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_proto3_arena.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_proto3_arena_lite.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_proto3_bad_macros.proto
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_proto3_extensions.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_proto3_lite.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_proto3_optional.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_retention.proto

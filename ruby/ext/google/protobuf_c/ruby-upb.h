@@ -342,6 +342,12 @@ void __asan_unpoison_memory_region(void const volatile *addr, size_t size);
 #define UPB_DESC_MINITABLE(sym) &google__protobuf__##sym##_msg_init
 #endif
 
+#ifdef UPB_TRACING_ENABLED
+#ifdef NDEBUG
+error UPB_TRACING_ENABLED Tracing should be disabled in production builds
+#endif
+#endif
+
 #ifndef UPB_BASE_STATUS_H_
 #define UPB_BASE_STATUS_H_
 
@@ -1488,11 +1494,16 @@ struct upb_MiniTable {
   uint8_t UPB_PRIVATE(dense_below);
   uint8_t UPB_PRIVATE(table_mask);
   uint8_t UPB_PRIVATE(required_count);  // Required fields have the low hasbits.
+#ifdef UPB_TRACING_ENABLED
+  const char* UPB_PRIVATE(full_name);
+#endif
 
+#ifdef UPB_FASTTABLE_ENABLED
   // To statically initialize the tables of variable length, we need a flexible
   // array member, and we need to compile in gnu99 mode (constant initialization
   // of flexible array members is a GNU extension, not in C99 unfortunately.
   _upb_FastTable_Entry UPB_PRIVATE(fasttable)[];
+#endif
 };
 // LINT.ThenChange(//depot/google3/third_party/upb/bits/typescript/mini_table.ts)
 
@@ -1584,6 +1595,13 @@ UPB_PRIVATE(_upb_MiniTable_RequiredMask)(const struct upb_MiniTable* m) {
   UPB_ASSERT(0 < n && n <= 64);
   return (1ULL << n) - 1;
 }
+
+#ifdef UPB_TRACING_ENABLED
+UPB_INLINE const char* upb_MiniTable_FullName(
+    const struct upb_MiniTable* mini_table) {
+  return mini_table->UPB_PRIVATE(full_name);
+}
+#endif
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -3165,6 +3183,9 @@ upb_Message_GetField(const upb_Message* msg, const upb_MiniTableField* field,
   return ret;
 }
 
+// Sets the value of the given field in the given msg. The return value is true
+// if the operation completed successfully, or false if memory allocation
+// failed.
 UPB_INLINE bool upb_Message_SetField(upb_Message* msg,
                                      const upb_MiniTableField* field,
                                      upb_MessageValue val, upb_Arena* a) {
@@ -3379,6 +3400,10 @@ upb_Message_GetString(const upb_Message* msg, const upb_MiniTableField* field,
   return upb_Message_GetField(msg, field, def).str_val;
 }
 
+// Sets the value of a `string` or `bytes` field. The bytes of the value are not
+// copied, so it is the caller's responsibility to ensure that they remain valid
+// for the lifetime of `msg`. That might be done by copying them into the given
+// arena, or by fusing that arena with the arena the bytes live in, for example.
 UPB_API_INLINE bool upb_Message_SetString(upb_Message* msg,
                                           const upb_MiniTableField* field,
                                           upb_StringView value, upb_Arena* a) {
