@@ -10,16 +10,16 @@ load(
     "cc_proto_library",
 )
 load(
-    "//bazel:build_defs.bzl",
-    "UPB_DEFAULT_CPPOPTS",
-)
-load(
     "//bazel:upb_proto_library.bzl",
     "upb_c_proto_library",
 )
 load(
     "//protos/bazel:upb_cc_proto_library.bzl",
     "upb_cc_proto_library",
+)
+load(
+    "//upb/bazel:build_defs.bzl",
+    "UPB_DEFAULT_CPPOPTS",
 )
 
 # begin:google_only
@@ -76,9 +76,7 @@ upb_cc_proto_library(
 
 upb_cc_proto_library(
     name = "naming_conflict_upb_cc_proto",
-    visibility = [
-        "//visibility:private",  # Only private by automation, not intent. Owner may accept CLs adding visibility. See go/scheuklappen#explicit-private.
-    ],
+    visibility = ["//visibility:private"],
     deps = [":naming_conflict_proto"],
 )
 
@@ -111,9 +109,7 @@ cc_proto_library(
 #
 # upb_cc_proto_library(
 #     name = "legacy_name_test_proto",
-#     visibility = [
-#         "//visibility:private",  # Only private by automation, not intent. Owner may accept CLs adding visibility. See go/scheuklappen#explicit-private.
-#     ],
+#     visibility = ["//visibility:private"],
 #     deps = [":legacy_name_proto"],
 # )
 # end:google_only
