@@ -68,8 +68,6 @@
 
 namespace google {
 namespace protobuf {
-
-
 // Defined in this file.
 class Descriptor;
 class FieldDescriptor;
@@ -338,6 +336,12 @@ class PROTOBUF_EXPORT Descriptor : private internal::SymbolBase {
   // The target DescriptorProto must be clear before calling this; if it
   // isn't, the result may be garbage.
   void CopyTo(DescriptorProto* proto) const;
+
+  // Fills in the message-level settings of this message (e.g. name, reserved
+  // fields, message options) to `proto`.  This is essentially all of the
+  // metadata owned exclusively by this descriptor, and not any nested
+  // descriptors.
+  void CopyHeadingTo(DescriptorProto* proto) const;
 
   // Write the contents of this descriptor in a human-readable form. Output
   // will be suitable for re-parsing.
@@ -2348,6 +2352,7 @@ class PROTOBUF_EXPORT DescriptorPool {
   friend class DescriptorBuilder;
   friend class FileDescriptorTables;
   friend class google::protobuf::descriptor_unittest::ValidationErrorTest;
+  friend class ::google::protobuf::compiler::CommandLineInterface;
 
   // Return true if the given name is a sub-symbol of any non-package
   // descriptor that already exists in the descriptor pool.  (The full
@@ -2437,7 +2442,8 @@ class PROTOBUF_EXPORT DescriptorPool {
   std::unique_ptr<FeatureSetDefaults> feature_set_defaults_spec_;
 
   // Returns true if the field extends an option message of descriptor.proto.
-  bool IsExtendingDescriptor(const FieldDescriptor& field) const;
+  bool IsReadyForCheckingDescriptorExtDecl(
+      absl::string_view message_name) const;
 
 };
 
