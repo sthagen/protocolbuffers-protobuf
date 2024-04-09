@@ -1588,7 +1588,7 @@ UPB_API_INLINE const struct upb_MiniTableField* upb_MiniTable_MapValue(
   return f;
 }
 
-UPB_API_INLINE bool upb_MiniTable_MessageFieldIsLinked(
+UPB_API_INLINE bool upb_MiniTable_FieldIsLinked(
     const struct upb_MiniTable* m, const struct upb_MiniTableField* f) {
   return upb_MiniTable_GetSubMessageTable(m, f) != NULL;
 }
@@ -1665,8 +1665,8 @@ UPB_API_INLINE const upb_MiniTableField* upb_MiniTable_MapValue(
 
 // Returns true if this MiniTable field is linked to a MiniTable for the
 // sub-message.
-UPB_API_INLINE bool upb_MiniTable_MessageFieldIsLinked(
-    const upb_MiniTable* m, const upb_MiniTableField* f);
+UPB_API_INLINE bool upb_MiniTable_FieldIsLinked(const upb_MiniTable* m,
+                                                const upb_MiniTableField* f);
 
 // If this field is in a oneof, returns the first field in the oneof.
 //
@@ -2861,7 +2861,14 @@ UPB_INLINE bool _upb_Message_SetExtensionField(
 UPB_API_INLINE void upb_Message_Clear(struct upb_Message* msg,
                                       const upb_MiniTable* m) {
   UPB_ASSERT(!upb_Message_IsFrozen(msg));
+  upb_Message_Internal* in = UPB_PRIVATE(_upb_Message_GetInternal)(msg);
   memset(msg, 0, m->UPB_PRIVATE(size));
+  if (in) {
+    // Reset the internal buffer to empty.
+    in->unknown_end = sizeof(upb_Message_Internal);
+    in->ext_begin = in->size;
+    UPB_PRIVATE(_upb_Message_SetInternal)(msg, in);
+  }
 }
 
 UPB_API_INLINE void upb_Message_ClearBaseField(struct upb_Message* msg,
@@ -3663,6 +3670,7 @@ UPB_INLINE void _upb_msg_map_set_value(void* msg, const void* val,
 // Export the newer headers, for legacy users.  New users should include the
 // more specific headers directly.
 // IWYU pragma: begin_exports
+
 #ifndef UPB_MINI_DESCRIPTOR_BUILD_ENUM_H_
 #define UPB_MINI_DESCRIPTOR_BUILD_ENUM_H_
 
@@ -3673,20 +3681,11 @@ UPB_INLINE void _upb_msg_map_set_value(void* msg, const void* val,
 extern "C" {
 #endif
 
-// Builds a upb_MiniTableEnum from an enum MiniDescriptor.  The MiniDescriptor
-// must be for an enum, not a message.
-UPB_API upb_MiniTableEnum* upb_MiniDescriptor_BuildEnum(const char* data,
-                                                        size_t len,
-                                                        upb_Arena* arena,
-                                                        upb_Status* status);
-
-// TODO: Deprecated name; update callers.
-UPB_API_INLINE upb_MiniTableEnum* upb_MiniTableEnum_Build(const char* data,
-                                                          size_t len,
-                                                          upb_Arena* arena,
-                                                          upb_Status* status) {
-  return upb_MiniDescriptor_BuildEnum(data, len, arena, status);
-}
+// Builds a upb_MiniTableEnum from an enum mini descriptor.
+// The mini descriptor must be for an enum, not a message.
+UPB_API upb_MiniTableEnum* upb_MiniTableEnum_Build(const char* data, size_t len,
+                                                   upb_Arena* arena,
+                                                   upb_Status* status);
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -4186,7 +4185,7 @@ enum {
    * memory during encode. */
   kUpb_EncodeOption_Deterministic = 1,
 
-  // When set, unknown fields are not printed.
+  // When set, unknown fields are not encoded.
   kUpb_EncodeOption_SkipUnknown = 2,
 
   // When set, the encode will fail if any required fields are missing.
