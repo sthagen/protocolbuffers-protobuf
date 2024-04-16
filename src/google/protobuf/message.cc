@@ -112,8 +112,8 @@ void Message::CopyFrom(const Message& from) {
 
 void Message::Clear() { ReflectionOps::Clear(this); }
 
-bool Message::IsInitialized() const {
-  return ReflectionOps::IsInitialized(*this);
+bool Message::IsInitializedImpl(const MessageLite& msg) {
+  return ReflectionOps::IsInitialized(DownCast<const Message&>(msg));
 }
 
 void Message::FindInitializationErrors(std::vector<std::string>* errors) const {
@@ -185,13 +185,7 @@ size_t Message::MaybeComputeUnknownFieldsSize(
 }
 
 size_t Message::SpaceUsedLong() const {
-  auto* reflection = GetReflection();
-  if (PROTOBUF_PREDICT_TRUE(reflection != nullptr)) {
-    return reflection->SpaceUsedLong(*this);
-  }
-  // The only case that does not have reflection is RawMessage.
-  return internal::DownCast<const internal::RawMessageBase&>(*this)
-      .SpaceUsedLong();
+  return GetClassData()->full().descriptor_methods->space_used_long(*this);
 }
 
 static std::string GetTypeNameImpl(const MessageLite& msg) {
@@ -207,11 +201,17 @@ const internal::TcParseTableBase* Message::GetTcParseTableImpl(
   return DownCast<const Message&>(msg).GetReflection()->GetTcParseTable();
 }
 
+size_t Message::SpaceUsedLongImpl(const MessageLite& msg_lite) {
+  auto& msg = DownCast<const Message&>(msg_lite);
+  return msg.GetReflection()->SpaceUsedLong(msg);
+}
+
 PROTOBUF_CONSTINIT const MessageLite::DescriptorMethods
     Message::kDescriptorMethods = {
         GetTypeNameImpl,
         InitializationErrorStringImpl,
         GetTcParseTableImpl,
+        SpaceUsedLongImpl,
 };
 
 namespace internal {

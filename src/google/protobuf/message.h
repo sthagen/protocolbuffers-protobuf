@@ -345,10 +345,6 @@ class PROTOBUF_EXPORT Message : public MessageLite {
 
   void Clear() override;
 
-  // Returns whether all required fields have been set. Note that required
-  // fields no longer exist starting in proto3.
-  bool IsInitialized() const override;
-
   void CheckTypeAndMergeFrom(const MessageLite& other) override;
   size_t ByteSizeLong() const override;
   uint8_t* _InternalSerialize(uint8_t* target,
@@ -374,6 +370,9 @@ class PROTOBUF_EXPORT Message : public MessageLite {
   Metadata GetMetadata() const;
   static Metadata GetMetadataImpl(const ClassDataFull& data);
 
+  // For CODE_SIZE types
+  static bool IsInitializedImpl(const MessageLite&);
+
   inline explicit Message(Arena* arena) : MessageLite(arena) {}
   size_t ComputeUnknownFieldsSize(size_t total_size,
                                   internal::CachedSize* cached_size) const;
@@ -385,6 +384,8 @@ class PROTOBUF_EXPORT Message : public MessageLite {
 
   static const internal::TcParseTableBase* GetTcParseTableImpl(
       const MessageLite& msg);
+
+  static size_t SpaceUsedLongImpl(const MessageLite& msg_lite);
 
   static const DescriptorMethods kDescriptorMethods;
 
@@ -1628,12 +1629,6 @@ bool SplitFieldHasExtraIndirectionStatic(const FieldDescriptor* field) {
   }
   return SplitFieldHasExtraIndirection(field);
 }
-
-class RawMessageBase : public Message {
- public:
-  using Message::Message;
-  virtual size_t SpaceUsedLong() const = 0;
-};
 
 inline void MaybePoisonAfterClear(Message* root) {
   if (root == nullptr) return;

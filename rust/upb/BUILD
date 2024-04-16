@@ -12,7 +12,20 @@ load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 rust_library(
     name = "upb",
-    srcs = ["shared.rs"],
+    srcs = [
+        "arena.rs",
+        "array.rs",
+        "ctype.rs",
+        "extension_registry.rs",
+        "lib.rs",
+        "map.rs",
+        "message.rs",
+        "message_value.rs",
+        "mini_table.rs",
+        "opaque_pointee.rs",
+        "string_view.rs",
+        "wire.rs",
+    ],
     visibility = [
         "//rust:__subpackages__",
         "//src/google/protobuf:__subpackages__",
