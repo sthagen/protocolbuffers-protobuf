@@ -4060,6 +4060,16 @@ class ValidationErrorTest : public testing::Test {
   }
 
 
+  // Add file_proto to the DescriptorPool. Expect errors to be produced which
+  // match the given error text.
+  void BuildFileWithErrors(const FileDescriptorProto& file_proto,
+                           const std::string& expected_errors) {
+    MockErrorCollector error_collector;
+    EXPECT_TRUE(pool_.BuildFileCollectingErrors(file_proto, &error_collector) ==
+                nullptr);
+    EXPECT_EQ(expected_errors, error_collector.text_);
+  }
+
   // Parse file_text as a FileDescriptorProto in text format and add it
   // to the DescriptorPool.  Expect errors to be produced which match the
   // given error text.
@@ -4067,11 +4077,7 @@ class ValidationErrorTest : public testing::Test {
                            const std::string& expected_errors) {
     FileDescriptorProto file_proto;
     ASSERT_TRUE(TextFormat::ParseFromString(file_text, &file_proto));
-
-    MockErrorCollector error_collector;
-    EXPECT_TRUE(pool_.BuildFileCollectingErrors(file_proto, &error_collector) ==
-                nullptr);
-    EXPECT_EQ(expected_errors, error_collector.text_);
+    BuildFileWithErrors(file_proto, expected_errors);
   }
 
   // Parse file_text as a FileDescriptorProto in text format and add it
@@ -6423,7 +6429,7 @@ TEST_F(ValidationErrorTest, MapEntryExtensionRange) {
       "  start: 10 end: 20 "
       "} ",
       file_proto.mutable_message_type(0)->mutable_nested_type(0));
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryExtension) {
@@ -6434,7 +6440,7 @@ TEST_F(ValidationErrorTest, MapEntryExtension) {
       "  name: 'foo_ext' extendee: '.Bar' number: 5"
       "} ",
       file_proto.mutable_message_type(0)->mutable_nested_type(0));
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryNestedType) {
@@ -6445,7 +6451,7 @@ TEST_F(ValidationErrorTest, MapEntryNestedType) {
       "  name: 'Bar' "
       "} ",
       file_proto.mutable_message_type(0)->mutable_nested_type(0));
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryEnumTypes) {
@@ -6457,7 +6463,7 @@ TEST_F(ValidationErrorTest, MapEntryEnumTypes) {
       "  value { name: 'BAR_BAR' number:0 } "
       "} ",
       file_proto.mutable_message_type(0)->mutable_nested_type(0));
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryExtraField) {
@@ -6471,7 +6477,7 @@ TEST_F(ValidationErrorTest, MapEntryExtraField) {
       "  number: 3 "
       "} ",
       file_proto.mutable_message_type(0)->mutable_nested_type(0));
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryMessageName) {
@@ -6481,7 +6487,7 @@ TEST_F(ValidationErrorTest, MapEntryMessageName) {
       "OtherMapEntry");
   file_proto.mutable_message_type(0)->mutable_field(0)->set_type_name(
       "OtherMapEntry");
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryNoneRepeatedMapEntry) {
@@ -6489,7 +6495,7 @@ TEST_F(ValidationErrorTest, MapEntryNoneRepeatedMapEntry) {
   FillValidMapEntry(&file_proto);
   file_proto.mutable_message_type(0)->mutable_field(0)->set_label(
       FieldDescriptorProto::LABEL_OPTIONAL);
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryDifferentContainingType) {
@@ -6499,7 +6505,7 @@ TEST_F(ValidationErrorTest, MapEntryDifferentContainingType) {
   // the validation.
   file_proto.mutable_message_type()->AddAllocated(
       file_proto.mutable_message_type(0)->mutable_nested_type()->ReleaseLast());
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryKeyName) {
@@ -6509,7 +6515,7 @@ TEST_F(ValidationErrorTest, MapEntryKeyName) {
       file_proto.mutable_message_type(0)->mutable_nested_type(0)->mutable_field(
           0);
   key->set_name("Key");
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryKeyLabel) {
@@ -6519,7 +6525,7 @@ TEST_F(ValidationErrorTest, MapEntryKeyLabel) {
       file_proto.mutable_message_type(0)->mutable_nested_type(0)->mutable_field(
           0);
   key->set_label(FieldDescriptorProto::LABEL_REQUIRED);
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryKeyNumber) {
@@ -6529,7 +6535,7 @@ TEST_F(ValidationErrorTest, MapEntryKeyNumber) {
       file_proto.mutable_message_type(0)->mutable_nested_type(0)->mutable_field(
           0);
   key->set_number(3);
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryValueName) {
@@ -6539,7 +6545,7 @@ TEST_F(ValidationErrorTest, MapEntryValueName) {
       file_proto.mutable_message_type(0)->mutable_nested_type(0)->mutable_field(
           1);
   value->set_name("Value");
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryValueLabel) {
@@ -6549,7 +6555,7 @@ TEST_F(ValidationErrorTest, MapEntryValueLabel) {
       file_proto.mutable_message_type(0)->mutable_nested_type(0)->mutable_field(
           1);
   value->set_label(FieldDescriptorProto::LABEL_REQUIRED);
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryValueNumber) {
@@ -6559,7 +6565,7 @@ TEST_F(ValidationErrorTest, MapEntryValueNumber) {
       file_proto.mutable_message_type(0)->mutable_nested_type(0)->mutable_field(
           1);
   value->set_number(3);
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryKeyTypeFloat) {
@@ -6569,7 +6575,7 @@ TEST_F(ValidationErrorTest, MapEntryKeyTypeFloat) {
       file_proto.mutable_message_type(0)->mutable_nested_type(0)->mutable_field(
           0);
   key->set_type(FieldDescriptorProto::TYPE_FLOAT);
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryKeyTypeErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryKeyTypeErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryKeyTypeDouble) {
@@ -6579,7 +6585,7 @@ TEST_F(ValidationErrorTest, MapEntryKeyTypeDouble) {
       file_proto.mutable_message_type(0)->mutable_nested_type(0)->mutable_field(
           0);
   key->set_type(FieldDescriptorProto::TYPE_DOUBLE);
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryKeyTypeErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryKeyTypeErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryKeyTypeBytes) {
@@ -6589,7 +6595,7 @@ TEST_F(ValidationErrorTest, MapEntryKeyTypeBytes) {
       file_proto.mutable_message_type(0)->mutable_nested_type(0)->mutable_field(
           0);
   key->set_type(FieldDescriptorProto::TYPE_BYTES);
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryKeyTypeErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryKeyTypeErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryKeyTypeEnum) {
@@ -6605,14 +6611,14 @@ TEST_F(ValidationErrorTest, MapEntryKeyTypeEnum) {
   EnumValueDescriptorProto* enum_value_proto = enum_proto->add_value();
   enum_value_proto->set_name("BAR_VALUE0");
   enum_value_proto->set_number(0);
-  BuildFileWithErrors(file_proto.DebugString(),
+  BuildFileWithErrors(file_proto,
                       "foo.proto: Foo.foo_map: TYPE: Key in map fields cannot "
                       "be enum types.\n");
   // Enum keys are not allowed in proto3 as well.
   // Get rid of extensions for proto3 to make it proto3 compatible.
   file_proto.mutable_message_type()->RemoveLast();
   file_proto.set_syntax("proto3");
-  BuildFileWithErrors(file_proto.DebugString(),
+  BuildFileWithErrors(file_proto,
                       "foo.proto: Foo.foo_map: TYPE: Key in map fields cannot "
                       "be enum types.\n");
 }
@@ -6625,7 +6631,7 @@ TEST_F(ValidationErrorTest, MapEntryKeyTypeMessage) {
           0);
   key->clear_type();
   key->set_type_name(".Bar");
-  BuildFileWithErrors(file_proto.DebugString(), kMapEntryKeyTypeErrorMessage);
+  BuildFileWithErrors(file_proto, kMapEntryKeyTypeErrorMessage);
 }
 
 TEST_F(ValidationErrorTest, MapEntryConflictsWithField) {
@@ -6640,7 +6646,7 @@ TEST_F(ValidationErrorTest, MapEntryConflictsWithField) {
       "}",
       file_proto.mutable_message_type(0));
   BuildFileWithErrors(
-      file_proto.DebugString(),
+      file_proto,
       "foo.proto: Foo.FooMapEntry: NAME: \"FooMapEntry\" is already defined in "
       "\"Foo\".\n"
       "foo.proto: Foo.foo_map: TYPE: \"FooMapEntry\" is not defined.\n"
@@ -6657,7 +6663,7 @@ TEST_F(ValidationErrorTest, MapEntryConflictsWithMessage) {
       "}",
       file_proto.mutable_message_type(0));
   BuildFileWithErrors(
-      file_proto.DebugString(),
+      file_proto,
       "foo.proto: Foo.FooMapEntry: NAME: \"FooMapEntry\" is already defined in "
       "\"Foo\".\n"
       "foo.proto: Foo: NAME: Expanded map entry type FooMapEntry conflicts "
@@ -6674,7 +6680,7 @@ TEST_F(ValidationErrorTest, MapEntryConflictsWithEnum) {
       "}",
       file_proto.mutable_message_type(0));
   BuildFileWithErrors(
-      file_proto.DebugString(),
+      file_proto,
       "foo.proto: Foo.FooMapEntry: NAME: \"FooMapEntry\" is already defined in "
       "\"Foo\".\n"
       "foo.proto: Foo: NAME: Expanded map entry type FooMapEntry conflicts "
@@ -6860,7 +6866,7 @@ TEST_F(ValidationErrorTest, MapEntryConflictsWithOneof) {
       "} ",
       file_proto.mutable_message_type(0));
   BuildFileWithErrors(
-      file_proto.DebugString(),
+      file_proto,
       "foo.proto: Foo.FooMapEntry: NAME: \"FooMapEntry\" is already defined in "
       "\"Foo\".\n"
       "foo.proto: Foo.foo_map: TYPE: \"FooMapEntry\" is not defined.\n"
@@ -7330,7 +7336,11 @@ TEST(IsGroupLike, GroupLikeDelimited) {
   const FileDescriptor& file =
       *editions_unittest::TestDelimited::descriptor()->file();
 
+  EXPECT_EQ(msg.FindFieldByName("grouplike")->type(),
+            FieldDescriptor::TYPE_GROUP);
   EXPECT_TRUE(IsGroupLike(*msg.FindFieldByName("grouplike")));
+  EXPECT_EQ(file.FindExtensionByName("grouplikefilescope")->type(),
+            FieldDescriptor::TYPE_GROUP);
   EXPECT_TRUE(IsGroupLike(*file.FindExtensionByName("grouplikefilescope")));
 }
 
@@ -7340,7 +7350,11 @@ TEST(IsGroupLike, GroupLikeNotDelimited) {
   const FileDescriptor& file =
       *editions_unittest::TestDelimited::descriptor()->file();
 
+  EXPECT_EQ(msg.FindFieldByName("lengthprefixed")->type(),
+            FieldDescriptor::TYPE_MESSAGE);
   EXPECT_FALSE(IsGroupLike(*msg.FindFieldByName("lengthprefixed")));
+  EXPECT_EQ(file.FindExtensionByName("lengthprefixed")->type(),
+            FieldDescriptor::TYPE_MESSAGE);
   EXPECT_FALSE(IsGroupLike(*file.FindExtensionByName("lengthprefixed")));
 }
 
@@ -7350,7 +7364,11 @@ TEST(IsGroupLike, GroupLikeMismatchedName) {
   const FileDescriptor& file =
       *editions_unittest::TestDelimited::descriptor()->file();
 
+  EXPECT_EQ(msg.FindFieldByName("notgrouplike")->type(),
+            FieldDescriptor::TYPE_GROUP);
   EXPECT_FALSE(IsGroupLike(*msg.FindFieldByName("notgrouplike")));
+  EXPECT_EQ(file.FindExtensionByName("not_group_like_scope")->type(),
+            FieldDescriptor::TYPE_GROUP);
   EXPECT_FALSE(IsGroupLike(*file.FindExtensionByName("not_group_like_scope")));
 }
 
@@ -7360,7 +7378,11 @@ TEST(IsGroupLike, GroupLikeMismatchedScope) {
   const FileDescriptor& file =
       *editions_unittest::TestDelimited::descriptor()->file();
 
+  EXPECT_EQ(msg.FindFieldByName("notgrouplikescope")->type(),
+            FieldDescriptor::TYPE_GROUP);
   EXPECT_FALSE(IsGroupLike(*msg.FindFieldByName("notgrouplikescope")));
+  EXPECT_EQ(file.FindExtensionByName("grouplike")->type(),
+            FieldDescriptor::TYPE_GROUP);
   EXPECT_FALSE(IsGroupLike(*file.FindExtensionByName("grouplike")));
 }
 
@@ -7370,7 +7392,11 @@ TEST(IsGroupLike, GroupLikeMismatchedFile) {
   const FileDescriptor& file =
       *editions_unittest::TestDelimited::descriptor()->file();
 
+  EXPECT_EQ(msg.FindFieldByName("messageimport")->type(),
+            FieldDescriptor::TYPE_GROUP);
   EXPECT_FALSE(IsGroupLike(*msg.FindFieldByName("messageimport")));
+  EXPECT_EQ(file.FindExtensionByName("messageimport")->type(),
+            FieldDescriptor::TYPE_GROUP);
   EXPECT_FALSE(IsGroupLike(*file.FindExtensionByName("messageimport")));
 }
 
@@ -7455,6 +7481,20 @@ TEST_F(FeaturesTest, Proto2Features) {
       }
       field { name: "utf8" number: 6 label: LABEL_REPEATED type: TYPE_STRING }
       field { name: "req" number: 7 label: LABEL_REQUIRED type: TYPE_INT32 }
+      field {
+        name: "cord"
+        number: 8
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        options { ctype: CORD }
+      }
+      field {
+        name: "piece"
+        number: 9
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        options { ctype: STRING_PIECE }
+      }
     }
     enum_type {
       name: "Foo2"
@@ -7505,6 +7545,10 @@ TEST_F(FeaturesTest, Proto2Features) {
       Utf8CheckMode::kVerify);
   EXPECT_EQ(GetUtf8CheckMode(message->FindFieldByName("str"), /*is_lite=*/true),
             Utf8CheckMode::kNone);
+  EXPECT_EQ(GetCoreFeatures(message->FindFieldByName("cord"))
+                .GetExtension(pb::cpp)
+                .string_type(),
+            pb::CppFeatures::CORD);
   EXPECT_FALSE(field->is_packed());
   EXPECT_FALSE(field->legacy_enum_field_treated_as_closed());
   EXPECT_FALSE(HasPreservingUnknownEnumSemantics(field));
@@ -7518,7 +7562,9 @@ TEST_F(FeaturesTest, Proto2Features) {
   // Check round-trip consistency.
   FileDescriptorProto proto;
   file->CopyTo(&proto);
-  EXPECT_THAT(proto, EqualsProto(file_proto.DebugString()));
+  std::string file_textproto;
+  google::protobuf::TextFormat::PrintToString(file_proto, &file_textproto);
+  EXPECT_THAT(proto, EqualsProto(file_textproto));
 }
 
 TEST_F(FeaturesTest, Proto3Features) {
@@ -7588,7 +7634,9 @@ TEST_F(FeaturesTest, Proto3Features) {
   // Check round-trip consistency.
   FileDescriptorProto proto;
   file->CopyTo(&proto);
-  EXPECT_THAT(proto, EqualsProto(file_proto.DebugString()));
+  std::string file_textproto;
+  google::protobuf::TextFormat::PrintToString(file_proto, &file_textproto);
+  EXPECT_THAT(proto, EqualsProto(file_textproto));
 }
 
 TEST_F(FeaturesTest, Proto2Proto3EnumFeatures) {
@@ -7751,6 +7799,59 @@ TEST_F(FeaturesTest, Edition2023Defaults) {
   EXPECT_TRUE(GetFeatures(file).HasExtension(pb::test));
   EXPECT_EQ(GetFeatures(file).GetExtension(pb::test).file_feature(),
             pb::VALUE3);
+}
+
+TEST_F(FeaturesTest, Edition2023InferredFeatures) {
+  FileDescriptorProto file_proto = ParseTextOrDie(R"pb(
+    name: "foo.proto"
+    syntax: "editions"
+    edition: EDITION_2023
+    message_type {
+      name: "Foo"
+      field { name: "str" number: 1 label: LABEL_OPTIONAL type: TYPE_STRING }
+      field {
+        name: "cord"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        options { ctype: CORD }
+      }
+      field {
+        name: "piece"
+        number: 3
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        options { ctype: STRING_PIECE }
+      }
+      field {
+        name: "ctype_and_string_type"
+        number: 4
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        options {
+          ctype: CORD
+          features {
+            [pb.cpp] { string_type: VIEW }
+          }
+        }
+      }
+    }
+  )pb");
+
+  BuildDescriptorMessagesInTestPool();
+  BuildFileInTestPool(pb::CppFeatures::GetDescriptor()->file());
+  const FileDescriptor* file = ABSL_DIE_IF_NULL(pool_.BuildFile(file_proto));
+  const Descriptor* message = file->message_type(0);
+
+  EXPECT_EQ(
+      GetCoreFeatures(message->field(0)).GetExtension(pb::cpp).string_type(),
+      pb::CppFeatures::STRING);
+  EXPECT_EQ(
+      GetCoreFeatures(message->field(1)).GetExtension(pb::cpp).string_type(),
+      pb::CppFeatures::CORD);
+  EXPECT_EQ(
+      GetCoreFeatures(message->field(3)).GetExtension(pb::cpp).string_type(),
+      pb::CppFeatures::VIEW);
 }
 
 TEST_F(FeaturesTest, Edition2024Defaults) {
@@ -9778,7 +9879,7 @@ TEST_F(FeaturesTest, InvalidFieldMapImplicit) {
   proto.set_name("foo.proto");
 
   BuildDescriptorMessagesInTestPool();
-  BuildFileWithErrors(proto.DebugString(),
+  BuildFileWithErrors(proto,
                       "foo.proto: Foo.bar: NAME: Repeated fields can't specify "
                       "field presence.\n");
 }
@@ -10021,7 +10122,7 @@ TEST_F(FeaturesTest, InvalidFieldMapWithMessageEncoding) {
 
   BuildDescriptorMessagesInTestPool();
   BuildFileWithErrors(
-      proto.DebugString(),
+      proto,
       "foo.proto: Foo.bar: NAME: Only message fields can specify message "
       "encoding.\n");
 }
@@ -11819,9 +11920,12 @@ TEST_F(DatabaseBackedPoolTest, UnittestProto) {
 TEST_F(DatabaseBackedPoolTest, FeatureResolution) {
   FileDescriptorProto proto;
   FileDescriptorProto::descriptor()->file()->CopyTo(&proto);
-  AddToDatabase(&database_, proto.DebugString());
+  std::string text_proto;
+  google::protobuf::TextFormat::PrintToString(proto, &text_proto);
+  AddToDatabase(&database_, text_proto);
   pb::TestFeatures::descriptor()->file()->CopyTo(&proto);
-  AddToDatabase(&database_, proto.DebugString());
+  google::protobuf::TextFormat::PrintToString(proto, &text_proto);
+  AddToDatabase(&database_, text_proto);
   AddToDatabase(&database_, R"pb(
     name: "features.proto"
     syntax: "editions"
@@ -11867,9 +11971,12 @@ TEST_F(DatabaseBackedPoolTest, FeatureResolution) {
 TEST_F(DatabaseBackedPoolTest, FeatureLifetimeError) {
   FileDescriptorProto proto;
   FileDescriptorProto::descriptor()->file()->CopyTo(&proto);
-  AddToDatabase(&database_, proto.DebugString());
+  std::string text_proto;
+  google::protobuf::TextFormat::PrintToString(proto, &text_proto);
+  AddToDatabase(&database_, text_proto);
   pb::TestFeatures::descriptor()->file()->CopyTo(&proto);
-  AddToDatabase(&database_, proto.DebugString());
+  google::protobuf::TextFormat::PrintToString(proto, &text_proto);
+  AddToDatabase(&database_, text_proto);
   AddToDatabase(&database_, R"pb(
     name: "features.proto"
     syntax: "editions"
@@ -12756,17 +12863,15 @@ class LazilyBuildDependenciesTest : public testing::Test {
 
   void AddSimpleMessageProtoFileToDb(absl::string_view file_name,
                                      absl::string_view message_name) {
-    ParseProtoAndAddToDb(absl::StrCat("name: '", file_name,
-                                      ".proto' "
-                                      "package: \"protobuf_unittest\" "
-                                      "message_type { "
-                                      "  name:'",
-                                      message_name,
-                                      "' "
-                                      "  field { name:'a' number:1 "
-                                      "  label:LABEL_OPTIONAL "
-                                      "  type_name:'int32' } "
-                                      "}"));
+    ParseProtoAndAddToDb(absl::StrFormat(
+        R"pb(
+          name: '%s.proto'
+          package: "protobuf_unittest"
+          message_type {
+            name: '%s'
+            field { name: 'a' number: 1 label: LABEL_OPTIONAL type: TYPE_INT32 }
+          })pb",
+        file_name, message_name));
   }
 
   void AddSimpleEnumProtoFileToDb(absl::string_view file_name,
@@ -12791,15 +12896,20 @@ class LazilyBuildDependenciesTest : public testing::Test {
 };
 
 TEST_F(LazilyBuildDependenciesTest, Message) {
-  ParseProtoAndAddToDb(
-      "name: 'foo.proto' "
-      "package: 'protobuf_unittest' "
-      "dependency: 'bar.proto' "
-      "message_type { "
-      "  name:'Foo' "
-      "  field { name:'bar' number:1 label:LABEL_OPTIONAL "
-      "type_name:'.protobuf_unittest.Bar' } "
-      "}");
+  ParseProtoAndAddToDb(R"pb(
+    name: 'foo.proto'
+    package: 'protobuf_unittest'
+    dependency: 'bar.proto'
+    message_type {
+      name: 'Foo'
+      field {
+        name: 'bar'
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_MESSAGE
+        type_name: '.protobuf_unittest.Bar'
+      }
+    })pb");
   AddSimpleMessageProtoFileToDb("bar", "Bar");
 
   // Verify neither has been built yet.
@@ -12832,17 +12942,28 @@ TEST_F(LazilyBuildDependenciesTest, Message) {
 
 TEST_F(LazilyBuildDependenciesTest, Enum) {
   ParseProtoAndAddToDb(
-      "name: 'foo.proto' "
-      "package: 'protobuf_unittest' "
-      "dependency: 'enum1.proto' "
-      "dependency: 'enum2.proto' "
-      "message_type { "
-      "  name:'Lazy' "
-      "  field { name:'enum1' number:1 label:LABEL_OPTIONAL "
-      "type_name:'.protobuf_unittest.Enum1' } "
-      "  field { name:'enum2' number:1 label:LABEL_OPTIONAL "
-      "type_name:'.protobuf_unittest.Enum2' } "
-      "}");
+      R"pb(
+        name: 'foo.proto'
+        package: 'protobuf_unittest'
+        dependency: 'enum1.proto'
+        dependency: 'enum2.proto'
+        message_type {
+          name: 'Lazy'
+          field {
+            name: 'enum1'
+            number: 1
+            label: LABEL_OPTIONAL
+            type: TYPE_ENUM
+            type_name: '.protobuf_unittest.Enum1'
+          }
+          field {
+            name: 'enum2'
+            number: 1
+            label: LABEL_OPTIONAL
+            type: TYPE_ENUM
+            type_name: '.protobuf_unittest.Enum2'
+          }
+        })pb");
   AddSimpleEnumProtoFileToDb("enum1", "Enum1", "ENUM1");
   AddSimpleEnumProtoFileToDb("enum2", "Enum2", "ENUM2");
 
@@ -12869,23 +12990,44 @@ TEST_F(LazilyBuildDependenciesTest, Enum) {
 
 TEST_F(LazilyBuildDependenciesTest, Type) {
   ParseProtoAndAddToDb(
-      "name: 'foo.proto' "
-      "package: 'protobuf_unittest' "
-      "dependency: 'message1.proto' "
-      "dependency: 'message2.proto' "
-      "dependency: 'enum1.proto' "
-      "dependency: 'enum2.proto' "
-      "message_type { "
-      "  name:'Lazy' "
-      "  field { name:'message1' number:1 label:LABEL_OPTIONAL "
-      "type_name:'.protobuf_unittest.Message1' } "
-      "  field { name:'message2' number:1 label:LABEL_OPTIONAL "
-      "type_name:'.protobuf_unittest.Message2' } "
-      "  field { name:'enum1' number:1 label:LABEL_OPTIONAL "
-      "type_name:'.protobuf_unittest.Enum1' } "
-      "  field { name:'enum2' number:1 label:LABEL_OPTIONAL "
-      "type_name:'.protobuf_unittest.Enum2' } "
-      "}");
+      R"pb(
+        name: 'foo.proto'
+        package: 'protobuf_unittest'
+        dependency: 'message1.proto'
+        dependency: 'message2.proto'
+        dependency: 'enum1.proto'
+        dependency: 'enum2.proto'
+        message_type {
+          name: 'Lazy'
+          field {
+            name: 'message1'
+            number: 1
+            label: LABEL_OPTIONAL
+            type: TYPE_MESSAGE
+            type_name: '.protobuf_unittest.Message1'
+          }
+          field {
+            name: 'message2'
+            number: 1
+            label: LABEL_OPTIONAL
+            type: TYPE_MESSAGE
+            type_name: '.protobuf_unittest.Message2'
+          }
+          field {
+            name: 'enum1'
+            number: 1
+            label: LABEL_OPTIONAL
+            type: TYPE_ENUM
+            type_name: '.protobuf_unittest.Enum1'
+          }
+          field {
+            name: 'enum2'
+            number: 1
+            label: LABEL_OPTIONAL
+            type: TYPE_ENUM
+            type_name: '.protobuf_unittest.Enum2'
+          }
+        })pb");
   AddSimpleMessageProtoFileToDb("message1", "Message1");
   AddSimpleMessageProtoFileToDb("message2", "Message2");
   AddSimpleEnumProtoFileToDb("enum1", "Enum1", "ENUM1");
@@ -12930,19 +13072,29 @@ TEST_F(LazilyBuildDependenciesTest, Type) {
 
 TEST_F(LazilyBuildDependenciesTest, Extension) {
   ParseProtoAndAddToDb(
-      "name: 'foo.proto' "
-      "package: 'protobuf_unittest' "
-      "dependency: 'bar.proto' "
-      "dependency: 'baz.proto' "
-      "extension { extendee: '.protobuf_unittest.Bar' name:'bar' number:11"
-      "            label:LABEL_OPTIONAL type_name:'.protobuf_unittest.Baz' }");
+      R"pb(
+        name: 'foo.proto'
+        package: 'protobuf_unittest'
+        dependency: 'bar.proto'
+        dependency: 'baz.proto'
+        extension {
+          extendee: '.protobuf_unittest.Bar'
+          name: 'bar'
+          number: 11
+          label: LABEL_OPTIONAL
+          type: TYPE_MESSAGE
+          type_name: '.protobuf_unittest.Baz'
+        }
+      )pb");
   ParseProtoAndAddToDb(
-      "name: 'bar.proto' "
-      "package: 'protobuf_unittest' "
-      "message_type { "
-      "  name:'Bar' "
-      "  extension_range { start: 10 end: 20 }"
-      "}");
+      R"pb(
+        name: 'bar.proto'
+        package: 'protobuf_unittest'
+        message_type {
+          name: 'Bar'
+          extension_range { start: 10 end: 20 }
+        }
+      )pb");
   AddSimpleMessageProtoFileToDb("baz", "Baz");
 
   // Verify none have been built yet.
@@ -12961,18 +13113,21 @@ TEST_F(LazilyBuildDependenciesTest, Extension) {
 }
 
 TEST_F(LazilyBuildDependenciesTest, Service) {
-  ParseProtoAndAddToDb(
-      "name: 'foo.proto' "
-      "package: 'protobuf_unittest' "
-      "dependency: 'message1.proto' "
-      "dependency: 'message2.proto' "
-      "dependency: 'message3.proto' "
-      "dependency: 'message4.proto' "
-      "service {"
-      "  name: 'LazyService'"
-      "  method { name: 'A' input_type:  '.protobuf_unittest.Message1' "
-      "                     output_type: '.protobuf_unittest.Message2' }"
-      "}");
+  ParseProtoAndAddToDb(R"pb(
+    name: 'foo.proto'
+    package: 'protobuf_unittest'
+    dependency: 'message1.proto'
+    dependency: 'message2.proto'
+    dependency: 'message3.proto'
+    dependency: 'message4.proto'
+    service {
+      name: 'LazyService'
+      method {
+        name: 'A'
+        input_type: '.protobuf_unittest.Message1'
+        output_type: '.protobuf_unittest.Message2'
+      }
+    })pb");
   AddSimpleMessageProtoFileToDb("message1", "Message1");
   AddSimpleMessageProtoFileToDb("message2", "Message2");
   AddSimpleMessageProtoFileToDb("message3", "Message3");
@@ -13055,23 +13210,37 @@ TEST_F(LazilyBuildDependenciesTest, GeneratedFile) {
 
 TEST_F(LazilyBuildDependenciesTest, Dependency) {
   ParseProtoAndAddToDb(
-      "name: 'foo.proto' "
-      "package: 'protobuf_unittest' "
-      "dependency: 'bar.proto' "
-      "message_type { "
-      "  name:'Foo' "
-      "  field { name:'bar' number:1 label:LABEL_OPTIONAL "
-      "type_name:'.protobuf_unittest.Bar' } "
-      "}");
+      R"pb(
+        name: 'foo.proto'
+        package: 'protobuf_unittest'
+        dependency: 'bar.proto'
+        message_type {
+          name: 'Foo'
+          field {
+            name: 'bar'
+            number: 1
+            label: LABEL_OPTIONAL
+            type: TYPE_MESSAGE
+            type_name: '.protobuf_unittest.Bar'
+          }
+        }
+      )pb");
   ParseProtoAndAddToDb(
-      "name: 'bar.proto' "
-      "package: 'protobuf_unittest' "
-      "dependency: 'baz.proto' "
-      "message_type { "
-      "  name:'Bar' "
-      "  field { name:'baz' number:1 label:LABEL_OPTIONAL "
-      "type_name:'.protobuf_unittest.Baz' } "
-      "}");
+      R"pb(
+        name: 'bar.proto'
+        package: 'protobuf_unittest'
+        dependency: 'baz.proto'
+        message_type {
+          name: 'Bar'
+          field {
+            name: 'baz'
+            number: 1
+            label: LABEL_OPTIONAL
+            type: TYPE_MESSAGE
+            type_name: '.protobuf_unittest.Baz'
+          }
+        }
+      )pb");
   AddSimpleMessageProtoFileToDb("baz", "Baz");
 
   const FileDescriptor* foo_file = pool_.FindFileByName("foo.proto");

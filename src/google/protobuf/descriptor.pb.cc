@@ -372,7 +372,6 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
 inline constexpr FeatureSetDefaults_FeatureSetEditionDefault::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
-        features_{nullptr},
         overridable_features_{nullptr},
         fixed_features_{nullptr},
         edition_{static_cast< ::google::protobuf::Edition >(0)} {}
@@ -1567,11 +1566,9 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::google::protobuf::FeatureSetDefaults_FeatureSetEditionDefault, _impl_.edition_),
         PROTOBUF_FIELD_OFFSET(::google::protobuf::FeatureSetDefaults_FeatureSetEditionDefault, _impl_.overridable_features_),
         PROTOBUF_FIELD_OFFSET(::google::protobuf::FeatureSetDefaults_FeatureSetEditionDefault, _impl_.fixed_features_),
-        PROTOBUF_FIELD_OFFSET(::google::protobuf::FeatureSetDefaults_FeatureSetEditionDefault, _impl_.features_),
-        3,
-        1,
         2,
         0,
+        1,
         PROTOBUF_FIELD_OFFSET(::google::protobuf::FeatureSetDefaults, _impl_._has_bits_),
         PROTOBUF_FIELD_OFFSET(::google::protobuf::FeatureSetDefaults, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -1671,12 +1668,12 @@ static const ::_pbi::MigrationSchema
         {463, 473, -1, sizeof(::google::protobuf::UninterpretedOption_NamePart)},
         {475, 490, -1, sizeof(::google::protobuf::UninterpretedOption)},
         {497, 511, -1, sizeof(::google::protobuf::FeatureSet)},
-        {517, 529, -1, sizeof(::google::protobuf::FeatureSetDefaults_FeatureSetEditionDefault)},
-        {533, 544, -1, sizeof(::google::protobuf::FeatureSetDefaults)},
-        {547, 560, -1, sizeof(::google::protobuf::SourceCodeInfo_Location)},
-        {565, -1, -1, sizeof(::google::protobuf::SourceCodeInfo)},
-        {574, 587, -1, sizeof(::google::protobuf::GeneratedCodeInfo_Annotation)},
-        {592, -1, -1, sizeof(::google::protobuf::GeneratedCodeInfo)},
+        {517, 528, -1, sizeof(::google::protobuf::FeatureSetDefaults_FeatureSetEditionDefault)},
+        {531, 542, -1, sizeof(::google::protobuf::FeatureSetDefaults)},
+        {545, 558, -1, sizeof(::google::protobuf::SourceCodeInfo_Location)},
+        {563, -1, -1, sizeof(::google::protobuf::SourceCodeInfo)},
+        {572, 585, -1, sizeof(::google::protobuf::GeneratedCodeInfo_Annotation)},
+        {590, -1, -1, sizeof(::google::protobuf::GeneratedCodeInfo)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::google::protobuf::_FileDescriptorSet_default_instance_._instance,
@@ -1931,47 +1928,46 @@ const char descriptor_table_protodef_google_2fprotobuf_2fdescriptor_2eproto[] AB
     "\020\001\022\r\n\tDELIMITED\020\002\"H\n\nJsonFormat\022\027\n\023JSON_"
     "FORMAT_UNKNOWN\020\000\022\t\n\005ALLOW\020\001\022\026\n\022LEGACY_BE"
     "ST_EFFORT\020\002*\006\010\350\007\020\351\007*\006\010\351\007\020\352\007*\006\010\352\007\020\353\007*\006\010\206N"
-    "\020\207N*\006\010\213N\020\220N*\006\010\220N\020\221NJ\006\010\347\007\020\350\007\"\261\003\n\022FeatureS"
+    "\020\207N*\006\010\213N\020\220N*\006\010\220N\020\221NJ\006\010\347\007\020\350\007\"\202\003\n\022FeatureS"
     "etDefaults\022N\n\010defaults\030\001 \003(\0132<.google.pr"
     "otobuf.FeatureSetDefaults.FeatureSetEdit"
     "ionDefault\0221\n\017minimum_edition\030\004 \001(\0162\030.go"
     "ogle.protobuf.Edition\0221\n\017maximum_edition"
-    "\030\005 \001(\0162\030.google.protobuf.Edition\032\344\001\n\030Fea"
+    "\030\005 \001(\0162\030.google.protobuf.Edition\032\265\001\n\030Fea"
     "tureSetEditionDefault\022)\n\007edition\030\003 \001(\0162\030"
     ".google.protobuf.Edition\0229\n\024overridable_"
     "features\030\004 \001(\0132\033.google.protobuf.Feature"
     "Set\0223\n\016fixed_features\030\005 \001(\0132\033.google.pro"
-    "tobuf.FeatureSet\022-\n\010features\030\002 \001(\0132\033.goo"
-    "gle.protobuf.FeatureSet\"\325\001\n\016SourceCodeIn"
-    "fo\022:\n\010location\030\001 \003(\0132(.google.protobuf.S"
-    "ourceCodeInfo.Location\032\206\001\n\010Location\022\020\n\004p"
-    "ath\030\001 \003(\005B\002\020\001\022\020\n\004span\030\002 \003(\005B\002\020\001\022\030\n\020leadi"
-    "ng_comments\030\003 \001(\t\022\031\n\021trailing_comments\030\004"
-    " \001(\t\022!\n\031leading_detached_comments\030\006 \003(\t\""
-    "\234\002\n\021GeneratedCodeInfo\022A\n\nannotation\030\001 \003("
-    "\0132-.google.protobuf.GeneratedCodeInfo.An"
-    "notation\032\303\001\n\nAnnotation\022\020\n\004path\030\001 \003(\005B\002\020"
-    "\001\022\023\n\013source_file\030\002 \001(\t\022\r\n\005begin\030\003 \001(\005\022\013\n"
-    "\003end\030\004 \001(\005\022H\n\010semantic\030\005 \001(\01626.google.pr"
-    "otobuf.GeneratedCodeInfo.Annotation.Sema"
-    "ntic\"(\n\010Semantic\022\010\n\004NONE\020\000\022\007\n\003SET\020\001\022\t\n\005A"
-    "LIAS\020\002*\247\002\n\007Edition\022\023\n\017EDITION_UNKNOWN\020\000\022"
-    "\023\n\016EDITION_LEGACY\020\204\007\022\023\n\016EDITION_PROTO2\020\346"
-    "\007\022\023\n\016EDITION_PROTO3\020\347\007\022\021\n\014EDITION_2023\020\350"
-    "\007\022\021\n\014EDITION_2024\020\351\007\022\027\n\023EDITION_1_TEST_O"
-    "NLY\020\001\022\027\n\023EDITION_2_TEST_ONLY\020\002\022\035\n\027EDITIO"
-    "N_99997_TEST_ONLY\020\235\215\006\022\035\n\027EDITION_99998_T"
-    "EST_ONLY\020\236\215\006\022\035\n\027EDITION_99999_TEST_ONLY\020"
-    "\237\215\006\022\023\n\013EDITION_MAX\020\377\377\377\377\007B~\n\023com.google.p"
-    "rotobufB\020DescriptorProtosH\001Z-google.gola"
-    "ng.org/protobuf/types/descriptorpb\370\001\001\242\002\003"
-    "GPB\252\002\032Google.Protobuf.Reflection"
+    "tobuf.FeatureSet\"\325\001\n\016SourceCodeInfo\022:\n\010l"
+    "ocation\030\001 \003(\0132(.google.protobuf.SourceCo"
+    "deInfo.Location\032\206\001\n\010Location\022\020\n\004path\030\001 \003"
+    "(\005B\002\020\001\022\020\n\004span\030\002 \003(\005B\002\020\001\022\030\n\020leading_comm"
+    "ents\030\003 \001(\t\022\031\n\021trailing_comments\030\004 \001(\t\022!\n"
+    "\031leading_detached_comments\030\006 \003(\t\"\234\002\n\021Gen"
+    "eratedCodeInfo\022A\n\nannotation\030\001 \003(\0132-.goo"
+    "gle.protobuf.GeneratedCodeInfo.Annotatio"
+    "n\032\303\001\n\nAnnotation\022\020\n\004path\030\001 \003(\005B\002\020\001\022\023\n\013so"
+    "urce_file\030\002 \001(\t\022\r\n\005begin\030\003 \001(\005\022\013\n\003end\030\004 "
+    "\001(\005\022H\n\010semantic\030\005 \001(\01626.google.protobuf."
+    "GeneratedCodeInfo.Annotation.Semantic\"(\n"
+    "\010Semantic\022\010\n\004NONE\020\000\022\007\n\003SET\020\001\022\t\n\005ALIAS\020\002*"
+    "\247\002\n\007Edition\022\023\n\017EDITION_UNKNOWN\020\000\022\023\n\016EDIT"
+    "ION_LEGACY\020\204\007\022\023\n\016EDITION_PROTO2\020\346\007\022\023\n\016ED"
+    "ITION_PROTO3\020\347\007\022\021\n\014EDITION_2023\020\350\007\022\021\n\014ED"
+    "ITION_2024\020\351\007\022\027\n\023EDITION_1_TEST_ONLY\020\001\022\027"
+    "\n\023EDITION_2_TEST_ONLY\020\002\022\035\n\027EDITION_99997"
+    "_TEST_ONLY\020\235\215\006\022\035\n\027EDITION_99998_TEST_ONL"
+    "Y\020\236\215\006\022\035\n\027EDITION_99999_TEST_ONLY\020\237\215\006\022\023\n\013"
+    "EDITION_MAX\020\377\377\377\377\007B~\n\023com.google.protobuf"
+    "B\020DescriptorProtosH\001Z-google.golang.org/"
+    "protobuf/types/descriptorpb\370\001\001\242\002\003GPB\252\002\032G"
+    "oogle.Protobuf.Reflection"
 };
 static ::absl::once_flag descriptor_table_google_2fprotobuf_2fdescriptor_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_google_2fprotobuf_2fdescriptor_2eproto = {
     false,
     false,
-    10032,
+    9985,
     descriptor_table_protodef_google_2fprotobuf_2fdescriptor_2eproto,
     "google/protobuf/descriptor.proto",
     &descriptor_table_google_2fprotobuf_2fdescriptor_2eproto_once,
@@ -2597,9 +2593,10 @@ void FileDescriptorSet::InternalSwap(FileDescriptorSet* PROTOBUF_RESTRICT other)
 
 class FileDescriptorProto::_Internal {
  public:
-  using HasBits = decltype(std::declval<FileDescriptorProto>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<FileDescriptorProto>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(FileDescriptorProto, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(FileDescriptorProto, _impl_._has_bits_);
 };
 
 FileDescriptorProto::FileDescriptorProto(::google::protobuf::Arena* arena)
@@ -3197,9 +3194,10 @@ void FileDescriptorProto::InternalSwap(FileDescriptorProto* PROTOBUF_RESTRICT ot
 
 class DescriptorProto_ExtensionRange::_Internal {
  public:
-  using HasBits = decltype(std::declval<DescriptorProto_ExtensionRange>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<DescriptorProto_ExtensionRange>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(DescriptorProto_ExtensionRange, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(DescriptorProto_ExtensionRange, _impl_._has_bits_);
 };
 
 DescriptorProto_ExtensionRange::DescriptorProto_ExtensionRange(::google::protobuf::Arena* arena)
@@ -3485,9 +3483,10 @@ void DescriptorProto_ExtensionRange::InternalSwap(DescriptorProto_ExtensionRange
 
 class DescriptorProto_ReservedRange::_Internal {
  public:
-  using HasBits = decltype(std::declval<DescriptorProto_ReservedRange>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<DescriptorProto_ReservedRange>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(DescriptorProto_ReservedRange, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(DescriptorProto_ReservedRange, _impl_._has_bits_);
 };
 
 DescriptorProto_ReservedRange::DescriptorProto_ReservedRange(::google::protobuf::Arena* arena)
@@ -3707,9 +3706,10 @@ void DescriptorProto_ReservedRange::InternalSwap(DescriptorProto_ReservedRange* 
 
 class DescriptorProto::_Internal {
  public:
-  using HasBits = decltype(std::declval<DescriptorProto>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<DescriptorProto>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(DescriptorProto, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(DescriptorProto, _impl_._has_bits_);
 };
 
 DescriptorProto::DescriptorProto(::google::protobuf::Arena* arena)
@@ -4212,9 +4212,10 @@ void DescriptorProto::InternalSwap(DescriptorProto* PROTOBUF_RESTRICT other) {
 
 class ExtensionRangeOptions_Declaration::_Internal {
  public:
-  using HasBits = decltype(std::declval<ExtensionRangeOptions_Declaration>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<ExtensionRangeOptions_Declaration>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(ExtensionRangeOptions_Declaration, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(ExtensionRangeOptions_Declaration, _impl_._has_bits_);
 };
 
 ExtensionRangeOptions_Declaration::ExtensionRangeOptions_Declaration(::google::protobuf::Arena* arena)
@@ -4545,9 +4546,10 @@ void ExtensionRangeOptions_Declaration::InternalSwap(ExtensionRangeOptions_Decla
 
 class ExtensionRangeOptions::_Internal {
  public:
-  using HasBits = decltype(std::declval<ExtensionRangeOptions>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<ExtensionRangeOptions>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(ExtensionRangeOptions, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(ExtensionRangeOptions, _impl_._has_bits_);
 };
 
 ExtensionRangeOptions::ExtensionRangeOptions(::google::protobuf::Arena* arena)
@@ -4879,9 +4881,10 @@ void ExtensionRangeOptions::InternalSwap(ExtensionRangeOptions* PROTOBUF_RESTRIC
 
 class FieldDescriptorProto::_Internal {
  public:
-  using HasBits = decltype(std::declval<FieldDescriptorProto>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<FieldDescriptorProto>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(FieldDescriptorProto, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(FieldDescriptorProto, _impl_._has_bits_);
 };
 
 FieldDescriptorProto::FieldDescriptorProto(::google::protobuf::Arena* arena)
@@ -5408,9 +5411,10 @@ void FieldDescriptorProto::InternalSwap(FieldDescriptorProto* PROTOBUF_RESTRICT 
 
 class OneofDescriptorProto::_Internal {
  public:
-  using HasBits = decltype(std::declval<OneofDescriptorProto>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<OneofDescriptorProto>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(OneofDescriptorProto, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(OneofDescriptorProto, _impl_._has_bits_);
 };
 
 OneofDescriptorProto::OneofDescriptorProto(::google::protobuf::Arena* arena)
@@ -5666,9 +5670,10 @@ void OneofDescriptorProto::InternalSwap(OneofDescriptorProto* PROTOBUF_RESTRICT 
 
 class EnumDescriptorProto_EnumReservedRange::_Internal {
  public:
-  using HasBits = decltype(std::declval<EnumDescriptorProto_EnumReservedRange>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<EnumDescriptorProto_EnumReservedRange>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(EnumDescriptorProto_EnumReservedRange, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(EnumDescriptorProto_EnumReservedRange, _impl_._has_bits_);
 };
 
 EnumDescriptorProto_EnumReservedRange::EnumDescriptorProto_EnumReservedRange(::google::protobuf::Arena* arena)
@@ -5888,9 +5893,10 @@ void EnumDescriptorProto_EnumReservedRange::InternalSwap(EnumDescriptorProto_Enu
 
 class EnumDescriptorProto::_Internal {
  public:
-  using HasBits = decltype(std::declval<EnumDescriptorProto>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<EnumDescriptorProto>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(EnumDescriptorProto, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(EnumDescriptorProto, _impl_._has_bits_);
 };
 
 EnumDescriptorProto::EnumDescriptorProto(::google::protobuf::Arena* arena)
@@ -6235,9 +6241,10 @@ void EnumDescriptorProto::InternalSwap(EnumDescriptorProto* PROTOBUF_RESTRICT ot
 
 class EnumValueDescriptorProto::_Internal {
  public:
-  using HasBits = decltype(std::declval<EnumValueDescriptorProto>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<EnumValueDescriptorProto>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(EnumValueDescriptorProto, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(EnumValueDescriptorProto, _impl_._has_bits_);
 };
 
 EnumValueDescriptorProto::EnumValueDescriptorProto(::google::protobuf::Arena* arena)
@@ -6528,9 +6535,10 @@ void EnumValueDescriptorProto::InternalSwap(EnumValueDescriptorProto* PROTOBUF_R
 
 class ServiceDescriptorProto::_Internal {
  public:
-  using HasBits = decltype(std::declval<ServiceDescriptorProto>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<ServiceDescriptorProto>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(ServiceDescriptorProto, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(ServiceDescriptorProto, _impl_._has_bits_);
 };
 
 ServiceDescriptorProto::ServiceDescriptorProto(::google::protobuf::Arena* arena)
@@ -6818,9 +6826,10 @@ void ServiceDescriptorProto::InternalSwap(ServiceDescriptorProto* PROTOBUF_RESTR
 
 class MethodDescriptorProto::_Internal {
  public:
-  using HasBits = decltype(std::declval<MethodDescriptorProto>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<MethodDescriptorProto>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(MethodDescriptorProto, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(MethodDescriptorProto, _impl_._has_bits_);
 };
 
 MethodDescriptorProto::MethodDescriptorProto(::google::protobuf::Arena* arena)
@@ -7202,9 +7211,10 @@ void MethodDescriptorProto::InternalSwap(MethodDescriptorProto* PROTOBUF_RESTRIC
 
 class FileOptions::_Internal {
  public:
-  using HasBits = decltype(std::declval<FileOptions>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<FileOptions>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(FileOptions, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(FileOptions, _impl_._has_bits_);
 };
 
 FileOptions::FileOptions(::google::protobuf::Arena* arena)
@@ -8023,9 +8033,10 @@ void FileOptions::InternalSwap(FileOptions* PROTOBUF_RESTRICT other) {
 
 class MessageOptions::_Internal {
  public:
-  using HasBits = decltype(std::declval<MessageOptions>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<MessageOptions>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(MessageOptions, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(MessageOptions, _impl_._has_bits_);
 };
 
 MessageOptions::MessageOptions(::google::protobuf::Arena* arena)
@@ -8416,9 +8427,10 @@ void MessageOptions::InternalSwap(MessageOptions* PROTOBUF_RESTRICT other) {
 
 class FieldOptions_EditionDefault::_Internal {
  public:
-  using HasBits = decltype(std::declval<FieldOptions_EditionDefault>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<FieldOptions_EditionDefault>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(FieldOptions_EditionDefault, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(FieldOptions_EditionDefault, _impl_._has_bits_);
 };
 
 FieldOptions_EditionDefault::FieldOptions_EditionDefault(::google::protobuf::Arena* arena)
@@ -8651,9 +8663,10 @@ void FieldOptions_EditionDefault::InternalSwap(FieldOptions_EditionDefault* PROT
 
 class FieldOptions_FeatureSupport::_Internal {
  public:
-  using HasBits = decltype(std::declval<FieldOptions_FeatureSupport>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<FieldOptions_FeatureSupport>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(FieldOptions_FeatureSupport, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(FieldOptions_FeatureSupport, _impl_._has_bits_);
 };
 
 FieldOptions_FeatureSupport::FieldOptions_FeatureSupport(::google::protobuf::Arena* arena)
@@ -8952,9 +8965,10 @@ void FieldOptions_FeatureSupport::InternalSwap(FieldOptions_FeatureSupport* PROT
 
 class FieldOptions::_Internal {
  public:
-  using HasBits = decltype(std::declval<FieldOptions>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<FieldOptions>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(FieldOptions, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(FieldOptions, _impl_._has_bits_);
 };
 
 FieldOptions::FieldOptions(::google::protobuf::Arena* arena)
@@ -9540,9 +9554,10 @@ void FieldOptions::InternalSwap(FieldOptions* PROTOBUF_RESTRICT other) {
 
 class OneofOptions::_Internal {
  public:
-  using HasBits = decltype(std::declval<OneofOptions>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<OneofOptions>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(OneofOptions, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(OneofOptions, _impl_._has_bits_);
 };
 
 OneofOptions::OneofOptions(::google::protobuf::Arena* arena)
@@ -9807,9 +9822,10 @@ void OneofOptions::InternalSwap(OneofOptions* PROTOBUF_RESTRICT other) {
 
 class EnumOptions::_Internal {
  public:
-  using HasBits = decltype(std::declval<EnumOptions>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<EnumOptions>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(EnumOptions, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(EnumOptions, _impl_._has_bits_);
 };
 
 EnumOptions::EnumOptions(::google::protobuf::Arena* arena)
@@ -10160,9 +10176,10 @@ void EnumOptions::InternalSwap(EnumOptions* PROTOBUF_RESTRICT other) {
 
 class EnumValueOptions::_Internal {
  public:
-  using HasBits = decltype(std::declval<EnumValueOptions>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<EnumValueOptions>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(EnumValueOptions, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(EnumValueOptions, _impl_._has_bits_);
 };
 
 EnumValueOptions::EnumValueOptions(::google::protobuf::Arena* arena)
@@ -10495,9 +10512,10 @@ void EnumValueOptions::InternalSwap(EnumValueOptions* PROTOBUF_RESTRICT other) {
 
 class ServiceOptions::_Internal {
  public:
-  using HasBits = decltype(std::declval<ServiceOptions>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<ServiceOptions>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(ServiceOptions, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(ServiceOptions, _impl_._has_bits_);
 };
 
 ServiceOptions::ServiceOptions(::google::protobuf::Arena* arena)
@@ -10799,9 +10817,10 @@ void ServiceOptions::InternalSwap(ServiceOptions* PROTOBUF_RESTRICT other) {
 
 class MethodOptions::_Internal {
  public:
-  using HasBits = decltype(std::declval<MethodOptions>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<MethodOptions>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(MethodOptions, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(MethodOptions, _impl_._has_bits_);
 };
 
 MethodOptions::MethodOptions(::google::protobuf::Arena* arena)
@@ -11139,9 +11158,10 @@ void MethodOptions::InternalSwap(MethodOptions* PROTOBUF_RESTRICT other) {
 
 class UninterpretedOption_NamePart::_Internal {
  public:
-  using HasBits = decltype(std::declval<UninterpretedOption_NamePart>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<UninterpretedOption_NamePart>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(UninterpretedOption_NamePart, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(UninterpretedOption_NamePart, _impl_._has_bits_);
   static bool MissingRequiredFields(const HasBits& has_bits) {
     return ((has_bits[0] & 0x00000003) ^ 0x00000003) != 0;
   }
@@ -11384,9 +11404,10 @@ void UninterpretedOption_NamePart::InternalSwap(UninterpretedOption_NamePart* PR
 
 class UninterpretedOption::_Internal {
  public:
-  using HasBits = decltype(std::declval<UninterpretedOption>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<UninterpretedOption>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(UninterpretedOption, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(UninterpretedOption, _impl_._has_bits_);
 };
 
 UninterpretedOption::UninterpretedOption(::google::protobuf::Arena* arena)
@@ -11779,9 +11800,10 @@ void UninterpretedOption::InternalSwap(UninterpretedOption* PROTOBUF_RESTRICT ot
 
 class FeatureSet::_Internal {
  public:
-  using HasBits = decltype(std::declval<FeatureSet>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<FeatureSet>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(FeatureSet, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(FeatureSet, _impl_._has_bits_);
 };
 
 FeatureSet::FeatureSet(::google::protobuf::Arena* arena)
@@ -12136,9 +12158,10 @@ void FeatureSet::InternalSwap(FeatureSet* PROTOBUF_RESTRICT other) {
 
 class FeatureSetDefaults_FeatureSetEditionDefault::_Internal {
  public:
-  using HasBits = decltype(std::declval<FeatureSetDefaults_FeatureSetEditionDefault>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<FeatureSetDefaults_FeatureSetEditionDefault>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_._has_bits_);
 };
 
 FeatureSetDefaults_FeatureSetEditionDefault::FeatureSetDefaults_FeatureSetEditionDefault(::google::protobuf::Arena* arena)
@@ -12162,13 +12185,10 @@ FeatureSetDefaults_FeatureSetEditionDefault::FeatureSetDefaults_FeatureSetEditio
       from._internal_metadata_);
   new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
   ::uint32_t cached_has_bits = _impl_._has_bits_[0];
-  _impl_.features_ = (cached_has_bits & 0x00000001u) ? ::google::protobuf::Message::CopyConstruct<::google::protobuf::FeatureSet>(
-                              arena, *from._impl_.features_)
-                        : nullptr;
-  _impl_.overridable_features_ = (cached_has_bits & 0x00000002u) ? ::google::protobuf::Message::CopyConstruct<::google::protobuf::FeatureSet>(
+  _impl_.overridable_features_ = (cached_has_bits & 0x00000001u) ? ::google::protobuf::Message::CopyConstruct<::google::protobuf::FeatureSet>(
                               arena, *from._impl_.overridable_features_)
                         : nullptr;
-  _impl_.fixed_features_ = (cached_has_bits & 0x00000004u) ? ::google::protobuf::Message::CopyConstruct<::google::protobuf::FeatureSet>(
+  _impl_.fixed_features_ = (cached_has_bits & 0x00000002u) ? ::google::protobuf::Message::CopyConstruct<::google::protobuf::FeatureSet>(
                               arena, *from._impl_.fixed_features_)
                         : nullptr;
   _impl_.edition_ = from._impl_.edition_;
@@ -12183,10 +12203,10 @@ inline PROTOBUF_NDEBUG_INLINE FeatureSetDefaults_FeatureSetEditionDefault::Impl_
 inline void FeatureSetDefaults_FeatureSetEditionDefault::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
   ::memset(reinterpret_cast<char *>(&_impl_) +
-               offsetof(Impl_, features_),
+               offsetof(Impl_, overridable_features_),
            0,
            offsetof(Impl_, edition_) -
-               offsetof(Impl_, features_) +
+               offsetof(Impl_, overridable_features_) +
                sizeof(Impl_::edition_));
 }
 FeatureSetDefaults_FeatureSetEditionDefault::~FeatureSetDefaults_FeatureSetEditionDefault() {
@@ -12196,7 +12216,6 @@ FeatureSetDefaults_FeatureSetEditionDefault::~FeatureSetDefaults_FeatureSetEditi
 }
 inline void FeatureSetDefaults_FeatureSetEditionDefault::SharedDtor() {
   ABSL_DCHECK(GetArena() == nullptr);
-  delete _impl_.features_;
   delete _impl_.overridable_features_;
   delete _impl_.fixed_features_;
   _impl_.~Impl_();
@@ -12222,16 +12241,16 @@ FeatureSetDefaults_FeatureSetEditionDefault::GetClassData() const {
   ::google::protobuf::internal::PrefetchToLocalCache(_data_.tc_table);
   return _data_.base();
 }
-constexpr ::_pbi::TcParseTable<2, 4, 4, 0, 2> FeatureSetDefaults_FeatureSetEditionDefault::_table_ = {
+constexpr ::_pbi::TcParseTable<2, 3, 3, 0, 2> FeatureSetDefaults_FeatureSetEditionDefault::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_._has_bits_),
     0, // no _extensions_
     5, 24,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967265,  // skipmap
+    4294967267,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    4,  // num_field_entries
-    4,  // num_aux_entries
+    3,  // num_field_entries
+    3,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     &_FeatureSetDefaults_FeatureSetEditionDefault_default_instance_._instance,
     nullptr,  // post_loop_handler
@@ -12242,33 +12261,27 @@ constexpr ::_pbi::TcParseTable<2, 4, 4, 0, 2> FeatureSetDefaults_FeatureSetEditi
   }, {{
     // optional .google.protobuf.FeatureSet overridable_features = 4;
     {::_pbi::TcParser::FastMtS1,
-     {34, 1, 1, PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.overridable_features_)}},
+     {34, 0, 0, PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.overridable_features_)}},
     // optional .google.protobuf.FeatureSet fixed_features = 5;
     {::_pbi::TcParser::FastMtS1,
-     {42, 2, 2, PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.fixed_features_)}},
-    // optional .google.protobuf.FeatureSet features = 2;
-    {::_pbi::TcParser::FastMtS1,
-     {18, 0, 0, PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.features_)}},
+     {42, 1, 1, PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.fixed_features_)}},
+    {::_pbi::TcParser::MiniParse, {}},
     // optional .google.protobuf.Edition edition = 3;
     {::_pbi::TcParser::FastEvS1,
-     {24, 3, 3, PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.edition_)}},
+     {24, 2, 2, PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.edition_)}},
   }}, {{
     65535, 65535
   }}, {{
-    // optional .google.protobuf.FeatureSet features = 2;
-    {PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.features_), _Internal::kHasBitsOffset + 0, 0,
-    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
     // optional .google.protobuf.Edition edition = 3;
-    {PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.edition_), _Internal::kHasBitsOffset + 3, 3,
+    {PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.edition_), _Internal::kHasBitsOffset + 2, 2,
     (0 | ::_fl::kFcOptional | ::_fl::kEnum)},
     // optional .google.protobuf.FeatureSet overridable_features = 4;
-    {PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.overridable_features_), _Internal::kHasBitsOffset + 1, 1,
+    {PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.overridable_features_), _Internal::kHasBitsOffset + 0, 0,
     (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
     // optional .google.protobuf.FeatureSet fixed_features = 5;
-    {PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.fixed_features_), _Internal::kHasBitsOffset + 2, 2,
+    {PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.fixed_features_), _Internal::kHasBitsOffset + 1, 1,
     (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
   }}, {{
-    {::_pbi::TcParser::GetTable<::google::protobuf::FeatureSet>()},
     {::_pbi::TcParser::GetTable<::google::protobuf::FeatureSet>()},
     {::_pbi::TcParser::GetTable<::google::protobuf::FeatureSet>()},
     {::_pbi::FieldAuxEnumData{}, ::google::protobuf::Edition_internal_data_},
@@ -12284,16 +12297,12 @@ PROTOBUF_NOINLINE void FeatureSetDefaults_FeatureSetEditionDefault::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000007u) {
+  if (cached_has_bits & 0x00000003u) {
     if (cached_has_bits & 0x00000001u) {
-      ABSL_DCHECK(_impl_.features_ != nullptr);
-      _impl_.features_->Clear();
-    }
-    if (cached_has_bits & 0x00000002u) {
       ABSL_DCHECK(_impl_.overridable_features_ != nullptr);
       _impl_.overridable_features_->Clear();
     }
-    if (cached_has_bits & 0x00000004u) {
+    if (cached_has_bits & 0x00000002u) {
       ABSL_DCHECK(_impl_.fixed_features_ != nullptr);
       _impl_.fixed_features_->Clear();
     }
@@ -12311,27 +12320,21 @@ PROTOBUF_NOINLINE void FeatureSetDefaults_FeatureSetEditionDefault::Clear() {
   (void)cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  // optional .google.protobuf.FeatureSet features = 2;
-  if (cached_has_bits & 0x00000001u) {
-    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
-        2, *_impl_.features_, _impl_.features_->GetCachedSize(), target, stream);
-  }
-
   // optional .google.protobuf.Edition edition = 3;
-  if (cached_has_bits & 0x00000008u) {
+  if (cached_has_bits & 0x00000004u) {
     target = stream->EnsureSpace(target);
     target = ::_pbi::WireFormatLite::WriteEnumToArray(
         3, this->_internal_edition(), target);
   }
 
   // optional .google.protobuf.FeatureSet overridable_features = 4;
-  if (cached_has_bits & 0x00000002u) {
+  if (cached_has_bits & 0x00000001u) {
     target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
         4, *_impl_.overridable_features_, _impl_.overridable_features_->GetCachedSize(), target, stream);
   }
 
   // optional .google.protobuf.FeatureSet fixed_features = 5;
-  if (cached_has_bits & 0x00000004u) {
+  if (cached_has_bits & 0x00000002u) {
     target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
         5, *_impl_.fixed_features_, _impl_.fixed_features_->GetCachedSize(), target, stream);
   }
@@ -12355,27 +12358,21 @@ PROTOBUF_NOINLINE void FeatureSetDefaults_FeatureSetEditionDefault::Clear() {
 
   ::_pbi::Prefetch5LinesFrom7Lines(reinterpret_cast<const void*>(this));
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x0000000fu) {
-    // optional .google.protobuf.FeatureSet features = 2;
-    if (cached_has_bits & 0x00000001u) {
-      total_size +=
-          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.features_);
-    }
-
+  if (cached_has_bits & 0x00000007u) {
     // optional .google.protobuf.FeatureSet overridable_features = 4;
-    if (cached_has_bits & 0x00000002u) {
+    if (cached_has_bits & 0x00000001u) {
       total_size +=
           1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.overridable_features_);
     }
 
     // optional .google.protobuf.FeatureSet fixed_features = 5;
-    if (cached_has_bits & 0x00000004u) {
+    if (cached_has_bits & 0x00000002u) {
       total_size +=
           1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.fixed_features_);
     }
 
     // optional .google.protobuf.Edition edition = 3;
-    if (cached_has_bits & 0x00000008u) {
+    if (cached_has_bits & 0x00000004u) {
       total_size += 1 +
                     ::_pbi::WireFormatLite::EnumSize(this->_internal_edition());
     }
@@ -12395,17 +12392,8 @@ void FeatureSetDefaults_FeatureSetEditionDefault::MergeImpl(::google::protobuf::
   (void) cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
-  if (cached_has_bits & 0x0000000fu) {
+  if (cached_has_bits & 0x00000007u) {
     if (cached_has_bits & 0x00000001u) {
-      ABSL_DCHECK(from._impl_.features_ != nullptr);
-      if (_this->_impl_.features_ == nullptr) {
-        _this->_impl_.features_ =
-            ::google::protobuf::Message::CopyConstruct<::google::protobuf::FeatureSet>(arena, *from._impl_.features_);
-      } else {
-        _this->_impl_.features_->MergeFrom(*from._impl_.features_);
-      }
-    }
-    if (cached_has_bits & 0x00000002u) {
       ABSL_DCHECK(from._impl_.overridable_features_ != nullptr);
       if (_this->_impl_.overridable_features_ == nullptr) {
         _this->_impl_.overridable_features_ =
@@ -12414,7 +12402,7 @@ void FeatureSetDefaults_FeatureSetEditionDefault::MergeImpl(::google::protobuf::
         _this->_impl_.overridable_features_->MergeFrom(*from._impl_.overridable_features_);
       }
     }
-    if (cached_has_bits & 0x00000004u) {
+    if (cached_has_bits & 0x00000002u) {
       ABSL_DCHECK(from._impl_.fixed_features_ != nullptr);
       if (_this->_impl_.fixed_features_ == nullptr) {
         _this->_impl_.fixed_features_ =
@@ -12423,7 +12411,7 @@ void FeatureSetDefaults_FeatureSetEditionDefault::MergeImpl(::google::protobuf::
         _this->_impl_.fixed_features_->MergeFrom(*from._impl_.fixed_features_);
       }
     }
-    if (cached_has_bits & 0x00000008u) {
+    if (cached_has_bits & 0x00000004u) {
       _this->_impl_.edition_ = from._impl_.edition_;
     }
   }
@@ -12442,12 +12430,9 @@ PROTOBUF_NOINLINE bool FeatureSetDefaults_FeatureSetEditionDefault::IsInitialize
     const MessageLite& msg) {
   auto& this_ = static_cast<const FeatureSetDefaults_FeatureSetEditionDefault&>(msg);
   if ((this_._impl_._has_bits_[0] & 0x00000001u) != 0) {
-    if (!this_._impl_.features_->IsInitialized()) return false;
-  }
-  if ((this_._impl_._has_bits_[0] & 0x00000002u) != 0) {
     if (!this_._impl_.overridable_features_->IsInitialized()) return false;
   }
-  if ((this_._impl_._has_bits_[0] & 0x00000004u) != 0) {
+  if ((this_._impl_._has_bits_[0] & 0x00000002u) != 0) {
     if (!this_._impl_.fixed_features_->IsInitialized()) return false;
   }
   return true;
@@ -12460,9 +12445,9 @@ void FeatureSetDefaults_FeatureSetEditionDefault::InternalSwap(FeatureSetDefault
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.edition_)
       + sizeof(FeatureSetDefaults_FeatureSetEditionDefault::_impl_.edition_)
-      - PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.features_)>(
-          reinterpret_cast<char*>(&_impl_.features_),
-          reinterpret_cast<char*>(&other->_impl_.features_));
+      - PROTOBUF_FIELD_OFFSET(FeatureSetDefaults_FeatureSetEditionDefault, _impl_.overridable_features_)>(
+          reinterpret_cast<char*>(&_impl_.overridable_features_),
+          reinterpret_cast<char*>(&other->_impl_.overridable_features_));
 }
 
 ::google::protobuf::Metadata FeatureSetDefaults_FeatureSetEditionDefault::GetMetadata() const {
@@ -12472,9 +12457,10 @@ void FeatureSetDefaults_FeatureSetEditionDefault::InternalSwap(FeatureSetDefault
 
 class FeatureSetDefaults::_Internal {
  public:
-  using HasBits = decltype(std::declval<FeatureSetDefaults>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<FeatureSetDefaults>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(FeatureSetDefaults, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(FeatureSetDefaults, _impl_._has_bits_);
 };
 
 FeatureSetDefaults::FeatureSetDefaults(::google::protobuf::Arena* arena)
@@ -12748,9 +12734,10 @@ void FeatureSetDefaults::InternalSwap(FeatureSetDefaults* PROTOBUF_RESTRICT othe
 
 class SourceCodeInfo_Location::_Internal {
  public:
-  using HasBits = decltype(std::declval<SourceCodeInfo_Location>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<SourceCodeInfo_Location>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(SourceCodeInfo_Location, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(SourceCodeInfo_Location, _impl_._has_bits_);
 };
 
 SourceCodeInfo_Location::SourceCodeInfo_Location(::google::protobuf::Arena* arena)
@@ -13276,9 +13263,10 @@ void SourceCodeInfo::InternalSwap(SourceCodeInfo* PROTOBUF_RESTRICT other) {
 
 class GeneratedCodeInfo_Annotation::_Internal {
  public:
-  using HasBits = decltype(std::declval<GeneratedCodeInfo_Annotation>()._impl_._has_bits_);
+  using HasBits =
+      decltype(std::declval<GeneratedCodeInfo_Annotation>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(GeneratedCodeInfo_Annotation, _impl_._has_bits_);
+      8 * PROTOBUF_FIELD_OFFSET(GeneratedCodeInfo_Annotation, _impl_._has_bits_);
 };
 
 GeneratedCodeInfo_Annotation::GeneratedCodeInfo_Annotation(::google::protobuf::Arena* arena)

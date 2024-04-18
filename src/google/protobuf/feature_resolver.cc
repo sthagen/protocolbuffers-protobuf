@@ -95,8 +95,8 @@ absl::Status ValidateDescriptor(const Descriptor& descriptor) {
     }
 
     if (!field.options().has_feature_support()) {
-      // TODO Enforce that feature_support is always set.
-      return absl::OkStatus();
+      return Error("Feature field ", field.full_name(),
+                   " has no feature support specified.");
     }
 
     const FieldOptions::FeatureSupport& support =
@@ -347,6 +347,7 @@ absl::StatusOr<FeatureSetDefaults> FeatureResolver::CompileDefaults(
   }
   // Sanity check validation conditions above.
   ABSL_CHECK(!editions.empty());
+  // TODO Check that this is always EDITION_LEGACY.
   ABSL_CHECK_LE(*editions.begin(), EDITION_PROTO2);
 
   if (*editions.begin() > minimum_edition) {
@@ -380,11 +381,6 @@ absl::StatusOr<FeatureSetDefaults> FeatureResolver::CompileDefaults(
     edition_defaults->mutable_fixed_features()->MergeFromString(
         fixed_defaults_dynamic->SerializeAsString());
     edition_defaults->mutable_overridable_features()->MergeFromString(
-        overridable_defaults_dynamic->SerializeAsString());
-    // TODO Remove this once `features` is deprecated.
-    edition_defaults->mutable_features()->MergeFromString(
-        fixed_defaults_dynamic->SerializeAsString());
-    edition_defaults->mutable_features()->MergeFromString(
         overridable_defaults_dynamic->SerializeAsString());
   }
   return defaults;

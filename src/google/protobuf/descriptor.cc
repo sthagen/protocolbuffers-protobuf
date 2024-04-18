@@ -2869,7 +2869,6 @@ FileDescriptor::FileDescriptor() = default;
 void FileDescriptor::CopyTo(FileDescriptorProto* proto) const {
   CopyHeadingTo(proto);
 
-
   for (int i = 0; i < dependency_count(); i++) {
     proto->add_dependency(dependency(i)->name());
   }
@@ -5447,6 +5446,16 @@ static void InferLegacyProtoFeatures(const ProtoT& proto,
 static void InferLegacyProtoFeatures(const FieldDescriptorProto& proto,
                                      const FieldOptions& options,
                                      Edition edition, FeatureSet& features) {
+  if (!features.MutableExtension(pb::cpp)->has_string_type()) {
+    if (options.ctype() == FieldOptions::CORD) {
+      features.MutableExtension(pb::cpp)->set_string_type(
+          pb::CppFeatures::CORD);
+    }
+  }
+
+  // Everything below is specifically for proto2/proto.
+  if (!IsLegacyEdition(edition)) return;
+
   if (proto.label() == FieldDescriptorProto::LABEL_REQUIRED) {
     features.set_field_presence(FeatureSet::LEGACY_REQUIRED);
   }
@@ -5492,8 +5501,8 @@ void DescriptorBuilder::ResolveFeaturesImpl(
       AddError(descriptor->name(), proto, error_location,
                "Features are only valid under editions.");
     }
-    InferLegacyProtoFeatures(proto, *options, edition, base_features);
   }
+  InferLegacyProtoFeatures(proto, *options, edition, base_features);
 
   if (base_features.ByteSizeLong() == 0 && !force_merge) {
     // Nothing to merge, and we aren't forcing it.
@@ -9524,10 +9533,11 @@ void FieldDescriptor::InternalTypeOnceInit() const {
   Symbol result = file()->pool()->CrossLinkOnDemandHelper(
       lazy_type_name, type_ == FieldDescriptor::TYPE_ENUM);
   if (result.type() == Symbol::MESSAGE) {
-    type_ = FieldDescriptor::TYPE_MESSAGE;
+    ABSL_CHECK(type_ == FieldDescriptor::TYPE_MESSAGE ||
+               type_ == FieldDescriptor::TYPE_GROUP);
     type_descriptor_.message_type = result.descriptor();
   } else if (result.type() == Symbol::ENUM) {
-    type_ = FieldDescriptor::TYPE_ENUM;
+    ABSL_CHECK(type_ == FieldDescriptor::TYPE_ENUM);
     enum_type = type_descriptor_.enum_type = result.enum_descriptor();
   }
 
