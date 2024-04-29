@@ -10,7 +10,7 @@
 use crate::__internal::{Enum, Private};
 use crate::{
     Map, MapIter, MapMut, MapView, Mut, ProtoStr, Proxied, ProxiedInMapValue, ProxiedInRepeated,
-    Repeated, RepeatedMut, RepeatedView, SettableValue, View, ViewProxy,
+    Repeated, RepeatedMut, RepeatedView, View, ViewProxy,
 };
 use core::fmt::Debug;
 use std::alloc::Layout;
@@ -66,7 +66,6 @@ pub type MessageAbsentMutData<'msg, T> = crate::vtable::RawVTableOptionalMutator
 pub type BytesPresentMutData<'msg> = crate::vtable::RawVTableOptionalMutatorData<'msg, [u8]>;
 pub type BytesAbsentMutData<'msg> = crate::vtable::RawVTableOptionalMutatorData<'msg, [u8]>;
 pub type InnerBytesMut<'msg> = crate::vtable::RawVTableMutator<'msg, [u8]>;
-pub type InnerPrimitiveMut<'msg, T> = crate::vtable::RawVTableMutator<'msg, T>;
 
 #[derive(Debug)]
 pub struct MessageVTable {

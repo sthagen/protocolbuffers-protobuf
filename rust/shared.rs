@@ -25,15 +25,15 @@ pub mod __public {
     pub use crate::r#enum::UnknownEnumValue;
     pub use crate::map::{Map, MapIter, MapMut, MapView, ProxiedInMapValue};
     pub use crate::optional::{AbsentField, FieldEntry, Optional, PresentField};
-    pub use crate::primitive::PrimitiveMut;
     pub use crate::proto;
     pub use crate::proxied::{
-        Mut, MutProxied, MutProxy, Proxied, ProxiedWithPresence, SettableValue, View, ViewProxy,
+        IntoProxied, Mut, MutProxied, MutProxy, Proxied, ProxiedWithPresence, SettableValue, View,
+        ViewProxy,
     };
     pub use crate::repeated::{
         ProxiedInRepeated, Repeated, RepeatedIter, RepeatedMut, RepeatedView,
     };
-    pub use crate::string::{BytesMut, ProtoStr, ProtoStrMut};
+    pub use crate::string::ProtoStr;
     pub use crate::ParseError;
 }
 pub use __public::*;
@@ -56,7 +56,6 @@ pub mod __runtime;
 
 #[path = "enum.rs"]
 mod r#enum;
-mod macros;
 mod map;
 mod optional;
 mod primitive;
