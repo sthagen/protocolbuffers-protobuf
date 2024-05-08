@@ -415,113 +415,6 @@ void upb_Status_VAppendErrorFormat(upb_Status* status, const char* fmt,
 #ifndef UPB_MESSAGE_ACCESSORS_H_
 #define UPB_MESSAGE_ACCESSORS_H_
 
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-
-
-#ifndef UPB_BASE_DESCRIPTOR_CONSTANTS_H_
-#define UPB_BASE_DESCRIPTOR_CONSTANTS_H_
-
-// Must be last.
-
-// The types a field can have. Note that this list is not identical to the
-// types defined in descriptor.proto, which gives INT32 and SINT32 separate
-// types (we distinguish the two with the "integer encoding" enum below).
-// This enum is an internal convenience only and has no meaning outside of upb.
-typedef enum {
-  kUpb_CType_Bool = 1,
-  kUpb_CType_Float = 2,
-  kUpb_CType_Int32 = 3,
-  kUpb_CType_UInt32 = 4,
-  kUpb_CType_Enum = 5,  // Enum values are int32. TODO: rename
-  kUpb_CType_Message = 6,
-  kUpb_CType_Double = 7,
-  kUpb_CType_Int64 = 8,
-  kUpb_CType_UInt64 = 9,
-  kUpb_CType_String = 10,
-  kUpb_CType_Bytes = 11
-} upb_CType;
-
-// The repeated-ness of each field; this matches descriptor.proto.
-typedef enum {
-  kUpb_Label_Optional = 1,
-  kUpb_Label_Required = 2,
-  kUpb_Label_Repeated = 3
-} upb_Label;
-
-// Descriptor types, as defined in descriptor.proto.
-typedef enum {
-  kUpb_FieldType_Double = 1,
-  kUpb_FieldType_Float = 2,
-  kUpb_FieldType_Int64 = 3,
-  kUpb_FieldType_UInt64 = 4,
-  kUpb_FieldType_Int32 = 5,
-  kUpb_FieldType_Fixed64 = 6,
-  kUpb_FieldType_Fixed32 = 7,
-  kUpb_FieldType_Bool = 8,
-  kUpb_FieldType_String = 9,
-  kUpb_FieldType_Group = 10,
-  kUpb_FieldType_Message = 11,
-  kUpb_FieldType_Bytes = 12,
-  kUpb_FieldType_UInt32 = 13,
-  kUpb_FieldType_Enum = 14,
-  kUpb_FieldType_SFixed32 = 15,
-  kUpb_FieldType_SFixed64 = 16,
-  kUpb_FieldType_SInt32 = 17,
-  kUpb_FieldType_SInt64 = 18,
-} upb_FieldType;
-
-#define kUpb_FieldType_SizeOf 19
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Convert from upb_FieldType to upb_CType
-UPB_INLINE upb_CType upb_FieldType_CType(upb_FieldType field_type) {
-  static const upb_CType c_type[] = {
-      kUpb_CType_Double,   // kUpb_FieldType_Double
-      kUpb_CType_Float,    // kUpb_FieldType_Float
-      kUpb_CType_Int64,    // kUpb_FieldType_Int64
-      kUpb_CType_UInt64,   // kUpb_FieldType_UInt64
-      kUpb_CType_Int32,    // kUpb_FieldType_Int32
-      kUpb_CType_UInt64,   // kUpb_FieldType_Fixed64
-      kUpb_CType_UInt32,   // kUpb_FieldType_Fixed32
-      kUpb_CType_Bool,     // kUpb_FieldType_Bool
-      kUpb_CType_String,   // kUpb_FieldType_String
-      kUpb_CType_Message,  // kUpb_FieldType_Group
-      kUpb_CType_Message,  // kUpb_FieldType_Message
-      kUpb_CType_Bytes,    // kUpb_FieldType_Bytes
-      kUpb_CType_UInt32,   // kUpb_FieldType_UInt32
-      kUpb_CType_Enum,     // kUpb_FieldType_Enum
-      kUpb_CType_Int32,    // kUpb_FieldType_SFixed32
-      kUpb_CType_Int64,    // kUpb_FieldType_SFixed64
-      kUpb_CType_Int32,    // kUpb_FieldType_SInt32
-      kUpb_CType_Int64,    // kUpb_FieldType_SInt64
-  };
-
-  // -1 here because the enum is one-based but the table is zero-based.
-  return c_type[field_type - 1];
-}
-
-UPB_INLINE bool upb_FieldType_IsPackable(upb_FieldType field_type) {
-  // clang-format off
-  const unsigned kUnpackableTypes =
-      (1 << kUpb_FieldType_String) |
-      (1 << kUpb_FieldType_Bytes) |
-      (1 << kUpb_FieldType_Message) |
-      (1 << kUpb_FieldType_Group);
-  // clang-format on
-  return (1 << field_type) & ~kUnpackableTypes;
-}
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_BASE_DESCRIPTOR_CONSTANTS_H_ */
 #ifndef UPB_BASE_STRING_VIEW_H_
 #define UPB_BASE_STRING_VIEW_H_
 
@@ -828,6 +721,109 @@ void upb_Arena_SetTraceHandler(void (*initArenaTraceHandler)(const upb_Arena*,
 
 #include <stddef.h>
 
+
+#ifndef UPB_BASE_DESCRIPTOR_CONSTANTS_H_
+#define UPB_BASE_DESCRIPTOR_CONSTANTS_H_
+
+// Must be last.
+
+// The types a field can have. Note that this list is not identical to the
+// types defined in descriptor.proto, which gives INT32 and SINT32 separate
+// types (we distinguish the two with the "integer encoding" enum below).
+// This enum is an internal convenience only and has no meaning outside of upb.
+typedef enum {
+  kUpb_CType_Bool = 1,
+  kUpb_CType_Float = 2,
+  kUpb_CType_Int32 = 3,
+  kUpb_CType_UInt32 = 4,
+  kUpb_CType_Enum = 5,  // Enum values are int32. TODO: rename
+  kUpb_CType_Message = 6,
+  kUpb_CType_Double = 7,
+  kUpb_CType_Int64 = 8,
+  kUpb_CType_UInt64 = 9,
+  kUpb_CType_String = 10,
+  kUpb_CType_Bytes = 11
+} upb_CType;
+
+// The repeated-ness of each field; this matches descriptor.proto.
+typedef enum {
+  kUpb_Label_Optional = 1,
+  kUpb_Label_Required = 2,
+  kUpb_Label_Repeated = 3
+} upb_Label;
+
+// Descriptor types, as defined in descriptor.proto.
+typedef enum {
+  kUpb_FieldType_Double = 1,
+  kUpb_FieldType_Float = 2,
+  kUpb_FieldType_Int64 = 3,
+  kUpb_FieldType_UInt64 = 4,
+  kUpb_FieldType_Int32 = 5,
+  kUpb_FieldType_Fixed64 = 6,
+  kUpb_FieldType_Fixed32 = 7,
+  kUpb_FieldType_Bool = 8,
+  kUpb_FieldType_String = 9,
+  kUpb_FieldType_Group = 10,
+  kUpb_FieldType_Message = 11,
+  kUpb_FieldType_Bytes = 12,
+  kUpb_FieldType_UInt32 = 13,
+  kUpb_FieldType_Enum = 14,
+  kUpb_FieldType_SFixed32 = 15,
+  kUpb_FieldType_SFixed64 = 16,
+  kUpb_FieldType_SInt32 = 17,
+  kUpb_FieldType_SInt64 = 18,
+} upb_FieldType;
+
+#define kUpb_FieldType_SizeOf 19
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Convert from upb_FieldType to upb_CType
+UPB_INLINE upb_CType upb_FieldType_CType(upb_FieldType field_type) {
+  static const upb_CType c_type[] = {
+      kUpb_CType_Double,   // kUpb_FieldType_Double
+      kUpb_CType_Float,    // kUpb_FieldType_Float
+      kUpb_CType_Int64,    // kUpb_FieldType_Int64
+      kUpb_CType_UInt64,   // kUpb_FieldType_UInt64
+      kUpb_CType_Int32,    // kUpb_FieldType_Int32
+      kUpb_CType_UInt64,   // kUpb_FieldType_Fixed64
+      kUpb_CType_UInt32,   // kUpb_FieldType_Fixed32
+      kUpb_CType_Bool,     // kUpb_FieldType_Bool
+      kUpb_CType_String,   // kUpb_FieldType_String
+      kUpb_CType_Message,  // kUpb_FieldType_Group
+      kUpb_CType_Message,  // kUpb_FieldType_Message
+      kUpb_CType_Bytes,    // kUpb_FieldType_Bytes
+      kUpb_CType_UInt32,   // kUpb_FieldType_UInt32
+      kUpb_CType_Enum,     // kUpb_FieldType_Enum
+      kUpb_CType_Int32,    // kUpb_FieldType_SFixed32
+      kUpb_CType_Int64,    // kUpb_FieldType_SFixed64
+      kUpb_CType_Int32,    // kUpb_FieldType_SInt32
+      kUpb_CType_Int64,    // kUpb_FieldType_SInt64
+  };
+
+  // -1 here because the enum is one-based but the table is zero-based.
+  return c_type[field_type - 1];
+}
+
+UPB_INLINE bool upb_FieldType_IsPackable(upb_FieldType field_type) {
+  // clang-format off
+  const unsigned kUnpackableTypes =
+      (1 << kUpb_FieldType_String) |
+      (1 << kUpb_FieldType_Bytes) |
+      (1 << kUpb_FieldType_Message) |
+      (1 << kUpb_FieldType_Group);
+  // clang-format on
+  return (1 << field_type) & ~kUnpackableTypes;
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_BASE_DESCRIPTOR_CONSTANTS_H_ */
 
 #ifndef UPB_MESSAGE_INTERNAL_ARRAY_H_
 #define UPB_MESSAGE_INTERNAL_ARRAY_H_
@@ -1884,6 +1880,11 @@ UPB_API_INLINE void upb_MiniTableExtension_SetSubMessage(
   e->UPB_PRIVATE(sub).UPB_PRIVATE(submsg) = m;
 }
 
+UPB_INLINE upb_FieldRep UPB_PRIVATE(_upb_MiniTableExtension_GetRep)(
+    const struct upb_MiniTableExtension* e) {
+  return UPB_PRIVATE(_upb_MiniTableField_GetRep)(&e->UPB_PRIVATE(field));
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
@@ -2798,7 +2799,6 @@ UPB_INLINE bool UPB_PRIVATE(_upb_MiniTableField_DataIsZero)(
 //                                       const upb_MiniTableField* field,
 //                                       bool value, upb_Arena* a) {
 //     UPB_ASSUME(field->UPB_PRIVATE(descriptortype) == kUpb_FieldType_Bool);
-//     UPB_ASSUME(upb_MiniTableField_IsScalar(field));
 //     UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(field) ==
 //                kUpb_FieldRep_1Byte);
 //     upb_Message_SetField(msg, field, &value, a);
@@ -2929,8 +2929,8 @@ UPB_API_INLINE bool upb_Message_GetBool(const struct upb_Message* msg,
                                         const upb_MiniTableField* f,
                                         bool default_val) {
   UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Bool);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_1Byte);
   UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_1Byte);
   upb_MessageValue def;
   def.bool_val = default_val;
   return upb_Message_GetField(msg, f, def).bool_val;
@@ -2940,8 +2940,8 @@ UPB_API_INLINE double upb_Message_GetDouble(const struct upb_Message* msg,
                                             const upb_MiniTableField* f,
                                             double default_val) {
   UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Double);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_8Byte);
   UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_8Byte);
 
   upb_MessageValue def;
   def.double_val = default_val;
@@ -2952,8 +2952,8 @@ UPB_API_INLINE float upb_Message_GetFloat(const struct upb_Message* msg,
                                           const upb_MiniTableField* f,
                                           float default_val) {
   UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Float);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
   UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
 
   upb_MessageValue def;
   def.float_val = default_val;
@@ -2965,8 +2965,8 @@ UPB_API_INLINE int32_t upb_Message_GetInt32(const struct upb_Message* msg,
                                             int32_t default_val) {
   UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Int32 ||
              upb_MiniTableField_CType(f) == kUpb_CType_Enum);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
   UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
 
   upb_MessageValue def;
   def.int32_val = default_val;
@@ -2977,8 +2977,8 @@ UPB_API_INLINE int64_t upb_Message_GetInt64(const struct upb_Message* msg,
                                             const upb_MiniTableField* f,
                                             int64_t default_val) {
   UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Int64);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_8Byte);
   UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_8Byte);
 
   upb_MessageValue def;
   def.int64_val = default_val;
@@ -3007,6 +3007,37 @@ UPB_API_INLINE const struct upb_Map* upb_Message_GetMap(
   return ret;
 }
 
+UPB_API_INLINE uintptr_t upb_Message_GetTaggedMessagePtr(
+    const struct upb_Message* msg, const upb_MiniTableField* f,
+    struct upb_Message* default_val) {
+  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Message);
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) ==
+             UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte));
+  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  uintptr_t tagged;
+  _upb_Message_GetNonExtensionField(msg, f, &default_val, &tagged);
+  return tagged;
+}
+
+// For internal use only; users cannot set tagged messages because only the
+// parser and the message copier are allowed to directly create an empty
+// message.
+UPB_INLINE void UPB_PRIVATE(_upb_Message_SetTaggedMessagePtr)(
+    struct upb_Message* msg, const upb_MiniTableField* f,
+    uintptr_t sub_message) {
+  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Message);
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) ==
+             UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte));
+  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  upb_Message_SetBaseField(msg, f, &sub_message);
+}
+
+UPB_API_INLINE const struct upb_Message* upb_Message_GetMessage(
+    const struct upb_Message* msg, const upb_MiniTableField* f) {
+  uintptr_t tagged = upb_Message_GetTaggedMessagePtr(msg, f, NULL);
+  return upb_TaggedMessagePtr_GetNonEmptyMessage(tagged);
+}
+
 UPB_API_INLINE upb_Array* upb_Message_GetMutableArray(
     struct upb_Message* msg, const upb_MiniTableField* f) {
   UPB_PRIVATE(_upb_MiniTableField_CheckIsArray)(f);
@@ -3016,6 +3047,11 @@ UPB_API_INLINE upb_Array* upb_Message_GetMutableArray(
 UPB_API_INLINE struct upb_Map* upb_Message_GetMutableMap(
     struct upb_Message* msg, const upb_MiniTableField* f) {
   return (struct upb_Map*)upb_Message_GetMap(msg, f);
+}
+
+UPB_API_INLINE struct upb_Message* upb_Message_GetMutableMessage(
+    struct upb_Message* msg, const upb_MiniTableField* f) {
+  return (struct upb_Message*)upb_Message_GetMessage(msg, f);
 }
 
 UPB_API_INLINE upb_Array* upb_Message_GetOrCreateMutableArray(
@@ -3093,7 +3129,6 @@ upb_Message_GetString(const struct upb_Message* msg,
              upb_MiniTableField_CType(f) == kUpb_CType_Bytes);
   UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) ==
              kUpb_FieldRep_StringView);
-  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
 
   upb_MessageValue def;
   def.str_val = default_val;
@@ -3104,8 +3139,8 @@ UPB_API_INLINE uint32_t upb_Message_GetUInt32(const struct upb_Message* msg,
                                               const upb_MiniTableField* f,
                                               uint32_t default_val) {
   UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_UInt32);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
   UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
 
   upb_MessageValue def;
   def.uint32_val = default_val;
@@ -3116,23 +3151,89 @@ UPB_API_INLINE uint64_t upb_Message_GetUInt64(const struct upb_Message* msg,
                                               const upb_MiniTableField* f,
                                               uint64_t default_val) {
   UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_UInt64);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_8Byte);
   UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_8Byte);
 
   upb_MessageValue def;
   def.uint64_val = default_val;
   return upb_Message_GetField(msg, f, def).uint64_val;
 }
 
-UPB_API_INLINE bool upb_Message_SetBool(struct upb_Message* msg,
-                                        const upb_MiniTableField* f, bool value,
-                                        upb_Arena* a) {
+// BaseField Setters ///////////////////////////////////////////////////////////
+
+UPB_API_INLINE void upb_Message_SetBaseFieldBool(struct upb_Message* msg,
+                                                 const upb_MiniTableField* f,
+                                                 bool value) {
   UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Bool);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_1Byte);
   UPB_ASSUME(upb_MiniTableField_IsScalar(f));
-  upb_MessageValue val;
-  val.bool_val = value;
-  return UPB_PRIVATE(_upb_Message_SetField)(msg, f, val, a);
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_1Byte);
+  upb_Message_SetBaseField(msg, f, &value);
+}
+
+UPB_API_INLINE void upb_Message_SetBaseFieldDouble(struct upb_Message* msg,
+                                                   const upb_MiniTableField* f,
+                                                   double value) {
+  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Double);
+  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_8Byte);
+  upb_Message_SetBaseField(msg, f, &value);
+}
+
+UPB_API_INLINE void upb_Message_SetBaseFieldFloat(struct upb_Message* msg,
+                                                  const upb_MiniTableField* f,
+                                                  float value) {
+  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Float);
+  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
+  upb_Message_SetBaseField(msg, f, &value);
+}
+
+UPB_API_INLINE void upb_Message_SetBaseFieldInt32(struct upb_Message* msg,
+                                                  const upb_MiniTableField* f,
+                                                  int32_t value) {
+  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Int32 ||
+             upb_MiniTableField_CType(f) == kUpb_CType_Enum);
+  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
+  upb_Message_SetBaseField(msg, f, &value);
+}
+
+UPB_API_INLINE void upb_Message_SetBaseFieldInt64(struct upb_Message* msg,
+                                                  const upb_MiniTableField* f,
+                                                  int64_t value) {
+  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Int64);
+  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_8Byte);
+  upb_Message_SetBaseField(msg, f, &value);
+}
+
+UPB_API_INLINE void upb_Message_SetBaseFieldString(struct upb_Message* msg,
+                                                   const upb_MiniTableField* f,
+                                                   upb_StringView value) {
+  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_String ||
+             upb_MiniTableField_CType(f) == kUpb_CType_Bytes);
+  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) ==
+             kUpb_FieldRep_StringView);
+  upb_Message_SetBaseField(msg, f, &value);
+}
+
+UPB_API_INLINE void upb_Message_SetBaseFieldUInt32(struct upb_Message* msg,
+                                                   const upb_MiniTableField* f,
+                                                   uint32_t value) {
+  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_UInt32);
+  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
+  upb_Message_SetBaseField(msg, f, &value);
+}
+
+UPB_API_INLINE void upb_Message_SetBaseFieldUInt64(struct upb_Message* msg,
+                                                   const upb_MiniTableField* f,
+                                                   uint64_t value) {
+  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_UInt64);
+  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_8Byte);
+  upb_Message_SetBaseField(msg, f, &value);
 }
 
 UPB_API_INLINE void upb_Message_SetClosedEnum(
@@ -3140,55 +3241,142 @@ UPB_API_INLINE void upb_Message_SetClosedEnum(
     const upb_MiniTableField* f, int32_t value) {
   UPB_ASSERT(upb_MiniTableField_IsClosedEnum(f));
   UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
-  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
   UPB_ASSERT(upb_MiniTableEnum_CheckValue(
       upb_MiniTable_GetSubEnumTable(msg_mini_table, f), value));
   upb_Message_SetBaseField(msg, f, &value);
 }
 
+// Extension Setters ///////////////////////////////////////////////////////////
+
+UPB_API_INLINE bool upb_Message_SetExtensionBool(
+    struct upb_Message* msg, const upb_MiniTableExtension* e, bool value,
+    upb_Arena* a) {
+  UPB_ASSUME(upb_MiniTableExtension_CType(e) == kUpb_CType_Bool);
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableExtension_GetRep)(e) ==
+             kUpb_FieldRep_1Byte);
+  return upb_Message_SetExtension(msg, e, &value, a);
+}
+
+UPB_API_INLINE bool upb_Message_SetExtensionDouble(
+    struct upb_Message* msg, const upb_MiniTableExtension* e, double value,
+    upb_Arena* a) {
+  UPB_ASSUME(upb_MiniTableExtension_CType(e) == kUpb_CType_Double);
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableExtension_GetRep)(e) ==
+             kUpb_FieldRep_8Byte);
+  return upb_Message_SetExtension(msg, e, &value, a);
+}
+
+UPB_API_INLINE bool upb_Message_SetExtensionFloat(
+    struct upb_Message* msg, const upb_MiniTableExtension* e, float value,
+    upb_Arena* a) {
+  UPB_ASSUME(upb_MiniTableExtension_CType(e) == kUpb_CType_Float);
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableExtension_GetRep)(e) ==
+             kUpb_FieldRep_4Byte);
+  return upb_Message_SetExtension(msg, e, &value, a);
+}
+
+UPB_API_INLINE bool upb_Message_SetExtensionInt32(
+    struct upb_Message* msg, const upb_MiniTableExtension* e, int32_t value,
+    upb_Arena* a) {
+  UPB_ASSUME(upb_MiniTableExtension_CType(e) == kUpb_CType_Int32 ||
+             upb_MiniTableExtension_CType(e) == kUpb_CType_Enum);
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableExtension_GetRep)(e) ==
+             kUpb_FieldRep_4Byte);
+  return upb_Message_SetExtension(msg, e, &value, a);
+}
+
+UPB_API_INLINE bool upb_Message_SetExtensionInt64(
+    struct upb_Message* msg, const upb_MiniTableExtension* e, int64_t value,
+    upb_Arena* a) {
+  UPB_ASSUME(upb_MiniTableExtension_CType(e) == kUpb_CType_Int64);
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableExtension_GetRep)(e) ==
+             kUpb_FieldRep_8Byte);
+  return upb_Message_SetExtension(msg, e, &value, a);
+}
+
+UPB_API_INLINE bool upb_Message_SetExtensionString(
+    struct upb_Message* msg, const upb_MiniTableExtension* e,
+    upb_StringView value, upb_Arena* a) {
+  UPB_ASSUME(upb_MiniTableExtension_CType(e) == kUpb_CType_String ||
+             upb_MiniTableExtension_CType(e) == kUpb_CType_Bytes);
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableExtension_GetRep)(e) ==
+             kUpb_FieldRep_StringView);
+  return upb_Message_SetExtension(msg, e, &value, a);
+}
+
+UPB_API_INLINE bool upb_Message_SetExtensionUInt32(
+    struct upb_Message* msg, const upb_MiniTableExtension* e, uint32_t value,
+    upb_Arena* a) {
+  UPB_ASSUME(upb_MiniTableExtension_CType(e) == kUpb_CType_UInt32);
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableExtension_GetRep)(e) ==
+             kUpb_FieldRep_4Byte);
+  return upb_Message_SetExtension(msg, e, &value, a);
+}
+
+UPB_API_INLINE bool upb_Message_SetExtensionUInt64(
+    struct upb_Message* msg, const upb_MiniTableExtension* e, uint64_t value,
+    upb_Arena* a) {
+  UPB_ASSUME(upb_MiniTableExtension_CType(e) == kUpb_CType_UInt64);
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableExtension_GetRep)(e) ==
+             kUpb_FieldRep_8Byte);
+  return upb_Message_SetExtension(msg, e, &value, a);
+}
+
+// Universal Setters ///////////////////////////////////////////////////////////
+
+UPB_API_INLINE bool upb_Message_SetBool(struct upb_Message* msg,
+                                        const upb_MiniTableField* f, bool value,
+                                        upb_Arena* a) {
+  return upb_MiniTableField_IsExtension(f)
+             ? upb_Message_SetExtensionBool(
+                   msg, (const upb_MiniTableExtension*)f, value, a)
+             : (upb_Message_SetBaseFieldBool(msg, f, value), true);
+}
+
 UPB_API_INLINE bool upb_Message_SetDouble(struct upb_Message* msg,
                                           const upb_MiniTableField* f,
                                           double value, upb_Arena* a) {
-  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Double);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_8Byte);
-  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
-  upb_MessageValue val;
-  val.double_val = value;
-  return UPB_PRIVATE(_upb_Message_SetField)(msg, f, val, a);
+  return upb_MiniTableField_IsExtension(f)
+             ? upb_Message_SetExtensionDouble(
+                   msg, (const upb_MiniTableExtension*)f, value, a)
+             : (upb_Message_SetBaseFieldDouble(msg, f, value), true);
 }
 
 UPB_API_INLINE bool upb_Message_SetFloat(struct upb_Message* msg,
                                          const upb_MiniTableField* f,
                                          float value, upb_Arena* a) {
-  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Float);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
-  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
-  upb_MessageValue val;
-  val.float_val = value;
-  return UPB_PRIVATE(_upb_Message_SetField)(msg, f, val, a);
+  return upb_MiniTableField_IsExtension(f)
+             ? upb_Message_SetExtensionFloat(
+                   msg, (const upb_MiniTableExtension*)f, value, a)
+             : (upb_Message_SetBaseFieldFloat(msg, f, value), true);
 }
 
 UPB_API_INLINE bool upb_Message_SetInt32(struct upb_Message* msg,
                                          const upb_MiniTableField* f,
                                          int32_t value, upb_Arena* a) {
-  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Int32 ||
-             upb_MiniTableField_CType(f) == kUpb_CType_Enum);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
-  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
-  upb_MessageValue val;
-  val.int32_val = value;
-  return UPB_PRIVATE(_upb_Message_SetField)(msg, f, val, a);
+  return upb_MiniTableField_IsExtension(f)
+             ? upb_Message_SetExtensionInt32(
+                   msg, (const upb_MiniTableExtension*)f, value, a)
+             : (upb_Message_SetBaseFieldInt32(msg, f, value), true);
 }
 
 UPB_API_INLINE bool upb_Message_SetInt64(struct upb_Message* msg,
                                          const upb_MiniTableField* f,
                                          int64_t value, upb_Arena* a) {
-  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Int64);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_8Byte);
-  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
-  upb_MessageValue val;
-  val.int64_val = value;
-  return UPB_PRIVATE(_upb_Message_SetField)(msg, f, val, a);
+  return upb_MiniTableField_IsExtension(f)
+             ? upb_Message_SetExtensionInt64(
+                   msg, (const upb_MiniTableExtension*)f, value, a)
+             : (upb_Message_SetBaseFieldInt64(msg, f, value), true);
+}
+
+// Sets the value of a message-typed field. The mini_tables of `msg` and
+// `sub_message` must have been linked for this to work correctly.
+UPB_API_INLINE void upb_Message_SetMessage(struct upb_Message* msg,
+                                           const upb_MiniTable* m,
+                                           const upb_MiniTableField* f,
+                                           struct upb_Message* sub_message) {
+  UPB_PRIVATE(_upb_Message_SetTaggedMessagePtr)
+  (msg, f, UPB_PRIVATE(_upb_TaggedMessagePtr_Pack)(sub_message, false));
 }
 
 // Sets the value of a `string` or `bytes` field. The bytes of the value are not
@@ -3198,36 +3386,28 @@ UPB_API_INLINE bool upb_Message_SetInt64(struct upb_Message* msg,
 UPB_API_INLINE bool upb_Message_SetString(struct upb_Message* msg,
                                           const upb_MiniTableField* f,
                                           upb_StringView value, upb_Arena* a) {
-  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_String ||
-             upb_MiniTableField_CType(f) == kUpb_CType_Bytes);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) ==
-             kUpb_FieldRep_StringView);
-  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
-  upb_MessageValue val;
-  val.str_val = value;
-  return UPB_PRIVATE(_upb_Message_SetField)(msg, f, val, a);
+  return upb_MiniTableField_IsExtension(f)
+             ? upb_Message_SetExtensionString(
+                   msg, (const upb_MiniTableExtension*)f, value, a)
+             : (upb_Message_SetBaseFieldString(msg, f, value), true);
 }
 
 UPB_API_INLINE bool upb_Message_SetUInt32(struct upb_Message* msg,
                                           const upb_MiniTableField* f,
                                           uint32_t value, upb_Arena* a) {
-  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_UInt32);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_4Byte);
-  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
-  upb_MessageValue val;
-  val.uint32_val = value;
-  return UPB_PRIVATE(_upb_Message_SetField)(msg, f, val, a);
+  return upb_MiniTableField_IsExtension(f)
+             ? upb_Message_SetExtensionUInt32(
+                   msg, (const upb_MiniTableExtension*)f, value, a)
+             : (upb_Message_SetBaseFieldUInt32(msg, f, value), true);
 }
 
 UPB_API_INLINE bool upb_Message_SetUInt64(struct upb_Message* msg,
                                           const upb_MiniTableField* f,
                                           uint64_t value, upb_Arena* a) {
-  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_UInt64);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) == kUpb_FieldRep_8Byte);
-  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
-  upb_MessageValue val;
-  val.uint64_val = value;
-  return UPB_PRIVATE(_upb_Message_SetField)(msg, f, val, a);
+  return upb_MiniTableField_IsExtension(f)
+             ? upb_Message_SetExtensionUInt64(
+                   msg, (const upb_MiniTableExtension*)f, value, a)
+             : (upb_Message_SetBaseFieldUInt64(msg, f, value), true);
 }
 
 UPB_API_INLINE void upb_Message_Clear(struct upb_Message* msg,
@@ -3269,6 +3449,21 @@ UPB_API_INLINE void upb_Message_ClearExtension(
     *ext = *base;
     in->ext_begin += sizeof(upb_Extension);
   }
+}
+
+UPB_API_INLINE void upb_Message_ClearOneof(struct upb_Message* msg,
+                                           const upb_MiniTable* m,
+                                           const upb_MiniTableField* f) {
+  UPB_ASSERT(!upb_Message_IsFrozen(msg));
+  uint32_t field_number = upb_Message_WhichOneofFieldNumber(msg, f);
+  if (field_number == 0) {
+    // No field in the oneof is set.
+    return;
+  }
+
+  const upb_MiniTableField* field =
+      upb_MiniTable_FindFieldByNumber(m, field_number);
+  upb_Message_ClearBaseField(msg, field);
 }
 
 UPB_API_INLINE void* upb_Message_ResizeArrayUninitialized(
@@ -3491,41 +3686,6 @@ UPB_API_INLINE upb_Message* upb_TaggedMessagePtr_GetNonEmptyMessage(
 
 #endif /* UPB_MINI_TABLE_TAGGED_PTR_H_ */
 
-#ifndef UPB_MINI_TABLE_SUB_H_
-#define UPB_MINI_TABLE_SUB_H_
-
-
-// Must be last.
-
-typedef union upb_MiniTableSub upb_MiniTableSub;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Constructors
-
-UPB_API_INLINE upb_MiniTableSub
-upb_MiniTableSub_FromEnum(const upb_MiniTableEnum* subenum);
-
-UPB_API_INLINE upb_MiniTableSub
-upb_MiniTableSub_FromMessage(const upb_MiniTable* submsg);
-
-// Getters
-
-UPB_API_INLINE const upb_MiniTableEnum* upb_MiniTableSub_Enum(
-    upb_MiniTableSub sub);
-
-UPB_API_INLINE const upb_MiniTable* upb_MiniTableSub_Message(
-    upb_MiniTableSub sub);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_MINI_TABLE_SUB_H_ */
-
 // Must be last.
 
 #ifdef __cplusplus
@@ -3546,6 +3706,10 @@ UPB_API_INLINE void upb_Message_ClearBaseField(upb_Message* msg,
 UPB_API_INLINE void upb_Message_ClearExtension(upb_Message* msg,
                                                const upb_MiniTableExtension* e);
 
+UPB_API_INLINE void upb_Message_ClearOneof(upb_Message* msg,
+                                           const upb_MiniTable* m,
+                                           const upb_MiniTableField* f);
+
 UPB_API_INLINE bool upb_Message_HasBaseField(const upb_Message* msg,
                                              const upb_MiniTableField* f);
 
@@ -3563,6 +3727,10 @@ UPB_API_INLINE bool upb_Message_SetExtension(upb_Message* msg,
 UPB_API_INLINE upb_MessageValue
 upb_Message_GetField(const upb_Message* msg, const upb_MiniTableField* f,
                      upb_MessageValue default_val);
+
+UPB_API_INLINE upb_TaggedMessagePtr upb_Message_GetTaggedMessagePtr(
+    const upb_Message* msg, const upb_MiniTableField* field,
+    upb_Message* default_val);
 
 UPB_API_INLINE const upb_Array* upb_Message_GetArray(
     const upb_Message* msg, const upb_MiniTableField* f);
@@ -3590,11 +3758,17 @@ UPB_API_INLINE int64_t upb_Message_GetInt64(const upb_Message* msg,
 UPB_API_INLINE const upb_Map* upb_Message_GetMap(const upb_Message* msg,
                                                  const upb_MiniTableField* f);
 
+UPB_API_INLINE const upb_Message* upb_Message_GetMessage(
+    const upb_Message* msg, const upb_MiniTableField* f);
+
 UPB_API_INLINE upb_Array* upb_Message_GetMutableArray(
     upb_Message* msg, const upb_MiniTableField* f);
 
 UPB_API_INLINE upb_Map* upb_Message_GetMutableMap(upb_Message* msg,
                                                   const upb_MiniTableField* f);
+
+UPB_API_INLINE upb_Message* upb_Message_GetMutableMessage(
+    upb_Message* msg, const upb_MiniTableField* f);
 
 UPB_API_INLINE upb_Array* upb_Message_GetOrCreateMutableArray(
     upb_Message* msg, const upb_MiniTableField* f, upb_Arena* arena);
@@ -3643,6 +3817,11 @@ UPB_API_INLINE bool upb_Message_SetInt64(upb_Message* msg,
                                          const upb_MiniTableField* f,
                                          int64_t value, upb_Arena* a);
 
+UPB_API_INLINE void upb_Message_SetMessage(upb_Message* msg,
+                                           const upb_MiniTable* m,
+                                           const upb_MiniTableField* f,
+                                           upb_Message* sub_message);
+
 UPB_API_INLINE bool upb_Message_SetString(upb_Message* msg,
                                           const upb_MiniTableField* f,
                                           upb_StringView value, upb_Arena* a);
@@ -3654,55 +3833,6 @@ UPB_API_INLINE bool upb_Message_SetUInt32(upb_Message* msg,
 UPB_API_INLINE bool upb_Message_SetUInt64(upb_Message* msg,
                                           const upb_MiniTableField* f,
                                           uint64_t value, upb_Arena* a);
-
-UPB_API_INLINE upb_TaggedMessagePtr upb_Message_GetTaggedMessagePtr(
-    const upb_Message* msg, const upb_MiniTableField* field,
-    upb_Message* default_val) {
-  UPB_ASSUME(upb_MiniTableField_CType(field) == kUpb_CType_Message);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(field) ==
-             UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte));
-  UPB_ASSUME(upb_MiniTableField_IsScalar(field));
-  upb_TaggedMessagePtr tagged;
-  _upb_Message_GetNonExtensionField(msg, field, &default_val, &tagged);
-  return tagged;
-}
-
-UPB_API_INLINE const upb_Message* upb_Message_GetMessage(
-    const upb_Message* msg, const upb_MiniTableField* field) {
-  upb_TaggedMessagePtr tagged =
-      upb_Message_GetTaggedMessagePtr(msg, field, NULL);
-  return upb_TaggedMessagePtr_GetNonEmptyMessage(tagged);
-}
-
-UPB_API_INLINE upb_Message* upb_Message_GetMutableMessage(
-    upb_Message* msg, const upb_MiniTableField* field) {
-  return (upb_Message*)upb_Message_GetMessage(msg, field);
-}
-
-// For internal use only; users cannot set tagged messages because only the
-// parser and the message copier are allowed to directly create an empty
-// message.
-UPB_INLINE void UPB_PRIVATE(_upb_Message_SetTaggedMessagePtr)(
-    struct upb_Message* msg, const upb_MiniTable* mini_table,
-    const upb_MiniTableField* f, upb_TaggedMessagePtr sub_message) {
-  UPB_ASSUME(upb_MiniTableField_CType(f) == kUpb_CType_Message);
-  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(f) ==
-             UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte));
-  UPB_ASSUME(upb_MiniTableField_IsScalar(f));
-  upb_Message_SetBaseField(msg, f, &sub_message);
-}
-
-// Sets the value of a message-typed field. The `mini_table` and `field`
-// parameters belong to `msg`, not `sub_message`. The mini_tables of `msg` and
-// `sub_message` must have been linked for this to work correctly.
-UPB_API_INLINE void upb_Message_SetMessage(upb_Message* msg,
-                                           const upb_MiniTable* mini_table,
-                                           const upb_MiniTableField* field,
-                                           upb_Message* sub_message) {
-  UPB_PRIVATE(_upb_Message_SetTaggedMessagePtr)
-  (msg, mini_table, field,
-   UPB_PRIVATE(_upb_TaggedMessagePtr_Pack)(sub_message, false));
-}
 
 UPB_API_INLINE void* upb_Message_ResizeArrayUninitialized(
     upb_Message* msg, const upb_MiniTableField* f, size_t size,
@@ -3775,6 +3905,41 @@ UPB_INLINE void _upb_msg_map_set_value(void* msg, const void* val,
 #ifndef UPB_MINI_TABLE_DECODE_H_
 #define UPB_MINI_TABLE_DECODE_H_
 
+
+#ifndef UPB_MINI_TABLE_SUB_H_
+#define UPB_MINI_TABLE_SUB_H_
+
+
+// Must be last.
+
+typedef union upb_MiniTableSub upb_MiniTableSub;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Constructors
+
+UPB_API_INLINE upb_MiniTableSub
+upb_MiniTableSub_FromEnum(const upb_MiniTableEnum* subenum);
+
+UPB_API_INLINE upb_MiniTableSub
+upb_MiniTableSub_FromMessage(const upb_MiniTable* submsg);
+
+// Getters
+
+UPB_API_INLINE const upb_MiniTableEnum* upb_MiniTableSub_Enum(
+    upb_MiniTableSub sub);
+
+UPB_API_INLINE const upb_MiniTable* upb_MiniTableSub_Message(
+    upb_MiniTableSub sub);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif /* UPB_MINI_TABLE_SUB_H_ */
 
 // Export the newer headers, for legacy users.  New users should include the
 // more specific headers directly.
