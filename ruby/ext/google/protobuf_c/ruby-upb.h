@@ -1843,6 +1843,7 @@ UPB_INLINE uint64_t upb_BigEndian64(uint64_t val) {
 #ifndef UPB_MINI_TABLE_INTERNAL_EXTENSION_H_
 #define UPB_MINI_TABLE_INTERNAL_EXTENSION_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
 
@@ -1872,6 +1873,9 @@ upb_MiniTableExtension_Number(const struct upb_MiniTableExtension* e) {
 
 UPB_API_INLINE const struct upb_MiniTable* upb_MiniTableExtension_GetSubMessage(
     const struct upb_MiniTableExtension* e) {
+  if (upb_MiniTableExtension_CType(e) != kUpb_CType_Message) {
+    return NULL;
+  }
   return upb_MiniTableSub_Message(e->UPB_PRIVATE(sub));
 }
 
@@ -3370,13 +3374,12 @@ UPB_API_INLINE bool upb_Message_SetInt64(struct upb_Message* msg,
 }
 
 // Sets the value of a message-typed field. The mini_tables of `msg` and
-// `sub_message` must have been linked for this to work correctly.
+// `value` must have been linked for this to work correctly.
 UPB_API_INLINE void upb_Message_SetMessage(struct upb_Message* msg,
-                                           const upb_MiniTable* m,
                                            const upb_MiniTableField* f,
-                                           struct upb_Message* sub_message) {
+                                           struct upb_Message* value) {
   UPB_PRIVATE(_upb_Message_SetTaggedMessagePtr)
-  (msg, f, UPB_PRIVATE(_upb_TaggedMessagePtr_Pack)(sub_message, false));
+  (msg, f, UPB_PRIVATE(_upb_TaggedMessagePtr_Pack)(value, false));
 }
 
 // Sets the value of a `string` or `bytes` field. The bytes of the value are not
@@ -3818,9 +3821,8 @@ UPB_API_INLINE bool upb_Message_SetInt64(upb_Message* msg,
                                          int64_t value, upb_Arena* a);
 
 UPB_API_INLINE void upb_Message_SetMessage(upb_Message* msg,
-                                           const upb_MiniTable* m,
                                            const upb_MiniTableField* f,
-                                           upb_Message* sub_message);
+                                           upb_Message* value);
 
 UPB_API_INLINE bool upb_Message_SetString(upb_Message* msg,
                                           const upb_MiniTableField* f,
