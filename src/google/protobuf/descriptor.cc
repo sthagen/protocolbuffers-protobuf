@@ -7340,7 +7340,8 @@ void DescriptorBuilder::CrossLinkField(FieldDescriptor* field,
       // from other extendees (< 2^29). If unknown deps are allowed, we may not
       // have that information, and wrongly deem the extension as invalid.
       auto skip_check = get_allow_unknown(pool_) &&
-                        proto.extendee() == "google.protobuf.bridge.MessageSet";
+                        absl::StripPrefix(proto.extendee(), ".") ==
+                            "google.protobuf.bridge.MessageSet";
       if (!skip_check) {
         AddError(field->full_name(), proto,
                  DescriptorPool::ErrorCollector::NUMBER, [&] {
@@ -8583,7 +8584,7 @@ bool DescriptorBuilder::OptionInterpreter::InterpretOptionsImpl(
           *original_options, original_uninterpreted_options_field);
   for (int i = 0; i < num_uninterpreted_options; ++i) {
     src_path.push_back(i);
-    uninterpreted_option_ = DownCastToGenerated<UninterpretedOption>(
+    uninterpreted_option_ = DownCastMessage<UninterpretedOption>(
         &original_options->GetReflection()->GetRepeatedMessage(
             *original_options, original_uninterpreted_options_field, i));
     if (!InterpretSingleOption(options, src_path,
