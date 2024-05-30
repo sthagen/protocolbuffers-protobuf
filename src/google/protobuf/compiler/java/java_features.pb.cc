@@ -85,7 +85,7 @@ const char descriptor_table_protodef_google_2fprotobuf_2fcompiler_2fjava_2fjava_
     "nitions themselves rather than on fields"
     ".\022\237\002\n\017utf8_validation\030\002 \001(\0162\037.pb.JavaFea"
     "tures.Utf8ValidationB\344\001\210\001\001\230\001\004\230\001\001\242\001\014\022\007DEF"
-    "AULT\030\204\007\262\001\310\001\010\350\007\020\350\007\032\277\001The Java-specific ut"
+    "AULT\030\204\007\262\001\310\001\010\350\007\020\351\007\032\277\001The Java-specific ut"
     "f8 validation feature is deprecated and "
     "is scheduled to be removed in edition 20"
     "25.  Utf8 validation behavior should use"
@@ -183,25 +183,26 @@ inline void JavaFeatures::SharedDtor() {
   _impl_.~Impl_();
 }
 
-const ::google::protobuf::MessageLite::ClassData*
-JavaFeatures::GetClassData() const {
-  PROTOBUF_CONSTINIT static const ::google::protobuf::MessageLite::
-      ClassDataFull _data_ = {
-          {
-              &_table_.header,
-              nullptr,  // OnDemandRegisterArenaDtor
-              nullptr,  // IsInitialized
-              &JavaFeatures::MergeImpl,
-              PROTOBUF_FIELD_OFFSET(JavaFeatures, _impl_._cached_size_),
-              false,
-          },
-          &JavaFeatures::kDescriptorMethods,
-          &descriptor_table_google_2fprotobuf_2fcompiler_2fjava_2fjava_5ffeatures_2eproto,
-          nullptr,  // tracker
-      };
-  ::google::protobuf::internal::PrefetchToLocalCache(&_data_);
-  ::google::protobuf::internal::PrefetchToLocalCache(_data_.tc_table);
-  return _data_.base();
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::MessageLite::ClassDataFull
+    JavaFeatures::_class_data_ = {
+        ::google::protobuf::Message::ClassData{
+            &_table_.header,
+            nullptr,  // OnDemandRegisterArenaDtor
+            nullptr,  // IsInitialized
+            &JavaFeatures::MergeImpl,
+            PROTOBUF_FIELD_OFFSET(JavaFeatures, _impl_._cached_size_),
+            false,
+        },
+        &JavaFeatures::kDescriptorMethods,
+        &descriptor_table_google_2fprotobuf_2fcompiler_2fjava_2fjava_5ffeatures_2eproto,
+        nullptr,  // tracker
+};
+const ::google::protobuf::MessageLite::ClassData* JavaFeatures::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
 const ::_pbi::TcParseTable<1, 2, 1, 0, 2> JavaFeatures::_table_ = {
