@@ -326,7 +326,6 @@ TEST(FeatureResolverTest, CompileDefaultsFixedRemovedFeature) {
                    .has_removed_feature());
 }
 
-
 TEST(FeatureResolverTest, CompileDefaultsOverridable) {
   absl::StatusOr<FeatureSetDefaults> defaults =
       FeatureResolver::CompileDefaults(FeatureSet::descriptor(),
@@ -352,7 +351,7 @@ TEST(FeatureResolverTest, CompileDefaultsOverridable) {
 
 TEST(FeatureResolverTest, CreateFromUnsortedDefaults) {
   auto valid_defaults = FeatureResolver::CompileDefaults(
-      FeatureSet::descriptor(), {}, EDITION_PROTO2, EDITION_2023);
+      FeatureSet::descriptor(), {}, EDITION_LEGACY, EDITION_2023);
   ASSERT_OK(valid_defaults);
   FeatureSetDefaults defaults = *valid_defaults;
 
@@ -361,7 +360,7 @@ TEST(FeatureResolverTest, CreateFromUnsortedDefaults) {
   EXPECT_THAT(FeatureResolver::Create(EDITION_2023, defaults),
               HasError(AllOf(HasSubstr("not strictly increasing."),
                              HasSubstr("Edition PROTO3 is greater "
-                                       "than or equal to edition PROTO2"))));
+                                       "than or equal to edition LEGACY"))));
 }
 
 TEST(FeatureResolverTest, CreateUnknownEdition) {
@@ -1282,7 +1281,7 @@ TEST_F(FeatureResolverPoolTest, CompileDefaultsInvalidDefaultsTooEarly) {
   EXPECT_THAT(
       FeatureResolver::CompileDefaults(feature_set_, {ext}, EDITION_2023,
                                        EDITION_2023),
-      HasError(HasSubstr("No valid default found for edition 2_TEST_ONLY")));
+      HasError(HasSubstr("Minimum edition 2_TEST_ONLY is not EDITION_LEGACY")));
 }
 
 TEST_F(FeatureResolverPoolTest, CompileDefaultsMinimumTooEarly) {
@@ -1346,7 +1345,7 @@ TEST_F(FeatureResolverPoolTest, CompileDefaultsMinimumCovered) {
     minimum_edition: EDITION_99997_TEST_ONLY
     maximum_edition: EDITION_99999_TEST_ONLY
     defaults {
-      edition: EDITION_PROTO2
+      edition: EDITION_LEGACY
       overridable_features {
         [pb.test] {}
       }
