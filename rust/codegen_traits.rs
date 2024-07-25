@@ -16,7 +16,7 @@ use write::ClearAndParse;
 /// A trait that all generated owned message types implement.
 pub trait Message: MutProxied
   // Create traits:
-  + create::Parse + Default
+  + Parse + Default
   // Read traits:
   + Debug + Serialize
   // Write traits:
@@ -34,12 +34,12 @@ pub trait MessageView<'msg>: ViewProxy<'msg, Proxied = Self::Message>
     + Debug + Serialize
     // Thread safety:
     + Send + Sync
-  // Copy/Clone:
-  + Copy + Clone
-    {
-      #[doc(hidden)]
-      type Message: Message;
-    }
+    // Copy/Clone:
+    + Copy + Clone
+{
+    #[doc(hidden)]
+    type Message: Message;
+}
 
 /// A trait that all generated message muts implement.
 pub trait MessageMut<'msg>:
@@ -59,7 +59,6 @@ pub trait MessageMut<'msg>:
 /// Operations related to constructing a message. Only owned messages implement
 /// these traits.
 pub(crate) mod create {
-
     pub trait Parse: Sized {
         fn parse(serialized: &[u8]) -> Result<Self, crate::ParseError>;
     }
