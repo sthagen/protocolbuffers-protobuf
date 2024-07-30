@@ -15,14 +15,15 @@
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "google/protobuf/descriptor.h"
 #include "google/protobuf/compiler/hpb/gen_accessors.h"
 #include "google/protobuf/compiler/hpb/gen_enums.h"
 #include "google/protobuf/compiler/hpb/gen_extensions.h"
 #include "google/protobuf/compiler/hpb/gen_utils.h"
 #include "google/protobuf/compiler/hpb/names.h"
 #include "google/protobuf/compiler/hpb/output.h"
-#include "google/protobuf/descriptor.h"
 #include "upb_generator/common.h"
+#include "upb_generator/file_layout.h"
 
 namespace google::protobuf::hpb_generator {
 
@@ -47,6 +48,10 @@ void WriteInternalForwardDeclarationsInHeader(
     const protobuf::Descriptor* message, Output& output);
 void WriteDefaultInstanceHeader(const protobuf::Descriptor* message,
                                 Output& output);
+void WriteExtensionIdentifiersImplementation(
+    const protobuf::Descriptor* message,
+    const std::vector<const protobuf::FieldDescriptor*>& file_exts,
+    Output& output);
 void WriteUsingEnumsInHeader(
     const protobuf::Descriptor* message,
     const std::vector<const protobuf::EnumDescriptor*>& file_enums,
@@ -292,7 +297,7 @@ void WriteModelProxyDeclaration(const protobuf::Descriptor* descriptor,
 
         $0Proxy(upb_Message* msg, upb_Arena* arena)
             : internal::$0Access(($1*)msg, arena) {}
-        friend $0::Proxy(::protos::CreateMessage<$0>(::hpb::Arena& arena));
+        friend $0::Proxy(::hpb::CreateMessage<$0>(::hpb::Arena& arena));
         friend $0::Proxy(::hpb::internal::CreateMessageProxy<$0>(upb_Message*,
                                                                  upb_Arena*));
         friend struct ::hpb::internal::PrivateAccess;
@@ -451,6 +456,8 @@ void WriteMessageImplementation(
           }
         )cc",
         ClassName(descriptor));
+
+    WriteExtensionIdentifiersImplementation(descriptor, file_exts, output);
   }
 }
 
@@ -474,6 +481,18 @@ void WriteExtensionIdentifiersInClassHeader(
     if (ext->extension_scope() &&
         ext->extension_scope()->full_name() == message->full_name()) {
       WriteExtensionIdentifierHeader(ext, output);
+    }
+  }
+}
+
+void WriteExtensionIdentifiersImplementation(
+    const protobuf::Descriptor* message,
+    const std::vector<const protobuf::FieldDescriptor*>& file_exts,
+    Output& output) {
+  for (auto* ext : file_exts) {
+    if (ext->extension_scope() &&
+        ext->extension_scope()->full_name() == message->full_name()) {
+      WriteExtensionIdentifier(ext, output);
     }
   }
 }
