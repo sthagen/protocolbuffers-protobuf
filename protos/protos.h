@@ -12,26 +12,17 @@ namespace protos {
 namespace internal {
 using hpb::internal::CreateMessage;
 using hpb::internal::CreateMessageProxy;
-using hpb::internal::DeepClone;
-using hpb::internal::DeepCopy;
 using hpb::internal::ExtensionIdentifier;
 using hpb::internal::GetArena;
 using hpb::internal::GetInternalMsg;
-using hpb::internal::GetOrPromoteExtension;
-using hpb::internal::GetUpbExtensions;
-using hpb::internal::HasExtensionOrUnknown;
-using hpb::internal::MoveExtension;
 using hpb::internal::PrivateAccess;
 using hpb::internal::Serialize;
 using hpb::internal::SetExtension;
 using hpb::interop::upb::GetMiniTable;
 }  // namespace internal
-using hpb::CreateMessage;
 using hpb::Parse;
 using hpb::Serialize;
 
-using hpb::ClearExtension;
-using hpb::ExtensionNotFoundError;
 using hpb::ExtensionNumber;
 using hpb::GetExtension;
 using hpb::HasExtension;
