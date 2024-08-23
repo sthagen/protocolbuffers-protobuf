@@ -29,14 +29,12 @@ cc_library(
     compatible_with = ["//buildenv/target:non_prod"],
     visibility = [
         "//hpb:__subpackages__",
-        "//video/youtube/utils/elements/client/component_type:__pkg__",
-        "//video/youtube/utils/elements/idom/styling/style_provider:__pkg__",
-        "//video/youtube/utils/elements/idom/styling/theme_provider:__pkg__",
-        "//video/youtube/utils/elements/javascript/client/proto/upb/native:__pkg__",
-        "//video/youtube/utils/elements/upb/crosslang:__pkg__",
     ],
     deps = [
         "//hpb:ptr",
+        "//hpb/internal",
+        "//upb:mem",
+        "//upb:message",
         "//upb:mini_table",
     ],
 )
