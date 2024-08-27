@@ -77,7 +77,7 @@ void EnumProxiedInMapValue(Context& ctx, const EnumDescriptor& desc) {
             unsafe {
                 $pb$::Map::from_inner(
                     $pbi$::Private,
-                    $pbr$::InnerMap::new($pbi$::Private, $pbr$::$map_new_thunk$())
+                    $pbr$::InnerMap::new($pbr$::$map_new_thunk$())
                 )
             }
         }
@@ -86,19 +86,19 @@ void EnumProxiedInMapValue(Context& ctx, const EnumDescriptor& desc) {
             unsafe { $pbr$::$map_free_thunk$(map.as_raw($pbi$::Private)); }
         }
 
-        fn map_clear(mut map: $pb$::Mut<'_, $pb$::Map<$key_t$, Self>>) {
+        fn map_clear(mut map: $pb$::MapMut<$key_t$, Self>) {
             unsafe { $pbr$::$map_clear_thunk$(map.as_raw($pbi$::Private)); }
         }
 
-        fn map_len(map: $pb$::View<'_, $pb$::Map<$key_t$, Self>>) -> usize {
+        fn map_len(map: $pb$::MapView<$key_t$, Self>) -> usize {
             unsafe { $pbr$::$map_size_thunk$(map.as_raw($pbi$::Private)) }
         }
 
-        fn map_insert(mut map: $pb$::Mut<'_, $pb$::Map<$key_t$, Self>>, key: $pb$::View<'_, $key_t$>, value: impl $pb$::IntoProxied<Self>) -> bool {
+        fn map_insert(mut map: $pb$::MapMut<$key_t$, Self>, key: $pb$::View<'_, $key_t$>, value: impl $pb$::IntoProxied<Self>) -> bool {
             unsafe { $pbr$::$map_insert_thunk$(map.as_raw($pbi$::Private), $to_ffi_key_expr$, value.into_proxied($pbi$::Private).0) }
         }
 
-        fn map_get<'a>(map: $pb$::View<'a, $pb$::Map<$key_t$, Self>>, key: $pb$::View<'_, $key_t$>) -> Option<$pb$::View<'a, Self>> {
+        fn map_get<'a>(map: $pb$::MapView<'a, $key_t$, Self>, key: $pb$::View<'_, $key_t$>) -> Option<$pb$::View<'a, Self>> {
             let key = $to_ffi_key_expr$;
             let mut value = $std$::mem::MaybeUninit::uninit();
             let found = unsafe { $pbr$::$map_get_thunk$(map.as_raw($pbi$::Private), key, value.as_mut_ptr()) };
@@ -108,12 +108,12 @@ void EnumProxiedInMapValue(Context& ctx, const EnumDescriptor& desc) {
             Some(unsafe { $name$(value.assume_init()) })
         }
 
-        fn map_remove(mut map: $pb$::Mut<'_, $pb$::Map<$key_t$, Self>>, key: $pb$::View<'_, $key_t$>) -> bool {
+        fn map_remove(mut map: $pb$::MapMut<$key_t$, Self>, key: $pb$::View<'_, $key_t$>) -> bool {
             let mut value = $std$::mem::MaybeUninit::uninit();
             unsafe { $pbr$::$map_remove_thunk$(map.as_raw($pbi$::Private), $to_ffi_key_expr$, value.as_mut_ptr()) }
         }
 
-        fn map_iter(map: $pb$::View<'_, $pb$::Map<$key_t$, Self>>) -> $pb$::MapIter<'_, $key_t$, Self> {
+        fn map_iter(map: $pb$::MapView<$key_t$, Self>) -> $pb$::MapIter<$key_t$, Self> {
             // SAFETY:
             // - The backing map for `map.as_raw` is valid for at least '_.
             // - A View that is live for '_ guarantees the backing map is unmodified for '_.
@@ -136,7 +136,6 @@ void EnumProxiedInMapValue(Context& ctx, const EnumDescriptor& desc) {
             // - The thunk does not increment the iterator.
             unsafe {
                 iter.as_raw_mut($pbi$::Private).next_unchecked::<$key_t$, Self, _, _>(
-                    $pbi$::Private,
                     $pbr$::$map_iter_get_thunk$,
                     $pbr$::MapNodeSizeInfo(0),  // Ignored
                     |ffi_key| $from_ffi_key_expr$,
@@ -164,27 +163,27 @@ void EnumProxiedInMapValue(Context& ctx, const EnumDescriptor& desc) {
               };
               $pb$::Map::from_inner(
                   $pbi$::Private,
-                  $pbr$::InnerMap::new($pbi$::Private, raw, arena))
+                  $pbr$::InnerMap::new(raw, arena))
           }
 
           unsafe fn map_free(_private: $pbi$::Private, _map: &mut $pb$::Map<$key_t$, Self>) {
               // No-op: the memory will be dropped by the arena.
           }
 
-          fn map_clear(mut map: $pb$::Mut<'_, $pb$::Map<$key_t$, Self>>) {
+          fn map_clear(mut map: $pb$::MapMut<$key_t$, Self>) {
               unsafe {
                   $pbr$::upb_Map_Clear(map.as_raw($pbi$::Private));
               }
           }
 
-          fn map_len(map: $pb$::View<'_, $pb$::Map<$key_t$, Self>>) -> usize {
+          fn map_len(map: $pb$::MapView<$key_t$, Self>) -> usize {
               unsafe {
                   $pbr$::upb_Map_Size(map.as_raw($pbi$::Private))
               }
           }
 
-          fn map_insert(mut map: $pb$::Mut<'_, $pb$::Map<$key_t$, Self>>, key: $pb$::View<'_, $key_t$>, value: impl $pb$::IntoProxied<Self>) -> bool {
-              let arena = map.inner($pbi$::Private).raw_arena($pbi$::Private);
+          fn map_insert(mut map: $pb$::MapMut<$key_t$, Self>, key: $pb$::View<'_, $key_t$>, value: impl $pb$::IntoProxied<Self>) -> bool {
+              let arena = map.inner($pbi$::Private).raw_arena();
               unsafe {
                   $pbr$::upb_Map_InsertAndReturnIfInserted(
                       map.as_raw($pbi$::Private),
@@ -195,7 +194,7 @@ void EnumProxiedInMapValue(Context& ctx, const EnumDescriptor& desc) {
               }
           }
 
-          fn map_get<'a>(map: $pb$::View<'a, $pb$::Map<$key_t$, Self>>, key: $pb$::View<'_, $key_t$>) -> Option<$pb$::View<'a, Self>> {
+          fn map_get<'a>(map: $pb$::MapView<'a, $key_t$, Self>, key: $pb$::View<'_, $key_t$>) -> Option<$pb$::View<'a, Self>> {
               let mut val = $std$::mem::MaybeUninit::uninit();
               let found = unsafe {
                   $pbr$::upb_Map_Get(
@@ -209,7 +208,7 @@ void EnumProxiedInMapValue(Context& ctx, const EnumDescriptor& desc) {
               Some($name$(unsafe { val.assume_init().int32_val }))
           }
 
-          fn map_remove(mut map: $pb$::Mut<'_, $pb$::Map<$key_t$, Self>>, key: $pb$::View<'_, $key_t$>) -> bool {
+          fn map_remove(mut map: $pb$::MapMut<$key_t$, Self>, key: $pb$::View<'_, $key_t$>) -> bool {
               let mut val = $std$::mem::MaybeUninit::uninit();
               unsafe {
                   $pbr$::upb_Map_Delete(
@@ -218,10 +217,10 @@ void EnumProxiedInMapValue(Context& ctx, const EnumDescriptor& desc) {
                       val.as_mut_ptr())
               }
           }
-          fn map_iter(map: $pb$::View<'_, $pb$::Map<$key_t$, Self>>) -> $pb$::MapIter<'_, $key_t$, Self> {
+          fn map_iter(map: $pb$::MapView<$key_t$, Self>) -> $pb$::MapIter<$key_t$, Self> {
               // SAFETY: View<Map<'_,..>> guarantees its RawMap outlives '_.
               unsafe {
-                  $pb$::MapIter::from_raw($pbi$::Private, $pbr$::RawMapIter::new($pbi$::Private, map.as_raw($pbi$::Private)))
+                  $pb$::MapIter::from_raw($pbi$::Private, $pbr$::RawMapIter::new(map.as_raw($pbi$::Private)))
               }
           }
 
@@ -229,7 +228,7 @@ void EnumProxiedInMapValue(Context& ctx, const EnumDescriptor& desc) {
               iter: &mut $pb$::MapIter<'a, $key_t$, Self>
           ) -> Option<($pb$::View<'a, $key_t$>, $pb$::View<'a, Self>)> {
               // SAFETY: MapIter<'a, ..> guarantees its RawMapIter outlives 'a.
-              unsafe { iter.as_raw_mut($pbi$::Private).next_unchecked($pbi$::Private) }
+              unsafe { iter.as_raw_mut($pbi$::Private).next_unchecked() }
                   // SAFETY: MapIter<K, V> returns key and values message values
                   //         with the variants for K and V active.
                   .map(|(k, v)| unsafe {(
@@ -410,23 +409,23 @@ void GenerateEnumDefinition(Context& ctx, const EnumDescriptor& desc) {
 
       unsafe impl $pb$::ProxiedInRepeated for $name$ {
         fn repeated_new(_private: $pbi$::Private) -> $pb$::Repeated<Self> {
-          $pbr$::new_enum_repeated($pbi$::Private)
+          $pbr$::new_enum_repeated()
         }
 
-        unsafe fn repeated_free(_private: $pbi$::Private, _f: &mut $pb$::Repeated<Self>) {
-          $pbr$::free_enum_repeated($pbi$::Private, _f)
+        unsafe fn repeated_free(_private: $pbi$::Private, f: &mut $pb$::Repeated<Self>) {
+          $pbr$::free_enum_repeated(f)
         }
 
         fn repeated_len(r: $pb$::View<$pb$::Repeated<Self>>) -> usize {
-          $pbr$::cast_enum_repeated_view($pbi$::Private, r).len()
+          $pbr$::cast_enum_repeated_view(r).len()
         }
 
         fn repeated_push(r: $pb$::Mut<$pb$::Repeated<Self>>, val: impl $pb$::IntoProxied<$name$>) {
-          $pbr$::cast_enum_repeated_mut($pbi$::Private, r).push(val.into_proxied($pbi$::Private))
+          $pbr$::cast_enum_repeated_mut(r).push(val.into_proxied($pbi$::Private))
         }
 
         fn repeated_clear(r: $pb$::Mut<$pb$::Repeated<Self>>) {
-          $pbr$::cast_enum_repeated_mut($pbi$::Private, r).clear()
+          $pbr$::cast_enum_repeated_mut(r).clear()
         }
 
         unsafe fn repeated_get_unchecked(
@@ -435,7 +434,7 @@ void GenerateEnumDefinition(Context& ctx, const EnumDescriptor& desc) {
         ) -> $pb$::View<$name$> {
           // SAFETY: In-bounds as promised by the caller.
           unsafe {
-            $pbr$::cast_enum_repeated_view($pbi$::Private, r)
+            $pbr$::cast_enum_repeated_view(r)
               .get_unchecked(index)
               .try_into()
               .unwrap_unchecked()
@@ -449,7 +448,7 @@ void GenerateEnumDefinition(Context& ctx, const EnumDescriptor& desc) {
         ) {
           // SAFETY: In-bounds as promised by the caller.
           unsafe {
-            $pbr$::cast_enum_repeated_mut($pbi$::Private, r)
+            $pbr$::cast_enum_repeated_mut(r)
               .set_unchecked(index, val.into_proxied($pbi$::Private))
           }
         }
@@ -458,8 +457,8 @@ void GenerateEnumDefinition(Context& ctx, const EnumDescriptor& desc) {
             src: $pb$::View<$pb$::Repeated<Self>>,
             dest: $pb$::Mut<$pb$::Repeated<Self>>,
         ) {
-          $pbr$::cast_enum_repeated_mut($pbi$::Private, dest)
-            .copy_from($pbr$::cast_enum_repeated_view($pbi$::Private, src))
+          $pbr$::cast_enum_repeated_mut(dest)
+            .copy_from($pbr$::cast_enum_repeated_view(src))
         }
 
         fn repeated_reserve(
@@ -468,7 +467,7 @@ void GenerateEnumDefinition(Context& ctx, const EnumDescriptor& desc) {
         ) {
             // SAFETY:
             // - `f.as_raw()` is valid.
-            $pbr$::reserve_enum_repeated_mut($pbi$::Private, r, additional);
+            $pbr$::reserve_enum_repeated_mut(r, additional);
         }
       }
 
