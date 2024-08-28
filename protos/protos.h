@@ -17,10 +17,7 @@ using hpb::internal::PrivateAccess;
 using hpb::internal::Serialize;
 using hpb::internal::SetExtension;
 }  // namespace internal
-using hpb::Serialize;
 
-using hpb::GetExtension;
-using hpb::HasExtension;
 
 using hpb::Arena;
 using hpb::Ptr;
