@@ -443,6 +443,11 @@ class RepeatedField final
   // This is public due to it being called by generated code.
   inline void InternalSwap(RepeatedField* other);
 
+  static constexpr size_t InternalGetArenaOffset(internal::InternalVisibility) {
+    return PROTOBUF_FIELD_OFFSET(RepeatedField, soo_rep_) +
+           PROTOBUF_FIELD_OFFSET(internal::ShortSooRep, arena_and_size);
+  }
+
  private:
   using InternalArenaConstructable_ = void;
   // We use std::max in order to share template instantiations between
@@ -858,7 +863,7 @@ inline void RepeatedField<Element>::Add(Element value) {
 
   // The below helps the compiler optimize dense loops.
   // Note: we can't call functions in PROTOBUF_ASSUME so use local variables.
-  ABSL_ATTRIBUTE_UNUSED const int final_is_soo = this->is_soo();
+  ABSL_ATTRIBUTE_UNUSED const bool final_is_soo = this->is_soo();
   PROTOBUF_ASSUME(is_soo == final_is_soo);
   ABSL_ATTRIBUTE_UNUSED const int final_size = size(is_soo);
   PROTOBUF_ASSUME(new_size == final_size);
@@ -898,7 +903,7 @@ inline void RepeatedField<Element>::AddForwardIterator(Iter begin, Iter end) {
 
   // The below helps the compiler optimize dense loops.
   // Note: we can't call functions in PROTOBUF_ASSUME so use local variables.
-  ABSL_ATTRIBUTE_UNUSED const int final_is_soo = this->is_soo();
+  ABSL_ATTRIBUTE_UNUSED const bool final_is_soo = this->is_soo();
   PROTOBUF_ASSUME(is_soo == final_is_soo);
   ABSL_ATTRIBUTE_UNUSED const int final_size = size(is_soo);
   PROTOBUF_ASSUME(new_size == final_size);

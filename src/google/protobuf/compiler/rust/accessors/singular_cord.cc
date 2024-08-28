@@ -7,12 +7,16 @@
 
 #include <string>
 
+#include "absl/log/absl_check.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/compiler/cpp/helpers.h"
 #include "google/protobuf/compiler/rust/accessors/accessor_case.h"
+#include "google/protobuf/compiler/rust/accessors/default_value.h"
 #include "google/protobuf/compiler/rust/accessors/generator.h"
+#include "google/protobuf/compiler/rust/accessors/with_presence.h"
 #include "google/protobuf/compiler/rust/context.h"
 #include "google/protobuf/compiler/rust/naming.h"
+#include "google/protobuf/compiler/rust/upb_helpers.h"
 #include "google/protobuf/descriptor.h"
 
 namespace google {
@@ -22,19 +26,23 @@ namespace rust {
 
 void SingularCord::InMsgImpl(Context& ctx, const FieldDescriptor& field,
                              AccessorCase accessor_case) const {
+  if (field.has_presence()) {
+    WithPresenceAccessorsInMsgImpl(ctx, field, accessor_case);
+  }
+
   std::string field_name = FieldNameWithCollisionAvoidance(field);
   bool is_string_type = field.type() == FieldDescriptor::TYPE_STRING;
   ctx.Emit(
       {{"field", RsSafeName(field_name)},
        {"raw_field_name", field_name},
-       {"hazzer_thunk", ThunkName(ctx, field, "has")},
        {"borrowed_getter_thunk", ThunkName(ctx, field, "get_cord_borrowed")},
        {"owned_getter_thunk", ThunkName(ctx, field, "get_cord_owned")},
        {"is_flat_thunk", ThunkName(ctx, field, "cord_is_flat")},
        {"setter_thunk", ThunkName(ctx, field, "set")},
-       {"clearer_thunk", ThunkName(ctx, field, "clear")},
        {"getter_thunk", ThunkName(ctx, field, "get")},
        {"proxied_type", RsTypePath(ctx, field)},
+       {"default_value", DefaultValue(ctx, field)},
+       {"upb_mt_field_index", UpbMiniTableFieldIndex(field)},
        {"borrowed_type",
         [&] {
           if (is_string_type) {
@@ -49,13 +57,13 @@ void SingularCord::InMsgImpl(Context& ctx, const FieldDescriptor& field,
             ctx.Emit(R"rs(
                 $pb$::ProtoStringCow::Borrowed(
                   // SAFETY: The runtime doesn't require ProtoStr to be UTF-8.
-                  unsafe { $pb$::ProtoStr::from_utf8_unchecked(view) }
+                  unsafe { $pb$::ProtoStr::from_utf8_unchecked(view.as_ref()) }
                 )
               )rs");
           } else {
             ctx.Emit(R"rs(
                 $pb$::ProtoBytesCow::Borrowed(
-                  view
+                  unsafe { view.as_ref() }
                 )
                )rs");
           }
@@ -92,7 +100,7 @@ void SingularCord::InMsgImpl(Context& ctx, const FieldDescriptor& field,
             ctx.Emit(R"rs(
                   let cord_is_flat = unsafe { $is_flat_thunk$(self.raw_msg()) };
                   if cord_is_flat {
-                    let view = unsafe { $borrowed_getter_thunk$(self.raw_msg()).as_ref() };
+                    let view = unsafe { $borrowed_getter_thunk$(self.raw_msg()) };
                     return $transform_borrowed$;
                   }
 
@@ -103,7 +111,13 @@ void SingularCord::InMsgImpl(Context& ctx, const FieldDescriptor& field,
                 )rs");
           } else {
             ctx.Emit(R"rs(
-                let view = unsafe { $getter_thunk$(self.raw_msg()).as_ref() };
+                let view = unsafe {
+                  let f = $pbr$::upb_MiniTable_GetFieldByIndex(
+                      <Self as $pbr$::AssociatedMiniTable>::mini_table(),
+                      $upb_mt_field_index$);
+                  $pbr$::upb_Message_GetString(
+                      self.raw_msg(), f, ($default_value$).into())
+                };
                 $transform_borrowed$
               )rs");
           }
@@ -142,10 +156,13 @@ void SingularCord::InMsgImpl(Context& ctx, const FieldDescriptor& field,
               parent_arena.fuse(&arena);
 
               unsafe {
-                $setter_thunk$(
+                let f = $pbr$::upb_MiniTable_GetFieldByIndex(
+                          <Self as $pbr$::AssociatedMiniTable>::mini_table(),
+                          $upb_mt_field_index$);
+                $pbr$::upb_Message_SetBaseFieldString(
                   self.as_mutator_message_ref($pbi$::Private).msg(),
-                  view
-                );
+                  f,
+                  view);
               }
             )rs");
           }
@@ -159,36 +176,22 @@ void SingularCord::InMsgImpl(Context& ctx, const FieldDescriptor& field,
                 $setter_impl$
               }
             )rs");
-        }},
-       {"hazzer",
-        [&] {
-          if (!field.has_presence()) return;
-          ctx.Emit({}, R"rs(
-                pub fn has_$raw_field_name$($view_self$) -> bool {
-                  unsafe { $hazzer_thunk$(self.raw_msg()) }
-                })rs");
-        }},
-       {"clearer",
-        [&] {
-          if (accessor_case == AccessorCase::VIEW) return;
-          if (!field.has_presence()) return;
-          ctx.Emit({}, R"rs(
-                pub fn clear_$raw_field_name$(&mut self) {
-                  unsafe { $clearer_thunk$(self.raw_msg()) }
-                })rs");
         }}},
       R"rs(
         $getter$
         $setter$
-        $hazzer$
-        $clearer$
       )rs");
 }
 
 void SingularCord::InExternC(Context& ctx, const FieldDescriptor& field) const {
+  if (ctx.is_upb()) return;
+
+  if (field.has_presence()) {
+    WithPresenceAccessorsInExternC(ctx, field);
+  }
+
   ctx.Emit(
-      {{"hazzer_thunk", ThunkName(ctx, field, "has")},
-       {"borrowed_getter_thunk", ThunkName(ctx, field, "get_cord_borrowed")},
+      {{"borrowed_getter_thunk", ThunkName(ctx, field, "get_cord_borrowed")},
        {"owned_getter_thunk", ThunkName(ctx, field, "get_cord_owned")},
        {"is_flat_thunk", ThunkName(ctx, field, "cord_is_flat")},
        {"getter_thunk", ThunkName(ctx, field, "get")},
@@ -205,7 +208,6 @@ void SingularCord::InExternC(Context& ctx, const FieldDescriptor& field) const {
             )rs");
           }
         }},
-       {"clearer_thunk", ThunkName(ctx, field, "clear")},
        {"getter_thunks",
         [&] {
           if (ctx.is_cpp()) {
@@ -219,47 +221,28 @@ void SingularCord::InExternC(Context& ctx, const FieldDescriptor& field) const {
              fn $getter_thunk$(raw_msg: $pbr$::RawMessage) -> $pbr$::PtrAndLen;
            )rs");
           }
-        }},
-       {"with_presence_fields_thunks",
-        [&] {
-          if (field.has_presence()) {
-            ctx.Emit(R"rs(
-                     fn $hazzer_thunk$(raw_msg: $pbr$::RawMessage) -> bool;
-                     fn $clearer_thunk$(raw_msg: $pbr$::RawMessage);
-                   )rs");
-          }
         }}},
       R"rs(
-          $with_presence_fields_thunks$
           $getter_thunks$
           $setter$
         )rs");
 }
 
 void SingularCord::InThunkCc(Context& ctx, const FieldDescriptor& field) const {
+  ABSL_CHECK(ctx.is_cpp());
+
+  if (field.has_presence()) {
+    WithPresenceAccessorsInThunkCc(ctx, field);
+  }
+
   ctx.Emit(
       {{"field", cpp::FieldName(&field)},
        {"QualifiedMsg", cpp::QualifiedClassName(field.containing_type())},
-       {"hazzer_thunk", ThunkName(ctx, field, "has")},
        {"setter_thunk", ThunkName(ctx, field, "set")},
-       {"clearer_thunk", ThunkName(ctx, field, "clear")},
        {"borrowed_getter_thunk", ThunkName(ctx, field, "get_cord_borrowed")},
        {"owned_getter_thunk", ThunkName(ctx, field, "get_cord_owned")},
-       {"is_flat_thunk", ThunkName(ctx, field, "cord_is_flat")},
-       {"with_presence_fields_thunks",
-        [&] {
-          if (field.has_presence()) {
-            ctx.Emit(R"cc(
-              bool $hazzer_thunk$($QualifiedMsg$* msg) {
-                return msg->has_$field$();
-              }
-              void $clearer_thunk$($QualifiedMsg$* msg) { msg->clear_$field$(); }
-            )cc");
-          }
-        }}},
+       {"is_flat_thunk", ThunkName(ctx, field, "cord_is_flat")}},
       R"cc(
-        $with_presence_fields_thunks$;
-
         bool $is_flat_thunk$($QualifiedMsg$* msg) {
           const absl::Cord& cord = msg->$field$();
           return cord.TryFlat().has_value();
