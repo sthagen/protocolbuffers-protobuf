@@ -9,9 +9,7 @@
 #include "google/protobuf/hpb/hpb.h"
 namespace protos {
 namespace internal {
-using hpb::internal::CreateMessageProxy;
 using hpb::internal::ExtensionIdentifier;
-using hpb::internal::GetArena;
 using hpb::internal::GetInternalMsg;
 using hpb::internal::PrivateAccess;
 using hpb::internal::Serialize;
