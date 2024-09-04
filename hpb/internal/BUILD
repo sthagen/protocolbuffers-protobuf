@@ -15,7 +15,6 @@ package(default_applicable_licenses = ["//:license"])
 cc_library(
     name = "template_help",
     hdrs = ["template_help.h"],
-    compatible_with = ["//buildenv/target:non_prod"],
     visibility = ["//hpb:__subpackages__"],
     deps = [
         "//hpb:ptr",
@@ -25,8 +24,9 @@ cc_library(
 cc_library(
     name = "internal",
     hdrs = ["internal.h"],
-    compatible_with = ["//buildenv/target:non_prod"],
-    visibility = ["//hpb:__subpackages__"],
+    visibility = [
+        "//hpb:__subpackages__",
+    ],
     deps = [
         "//upb:mem",
         "//upb:message",
@@ -39,7 +39,6 @@ cc_library(
     hdrs = [
         "message_lock.h",
     ],
-    compatible_with = ["//buildenv/target:non_prod"],
     copts = UPB_DEFAULT_CPPOPTS,
     visibility = ["//upb:friends"],
     deps = [
