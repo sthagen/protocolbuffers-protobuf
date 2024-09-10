@@ -225,9 +225,6 @@ class WireFormatLite;
 class WeakFieldMap;
 class RustMapHelper;
 
-template <typename Type>
-class GenericTypeHandler;  // defined in repeated_field.h
-
 // We compute sizes as size_t but cache them as int.  This function converts a
 // computed size to a cached size.  Since we don't proceed with serialization
 // if the total size was > INT_MAX, it is not important what this function
@@ -333,7 +330,7 @@ class PROTOBUF_EXPORT MessageLite {
   // will likely be needed again, so the memory used may not be freed.
   // To ensure that all memory used by a Message is freed, you must delete it.
 #if defined(PROTOBUF_CUSTOM_VTABLE)
-  void Clear() { _class_data_->clear(*this); }
+  void Clear() { (this->*_class_data_->clear)(); }
 #else
   virtual void Clear() = 0;
 #endif  // PROTOBUF_CUSTOM_VTABLE
@@ -650,12 +647,8 @@ class PROTOBUF_EXPORT MessageLite {
   }
 
   template <typename T>
-  static void ClearImpl(MessageLite& msg) {
-    return static_cast<T&>(msg).Clear();
-  }
-  template <typename T>
   static constexpr auto GetClearImpl() {
-    return ClearImpl<T>;
+    return static_cast<void (MessageLite::*)()>(&T::Clear);
   }
 #else   // PROTOBUF_CUSTOM_VTABLE
   // When custom vtables are off we avoid instantiating the functions because we
@@ -715,7 +708,7 @@ class PROTOBUF_EXPORT MessageLite {
     internal::MessageCreator message_creator;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
     DeleteMessageF delete_message;
-    void (*clear)(MessageLite&);
+    void (MessageLite::*clear)();
     size_t (*byte_size_long)(const MessageLite&);
     uint8_t* (*serialize)(const MessageLite& msg, uint8_t* ptr,
                           io::EpsCopyOutputStream* stream);
@@ -760,7 +753,7 @@ class PROTOBUF_EXPORT MessageLite {
         void (*merge_to_from)(MessageLite& to, const MessageLite& from_msg),
         internal::MessageCreator message_creator,  //
         DeleteMessageF delete_message,             //
-        void (*clear)(MessageLite&),
+        void (MessageLite::*clear)(),
         size_t (*byte_size_long)(const MessageLite&),
         uint8_t* (*serialize)(const MessageLite& msg, uint8_t* ptr,
                               io::EpsCopyOutputStream* stream),
@@ -963,8 +956,6 @@ class PROTOBUF_EXPORT MessageLite {
 
   template <typename Type>
   friend class Arena::InternalHelper;
-  template <typename Type>
-  friend class internal::GenericTypeHandler;
 
   friend auto internal::GetClassData(const MessageLite& msg);
 
