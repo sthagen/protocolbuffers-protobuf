@@ -168,6 +168,8 @@ alias(
         ":use_upb_kernel": ":protobuf_gtest_matchers_upb",
         "//conditions:default": ":protobuf_gtest_matchers_cpp",
     }),
+    visibility = [
+    ],
 )
 
 rust_library(
@@ -298,4 +300,13 @@ pkg_zip(
         ":rust_protobuf_src_dir",
         "//:LICENSE",
     ],
+)
+
+sh_binary(
+    name = "cargo_test",
+    srcs = ["cargo_test.sh"],
+    data = [
+        ":rust_crate",
+    ],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
 )

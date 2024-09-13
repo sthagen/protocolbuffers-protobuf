@@ -114,7 +114,7 @@ void WriteFieldAccessorsInHeader(const protobuf::Descriptor* desc,
                )cc",
                MessagePtrConstType(field, /* const */ false),
                MessagePtrConstType(field, /* const */ true),
-               resolved_field_name, resolved_upbc_name);
+               resolved_field_name);
       } else {
         output(
             R"cc(
@@ -225,7 +225,7 @@ void WriteAccessorsInSource(const protobuf::Descriptor* desc, Output& output) {
         output(
             R"cc(
               $1 $0::$2() const {
-                return ::hpb::UpbStrToStringView($3_$4(msg_));
+                return hpb::interop::upb::FromUpbStringView($3_$4(msg_));
               }
             )cc",
             class_name, CppConstType(field), resolved_field_name,

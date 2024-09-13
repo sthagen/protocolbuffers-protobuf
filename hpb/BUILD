@@ -6,7 +6,7 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 load(
-    "//hpb/bazel:upb_cc_proto_library.bzl",
+    "//hpb/bazel:hpb_proto_library.bzl",
     "upb_cc_proto_library_copts",
 )
 load(
@@ -30,6 +30,7 @@ cc_library(
     defines = ["HPB_BACKEND_UPB"],
     visibility = ["//visibility:public"],
     deps = [
+        "//hpb:arena",
         "//hpb:extension",
         "//hpb:ptr",
         "//hpb/backend/upb",
@@ -62,8 +63,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":hpb",
-        ":traits",
         "//hpb/backend/upb:interop",
+        "//hpb/internal:template_help",
         "//upb:base",
         "//upb:mem",
         "//upb:message",
@@ -71,15 +72,6 @@ cc_library(
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/strings",
     ],
-)
-
-# Internally used type traits.
-cc_library(
-    name = "traits",
-    hdrs = [
-        "traits.h",
-    ],
-    copts = UPB_DEFAULT_CPPOPTS,
 )
 
 # Common support code for C++ generated code.

@@ -15,6 +15,7 @@ package(default_applicable_licenses = ["//:license"])
 cc_library(
     name = "template_help",
     hdrs = ["template_help.h"],
+    copts = UPB_DEFAULT_CPPOPTS,
     visibility = ["//hpb:__subpackages__"],
     deps = [
         "//hpb:ptr",
@@ -61,7 +62,7 @@ cc_test(
     deps = [
         "//hpb",
         "//hpb/internal:message_lock",
-        "//src/google/protobuf/compiler/hpb/tests:test_model_upb_cc_proto",
+        "//src/google/protobuf/compiler/hpb/tests:test_model_hpb_proto",
         "//upb:mem",
         "@com_google_absl//absl/hash",
         "@com_google_absl//absl/log:absl_check",

@@ -35,9 +35,11 @@ cc_library(
     deps = [
         "//hpb:ptr",
         "//hpb/internal",
+        "//upb:base",
         "//upb:mem",
         "//upb:message",
         "//upb:mini_table",
+        "@com_google_absl//absl/strings:string_view",
     ],
 )
 
@@ -47,7 +49,7 @@ cc_test(
     copts = UPB_DEFAULT_CPPOPTS,
     deps = [
         ":interop",
-        "//src/google/protobuf/compiler/hpb/tests:test_model_upb_cc_proto",
+        "//src/google/protobuf/compiler/hpb/tests:test_model_hpb_proto",
         "//src/google/protobuf/compiler/hpb/tests:test_model_upb_proto",
         "//upb:mem",
         "//upb:message",
