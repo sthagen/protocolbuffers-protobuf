@@ -51,12 +51,12 @@ auto* GetMessage(T&& message) {
 
 template <typename T>
 upb_Arena* GetArena(Ptr<T> message) {
-  return static_cast<upb_Arena*>(message->GetInternalArena());
+  return hpb::internal::PrivateAccess::GetInternalArena(message);
 }
 
 template <typename T>
 upb_Arena* GetArena(T* message) {
-  return static_cast<upb_Arena*>(message->GetInternalArena());
+  return hpb::internal::PrivateAccess::GetInternalArena(message);
 }
 
 /**
@@ -93,6 +93,18 @@ typename T::CProxy MakeCHandle(const upb_Message* msg, upb_Arena* arena) {
 template <typename T>
 typename T::Proxy MakeHandle(upb_Message* msg, upb_Arena* arena) {
   return typename T::Proxy(msg, arena);
+}
+
+/**
+ * Creates a message in the given arena and returns a handle to it.
+ *
+ * The supplied arena must outlive the hpb handle.
+ * All messages reachable from from the upb message must
+ * outlive the hpb handle.
+ */
+template <typename T>
+typename T::Proxy CreateMessage(upb_Arena* arena) {
+  return hpb::internal::PrivateAccess::CreateMessage<T>(arena);
 }
 
 inline absl::string_view FromUpbStringView(upb_StringView str) {

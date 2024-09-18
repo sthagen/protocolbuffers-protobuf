@@ -6,14 +6,15 @@ load("@rules_pkg//pkg:zip.bzl", "pkg_zip")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 load("//bazel/toolchains:proto_lang_toolchain.bzl", "proto_lang_toolchain")
 
-package(
-    default_visibility = [
-        "//:__pkg__",  # "public" targets are alias rules in //.
-        "//src/google/protobuf:__subpackages__",
+licenses(["notice"])
+
+package_group(
+    name = "protobuf_internal",
+    packages = [
+        "//rust/...",
+        "//src/google/protobuf/...",
     ],
 )
-
-licenses(["notice"])
 
 # The current Rust Protobuf runtime for the build. Depending on the value of
 # `:rust_proto_library_kernel` build setting it forwards to the cpp or upb kernels. This is the
@@ -83,10 +84,7 @@ rust_library(
         "--cfg=upb_kernel",
         "--cfg=bzl",
     ],
-    visibility = [
-        "//rust:__subpackages__",
-        "//src/google/protobuf:__subpackages__",
-    ],
+    visibility = [":protobuf_internal"],
     deps = [
         ":utf8",
         "//rust/upb",
@@ -112,9 +110,7 @@ rust_library(
     testonly = True,
     srcs = ["protobuf.rs"],
     rustc_flags = ["--cfg=upb_kernel"],
-    visibility = [
-        "//src/google/protobuf:__subpackages__",
-    ],
+    visibility = [":protobuf_internal"],
     deps = [":protobuf_upb"],
 )
 
@@ -130,7 +126,11 @@ rust_library(
     proc_macro_deps = [
         "@crate_index//:paste",
     ],
-    rustc_flags = ["--cfg=cpp_kernel"],
+    rustc_flags = [
+        "--cfg=cpp_kernel",
+        "--cfg=bzl",
+    ],
+    visibility = [":protobuf_internal"],
     deps = [
         ":utf8",
         "//rust/cpp_kernel:cpp_api",
@@ -156,9 +156,7 @@ rust_library(
     testonly = True,
     srcs = ["protobuf.rs"],
     rustc_flags = ["--cfg=cpp_kernel"],
-    visibility = [
-        "//src/google/protobuf:__subpackages__",
-    ],
+    visibility = [":protobuf_internal"],
     deps = [":protobuf_cpp"],
 )
 
@@ -169,6 +167,7 @@ alias(
         "//conditions:default": ":protobuf_gtest_matchers_cpp",
     }),
     visibility = [
+        "//visibility:public",
     ],
 )
 
@@ -179,10 +178,7 @@ rust_library(
     aliases = {
         "//rust:protobuf_cpp": "protobuf",
     },
-    visibility = [
-        "//rust:__subpackages__",
-        "//src/google/protobuf:__subpackages__",
-    ],
+    visibility = [":protobuf_internal"],
     deps = [
         ":protobuf_cpp",
         "@crate_index//:googletest",
@@ -196,10 +192,7 @@ rust_library(
     aliases = {
         "//rust:protobuf_upb": "protobuf",
     },
-    visibility = [
-        "//rust:__subpackages__",
-        "//src/google/protobuf:__subpackages__",
-    ],
+    visibility = [":protobuf_internal"],
     deps = [
         ":protobuf_upb",
         "@crate_index//:googletest",
@@ -209,7 +202,6 @@ rust_library(
 rust_library(
     name = "utf8",
     srcs = ["utf8.rs"],
-    visibility = ["//visibility:private"],
 )
 
 proto_lang_toolchain(
