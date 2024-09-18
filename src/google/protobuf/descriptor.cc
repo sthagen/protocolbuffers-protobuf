@@ -33,6 +33,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/base/attributes.h"
 #include "absl/base/call_once.h"
 #include "absl/base/casts.h"
@@ -72,6 +73,7 @@
 #include "google/protobuf/descriptor_visitor.h"
 #include "google/protobuf/dynamic_message.h"
 #include "google/protobuf/feature_resolver.h"
+#include "google/protobuf/generated_enum_util.h"
 #include "google/protobuf/generated_message_util.h"
 #include "google/protobuf/io/strtod.h"
 #include "google/protobuf/io/tokenizer.h"
@@ -2585,6 +2587,33 @@ const FieldDescriptor* Descriptor::map_value() const {
   return field(1);
 }
 
+const uint32_t* EnumDescriptor::GetValidatorData() const {
+  // We generate the data on demand to delay the memory usage until we actually
+  // need it.
+  if (auto* p = validator_data_.load(std::memory_order_acquire)) return p;
+
+  std::vector<int32_t> values;
+  for (const auto& v : absl::MakeSpan(values_, value_count_)) {
+    values.push_back(v.number());
+  }
+  absl::c_sort(values);
+  values.erase(std::unique(values.begin(), values.end()), values.end());
+  auto data = internal::GenerateEnumData(values);
+
+  absl::MutexLockMaybe lock(file_->pool_->mutex_);
+
+  // Do the check again under the mutex to avoid wasting memory in case someone
+  // raced us. The memory is held by the pool, so "leaking" it can add up.
+  // But we do the preparation work above to not put all of that under the lock.
+  if (auto* p = validator_data_.load(std::memory_order_acquire)) return p;
+
+  uint32_t* owned_data = static_cast<uint32_t*>(
+      file_->pool_->tables_->AllocateBytes(data.size() * sizeof(uint32_t)));
+  memcpy(owned_data, data.data(), data.size() * sizeof(uint32_t));
+  validator_data_.store(owned_data, std::memory_order_release);
+  return owned_data;
+}
+
 const EnumValueDescriptor* EnumDescriptor::FindValueByName(
     absl::string_view name) const {
   return file()->tables_->FindNestedSymbol(this, name).enum_value_descriptor();
@@ -3570,8 +3599,10 @@ void Descriptor::DebugString(int depth, std::string* contents,
   if (reserved_name_count() > 0) {
     absl::SubstituteAndAppend(contents, "$0  reserved ", prefix);
     for (int i = 0; i < reserved_name_count(); i++) {
-      absl::SubstituteAndAppend(contents, "\"$0\", ",
-                                absl::CEscape(reserved_name(i)));
+      absl::SubstituteAndAppend(
+          contents,
+          file()->edition() < Edition::EDITION_2023 ? "\"$0\", " : "$0, ",
+          absl::CEscape(reserved_name(i)));
     }
     contents->replace(contents->size() - 2, 2, ";\n");
   }
@@ -3790,8 +3821,10 @@ void EnumDescriptor::DebugString(
   if (reserved_name_count() > 0) {
     absl::SubstituteAndAppend(contents, "$0  reserved ", prefix);
     for (int i = 0; i < reserved_name_count(); i++) {
-      absl::SubstituteAndAppend(contents, "\"$0\", ",
-                                absl::CEscape(reserved_name(i)));
+      absl::SubstituteAndAppend(
+          contents,
+          file()->edition() < Edition::EDITION_2023 ? "\"$0\", " : "$0, ",
+          absl::CEscape(reserved_name(i)));
     }
     contents->replace(contents->size() - 2, 2, ";\n");
   }
@@ -5166,6 +5199,7 @@ Symbol DescriptorPool::NewPlaceholderWithMutexHeld(
     placeholder_enum->merged_features_ = &FeatureSet::default_instance();
     placeholder_enum->is_placeholder_ = true;
     placeholder_enum->is_unqualified_placeholder_ = (name[0] != '.');
+    placeholder_enum->validator_data_.store(nullptr, std::memory_order_relaxed);
 
     // Enums must have at least one value.
     placeholder_enum->value_count_ = 1;
@@ -7024,6 +7058,7 @@ void DescriptorBuilder::BuildEnum(const EnumDescriptorProto& proto,
   result->containing_type_ = parent;
   result->is_placeholder_ = false;
   result->is_unqualified_placeholder_ = false;
+  result->validator_data_.store(nullptr, std::memory_order_relaxed);
 
   if (proto.value_size() == 0) {
     // We cannot allow enums with no values because this would mean there
