@@ -62,7 +62,9 @@ std::string GetThunkCcFile(Context& ctx, const FileDescriptor& file) {
 
 std::string GetHeaderFile(Context& ctx, const FileDescriptor& file) {
   auto basename = StripProto(file.name());
-  return absl::StrCat(basename, ".proto.h");
+  constexpr absl::string_view kCcGencodeExt = ".pb.h";
+
+  return absl::StrCat(basename, kCcGencodeExt);
 }
 
 std::string RawMapThunk(Context& ctx, const Descriptor& msg,
@@ -439,7 +441,7 @@ PROTOBUF_CONSTINIT const MapKeyType kMapKeyTypes[] = {
      /*cc_ffi_key_t=*/"google::protobuf::rust::PtrAndLen",
      /*cc_from_ffi_key_expr=*/
      "std::string(key.ptr, key.len)", /*cc_to_ffi_key_expr=*/
-     "google::protobuf::rust::PtrAndLen(cpp_key.data(), cpp_key.size())"}};
+     "google::protobuf::rust::PtrAndLen{cpp_key.data(), cpp_key.size()}"}};
 
 }  // namespace rust
 }  // namespace compiler

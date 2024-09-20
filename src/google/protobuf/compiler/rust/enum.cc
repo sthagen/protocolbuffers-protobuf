@@ -136,8 +136,7 @@ void EnumProxiedInMapValue(Context& ctx, const EnumDescriptor& desc) {
             // - The thunk does not increment the iterator.
             unsafe {
                 iter.as_raw_mut($pbi$::Private).next_unchecked::<$key_t$, Self, _, _>(
-                    $pbr$::$map_iter_get_thunk$,
-                    $pbr$::MapNodeSizeInfo(0),  // Ignored
+                    |iter, key, value| { $pbr$::$map_iter_get_thunk$(iter, key, value) },
                     |ffi_key| $from_ffi_key_expr$,
                     |value| $name$(value),
                 )
@@ -259,7 +258,7 @@ void GenerateEnumDefinition(Context& ctx, const EnumDescriptor& desc) {
               impl $std$::convert::TryFrom<i32> for $name$ {
                 type Error = $pb$::UnknownEnumValue<Self>;
 
-                fn try_from(val: i32) -> Result<$name$, Self::Error> {
+                fn try_from(val: i32) -> $Result$<$name$, Self::Error> {
                   if <Self as $pbi$::Enum>::is_known(val) {
                     Ok(Self(val))
                   } else {
