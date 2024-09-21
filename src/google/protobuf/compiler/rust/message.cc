@@ -285,21 +285,36 @@ void UpbGeneratedMessageTraitImpls(Context& ctx, const Descriptor& msg) {
       unsafe impl $pbr$::AssociatedMiniTable for $Msg$ {
         #[inline(always)]
         fn mini_table() -> *const $pbr$::upb_MiniTable {
-          $std$::ptr::addr_of!($minitable$)
+          // This is unsafe only for Rust 1.80 and below and thus can be dropped
+          // once our MSRV is 1.81+
+          #[allow(unused_unsafe)]
+          unsafe {
+            $std$::ptr::addr_of!($minitable$)
+          }
         }
       }
 
       unsafe impl $pbr$::AssociatedMiniTable for $Msg$View<'_> {
         #[inline(always)]
         fn mini_table() -> *const $pbr$::upb_MiniTable {
-          $std$::ptr::addr_of!($minitable$)
+          // This is unsafe only for Rust 1.80 and below and thus can be dropped
+          // once our MSRV is 1.81+
+          #[allow(unused_unsafe)]
+          unsafe {
+            $std$::ptr::addr_of!($minitable$)
+          }
         }
       }
 
       unsafe impl $pbr$::AssociatedMiniTable for $Msg$Mut<'_> {
         #[inline(always)]
         fn mini_table() -> *const $pbr$::upb_MiniTable {
-          $std$::ptr::addr_of!($minitable$)
+          // This is unsafe only for Rust 1.80 and below and thus can be dropped
+          // once our MSRV is 1.81+
+          #[allow(unused_unsafe)]
+          unsafe {
+            $std$::ptr::addr_of!($minitable$)
+          }
         }
       }
     )rs");
@@ -1399,10 +1414,10 @@ void GenerateThunksCc(Context& ctx, const Descriptor& msg) {
         size_t $repeated_len_thunk$(google::protobuf::RepeatedPtrField<$QualifiedMsg$>* field) {
           return field->size();
         }
-        const $QualifiedMsg$& $repeated_get_thunk$(
+        const $QualifiedMsg$* $repeated_get_thunk$(
           google::protobuf::RepeatedPtrField<$QualifiedMsg$>* field,
           size_t index) {
-          return field->Get(index);
+          return &field->Get(index);
         }
         $QualifiedMsg$* $repeated_get_mut_thunk$(
           google::protobuf::RepeatedPtrField<$QualifiedMsg$>* field,
