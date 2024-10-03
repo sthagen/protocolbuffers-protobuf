@@ -2266,7 +2266,10 @@ public abstract class CodedOutputStream extends ByteOutput {
      * responsibility of the caller.
      */
     final void buffer(byte value) {
-      buffer[position++] = value;
+      int position = this.position;
+      buffer[position] = value;
+      // Android optimisation: 1 fewer instruction codegen vs buffer[position++].
+      this.position = position + 1;
       totalBytesWritten++;
     }
 
@@ -2362,10 +2365,12 @@ public abstract class CodedOutputStream extends ByteOutput {
      * responsibility of the caller.
      */
     final void bufferFixed32NoTag(int value) {
+      int position = this.position; // Perf: hoist field to register to avoid load/stores.
       buffer[position++] = (byte) (value & 0xFF);
       buffer[position++] = (byte) ((value >> 8) & 0xFF);
       buffer[position++] = (byte) ((value >> 16) & 0xFF);
       buffer[position++] = (byte) ((value >> 24) & 0xFF);
+      this.position = position;
       totalBytesWritten += FIXED32_SIZE;
     }
 
@@ -2374,6 +2379,7 @@ public abstract class CodedOutputStream extends ByteOutput {
      * responsibility of the caller.
      */
     final void bufferFixed64NoTag(long value) {
+      int position = this.position; // Perf: hoist field to register to avoid load/stores.
       buffer[position++] = (byte) (value & 0xFF);
       buffer[position++] = (byte) ((value >> 8) & 0xFF);
       buffer[position++] = (byte) ((value >> 16) & 0xFF);
@@ -2382,6 +2388,7 @@ public abstract class CodedOutputStream extends ByteOutput {
       buffer[position++] = (byte) ((int) (value >> 40) & 0xFF);
       buffer[position++] = (byte) ((int) (value >> 48) & 0xFF);
       buffer[position++] = (byte) ((int) (value >> 56) & 0xFF);
+      this.position = position;
       totalBytesWritten += FIXED64_SIZE;
     }
   }
