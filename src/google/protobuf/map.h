@@ -17,19 +17,23 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <initializer_list>
 #include <iterator>
 #include <limits>  // To support Visual Studio 2008
+#include <new>     // IWYU pragma: keep for ::operator new.
 #include <string>
 #include <type_traits>
 #include <utility>
+
+#include "absl/memory/memory.h"
+#include "google/protobuf/message_lite.h"
 
 #if !defined(GOOGLE_PROTOBUF_NO_RDTSC) && defined(__APPLE__)
 #include <time.h>
 #endif
 
-#include "google/protobuf/stubs/common.h"
 #include "absl/base/attributes.h"
 #include "absl/container/btree_map.h"
 #include "absl/hash/hash.h"
@@ -39,7 +43,6 @@
 #include "google/protobuf/arena.h"
 #include "google/protobuf/generated_enum_util.h"
 #include "google/protobuf/internal_visibility.h"
-#include "google/protobuf/map_type_handler.h"
 #include "google/protobuf/port.h"
 #include "google/protobuf/wire_format_lite.h"
 
