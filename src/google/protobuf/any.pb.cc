@@ -331,7 +331,7 @@ PROTOBUF_NOINLINE void Any::Clear() {
             }
           }
 
-          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+          if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
                     this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
@@ -442,7 +442,7 @@ namespace protobuf {
 #pragma clang diagnostic pop
 #endif  // __llvm__
 PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::std::false_type
-    _static_init2_ PROTOBUF_UNUSED =
+    _static_init2_ [[maybe_unused]] =
         (::_pbi::AddDescriptors(&descriptor_table_google_2fprotobuf_2fany_2eproto),
          ::std::false_type{});
 #include "google/protobuf/port_undef.inc"

@@ -336,7 +336,7 @@ PROTOBUF_NOINLINE void JavaFeatures::Clear() {
                 4, this_._internal_use_old_outer_classname_default(), target);
           }
 
-          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+          if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
                     this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
@@ -439,7 +439,7 @@ namespace protobuf {
 }  // namespace google
 // @@protoc_insertion_point(global_scope)
 PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::std::false_type
-    _static_init2_ PROTOBUF_UNUSED =
+    _static_init2_ [[maybe_unused]] =
         (::_pbi::AddDescriptors(&descriptor_table_google_2fprotobuf_2fcompiler_2fjava_2fjava_5ffeatures_2eproto),
         ::_pbi::ExtensionSet::RegisterMessageExtension(
             &::google::protobuf::FeatureSet::default_instance(), 1001, 11,
