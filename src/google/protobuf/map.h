@@ -71,6 +71,10 @@ struct PtrAndLen;
 }  // namespace rust
 
 namespace internal {
+namespace v2 {
+class TableDriven;
+};
+
 template <typename Key, typename T>
 class MapFieldLite;
 
@@ -88,6 +92,10 @@ class TypeDefinedMapFieldBase;
 class DynamicMapField;
 
 class GeneratedMessageReflection;
+
+namespace v2 {
+class TableDriven;
+}  // namespace v2
 
 // The largest valid serialization for a message is INT_MAX, so we can't have
 // more than 32-bits worth of elements.
@@ -294,7 +302,7 @@ enum class MapNodeSizeInfoT : uint32_t;
 inline uint16_t SizeFromInfo(MapNodeSizeInfoT node_size_info) {
   return static_cast<uint16_t>(static_cast<uint32_t>(node_size_info) >> 16);
 }
-inline uint16_t ValueOffsetFromInfo(MapNodeSizeInfoT node_size_info) {
+inline constexpr uint16_t ValueOffsetFromInfo(MapNodeSizeInfoT node_size_info) {
   return static_cast<uint16_t>(static_cast<uint32_t>(node_size_info) >> 0);
 }
 constexpr MapNodeSizeInfoT MakeNodeInfo(uint16_t size, uint16_t value_offset) {
@@ -608,6 +616,7 @@ class PROTOBUF_EXPORT UntypedMapBase {
   friend struct MapBenchmarkPeer;
   friend class UntypedMapIterator;
   friend class RustMapHelper;
+  friend class v2::TableDriven;
 
   struct NodeAndBucket {
     NodeBase* node;
@@ -954,6 +963,7 @@ class KeyMapBase : public UntypedMapBase {
   friend struct MapTestPeer;
   friend struct MapBenchmarkPeer;
   friend class RustMapHelper;
+  friend class v2::TableDriven;
 
   PROTOBUF_NOINLINE void erase_no_destroy(map_index_t b, KeyNode* node) {
     TreeIterator tree_it;
@@ -1821,6 +1831,7 @@ class Map : private internal::KeyMapBase<internal::KeyForBase<Key>> {
   friend struct internal::MapTestPeer;
   friend struct internal::MapBenchmarkPeer;
   friend class internal::RustMapHelper;
+  friend class internal::v2::TableDriven;
 };
 
 namespace internal {
