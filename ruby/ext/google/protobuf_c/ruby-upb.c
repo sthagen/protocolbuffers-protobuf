@@ -3603,13 +3603,19 @@ void upb_Array_Freeze(upb_Array* arr, const upb_MiniTable* m) {
 
 // Must be last.
 
-const upb_MiniTableExtension* upb_Message_ExtensionByIndex(
-    const upb_Message* msg, size_t index) {
+bool upb_Message_NextExtension(const upb_Message* msg,
+                               const upb_MiniTableExtension** result,
+                               uintptr_t* iter) {
   size_t count;
   const upb_Extension* ext = UPB_PRIVATE(_upb_Message_Getexts)(msg, &count);
-
-  UPB_ASSERT(index < count);
-  return ext[index].ext;
+  size_t i = *iter;
+  if (i >= count) {
+    return false;
+    *result = NULL;
+  }
+  *result = ext[i].ext;
+  *iter = i + 1;
+  return true;
 }
 
 const upb_MiniTableExtension* upb_Message_FindExtensionByNumber(
@@ -3941,6 +3947,14 @@ bool upb_Message_NextUnknown(const upb_Message* msg, upb_StringView* data,
   }
   data->size = 0;
   data->data = NULL;
+  return false;
+}
+
+bool upb_Message_HasUnknown(const upb_Message* msg) {
+  const upb_Message_Internal* in = UPB_PRIVATE(_upb_Message_GetInternal)(msg);
+  if (in) {
+    return in->unknown_end > message_overhead;
+  }
   return false;
 }
 

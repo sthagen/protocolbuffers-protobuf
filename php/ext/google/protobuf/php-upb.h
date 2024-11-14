@@ -2403,6 +2403,8 @@ UPB_API upb_Message* upb_Message_New(const upb_MiniTable* m, upb_Arena* arena);
 bool upb_Message_NextUnknown(const upb_Message* msg, upb_StringView* data,
                              uintptr_t* iter);
 
+bool upb_Message_HasUnknown(const upb_Message* msg);
+
 // Returns a reference to the message's unknown data.
 const char* upb_Message_GetUnknown(const upb_Message* msg, size_t* len);
 
@@ -13569,9 +13571,11 @@ UPB_INLINE bool _upb_NonAtomic_CompareExchangeStrongP(void* addr,
 extern "C" {
 #endif
 
-const upb_MiniTableExtension* upb_Message_ExtensionByIndex(
-    const upb_Message* msg, size_t index);
+#define kUpb_Message_ExtensionBegin 0;
 
+bool upb_Message_NextExtension(const upb_Message* msg,
+                               const upb_MiniTableExtension** result,
+                               uintptr_t* iter);
 // Returns the minitable with the given field number, or NULL on failure.
 const upb_MiniTableExtension* upb_Message_FindExtensionByNumber(
     const upb_Message* msg, uint32_t field_number);
