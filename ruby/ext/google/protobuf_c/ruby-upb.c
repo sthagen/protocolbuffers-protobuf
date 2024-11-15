@@ -3902,6 +3902,7 @@ bool _upb_mapsorter_pushexts(_upb_mapsorter* s, const upb_Extension* exts,
 }
 
 
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -3918,10 +3919,34 @@ upb_Message* upb_Message_New(const upb_MiniTable* m, upb_Arena* a) {
 bool UPB_PRIVATE(_upb_Message_AddUnknown)(upb_Message* msg, const char* data,
                                           size_t len, upb_Arena* arena) {
   UPB_ASSERT(!upb_Message_IsFrozen(msg));
+  // TODO: b/376969853  - Add debug check that the unknown field is an overall
+  // valid proto field
   if (!UPB_PRIVATE(_upb_Message_Realloc)(msg, len, arena)) return false;
   upb_Message_Internal* in = UPB_PRIVATE(_upb_Message_GetInternal)(msg);
   memcpy(UPB_PTR_AT(in, in->unknown_end, char), data, len);
   in->unknown_end += len;
+  return true;
+}
+
+bool UPB_PRIVATE(_upb_Message_AddUnknownV)(struct upb_Message* msg,
+                                           upb_Arena* arena,
+                                           upb_StringView data[],
+                                           size_t count) {
+  UPB_ASSERT(!upb_Message_IsFrozen(msg));
+  UPB_ASSERT(count > 0);
+  size_t total_len = 0;
+  for (size_t i = 0; i < count; i++) {
+    total_len += data[i].size;
+  }
+  if (!UPB_PRIVATE(_upb_Message_Realloc)(msg, total_len, arena)) return false;
+
+  upb_Message_Internal* in = UPB_PRIVATE(_upb_Message_GetInternal)(msg);
+  for (size_t i = 0; i < count; i++) {
+    memcpy(UPB_PTR_AT(in, in->unknown_end, char), data[i].data, data[i].size);
+    in->unknown_end += data[i].size;
+  }
+  // TODO: b/376969853  - Add debug check that the unknown field is an overall
+  // valid proto field
   return true;
 }
 
@@ -4242,6 +4267,7 @@ bool upb_Message_IsEqual(const upb_Message* msg1, const upb_Message* msg2,
 
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 
 
@@ -4495,12 +4521,12 @@ upb_Message* _upb_Message_Copy(upb_Message* dst, const upb_Message* src,
   }
 
   // Clone unknowns.
-  size_t unknown_size = 0;
-  const char* ptr = upb_Message_GetUnknown(src, &unknown_size);
-  if (unknown_size != 0) {
-    UPB_ASSERT(ptr);
+  uintptr_t iter = kUpb_Message_UnknownBegin;
+  upb_StringView unknowns;
+  while (upb_Message_NextUnknown(src, &unknowns, &iter)) {
     // Make a copy into destination arena.
-    if (!UPB_PRIVATE(_upb_Message_AddUnknown)(dst, ptr, unknown_size, arena)) {
+    if (!UPB_PRIVATE(_upb_Message_AddUnknown)(dst, unknowns.data, unknowns.size,
+                                              arena)) {
       return NULL;
     }
   }
@@ -6199,11 +6225,14 @@ static upb_Message* _upb_Decoder_ReuseSubMessage(
   upb_Message* existing =
       UPB_PRIVATE(_upb_TaggedMessagePtr_GetEmptyMessage)(tagged);
   upb_Message* promoted = _upb_Decoder_NewSubMessage(d, subs, field, target);
-  size_t size;
-  const char* unknown = upb_Message_GetUnknown(existing, &size);
-  upb_DecodeStatus status = upb_Decode(unknown, size, promoted, subl, d->extreg,
-                                       d->options, &d->arena);
-  if (status != kUpb_DecodeStatus_Ok) _upb_Decoder_ErrorJmp(d, status);
+  uintptr_t iter = kUpb_Message_UnknownBegin;
+  upb_StringView unknown;
+  while (upb_Message_NextUnknown(existing, &unknown, &iter)) {
+    upb_DecodeStatus status =
+        upb_Decode(unknown.data, unknown.size, promoted, subl, d->extreg,
+                   d->options, &d->arena);
+    if (status != kUpb_DecodeStatus_Ok) _upb_Decoder_ErrorJmp(d, status);
+  }
   return promoted;
 }
 
@@ -6277,6 +6306,7 @@ const char* _upb_Decoder_DecodeKnownGroup(upb_Decoder* d, const char* ptr,
                                   field->UPB_PRIVATE(number));
 }
 
+#define kUpb_Decoder_EncodeVarint32MaxSize 5
 static char* upb_Decoder_EncodeVarint32(uint32_t val, char* ptr) {
   do {
     uint8_t byte = val & 0x7fU;
@@ -6285,18 +6315,6 @@ static char* upb_Decoder_EncodeVarint32(uint32_t val, char* ptr) {
     *(ptr++) = byte;
   } while (val);
   return ptr;
-}
-
-static void _upb_Decoder_AddUnknownVarints(upb_Decoder* d, upb_Message* msg,
-                                           uint32_t val1, uint32_t val2) {
-  char buf[20];
-  char* end = buf;
-  end = upb_Decoder_EncodeVarint32(val1, end);
-  end = upb_Decoder_EncodeVarint32(val2, end);
-
-  if (!UPB_PRIVATE(_upb_Message_AddUnknown)(msg, buf, end - buf, &d->arena)) {
-    _upb_Decoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
-  }
 }
 
 UPB_FORCEINLINE
@@ -6315,7 +6333,15 @@ bool _upb_Decoder_CheckEnum(upb_Decoder* d, const char* ptr, upb_Message* msg,
   upb_Message* unknown_msg =
       field->UPB_PRIVATE(mode) & kUpb_LabelFlags_IsExtension ? d->unknown_msg
                                                              : msg;
-  _upb_Decoder_AddUnknownVarints(d, unknown_msg, tag, v);
+  char buf[2 * kUpb_Decoder_EncodeVarint32MaxSize];
+  char* end = buf;
+  end = upb_Decoder_EncodeVarint32(tag, end);
+  end = upb_Decoder_EncodeVarint32(v, end);
+
+  if (!UPB_PRIVATE(_upb_Message_AddUnknown)(unknown_msg, buf, end - buf,
+                                            &d->arena)) {
+    _upb_Decoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
+  }
   return false;
 }
 
@@ -6573,10 +6599,7 @@ static const char* _upb_Decoder_DecodeToMap(
 
   ptr = _upb_Decoder_DecodeSubMessage(d, ptr, &ent.message, subs, field,
                                       val->size);
-  // check if ent had any unknown fields
-  size_t size;
-  upb_Message_GetUnknown(&ent.message, &size);
-  if (size != 0) {
+  if (upb_Message_HasUnknown(&ent.message)) {
     char* buf;
     size_t size;
     uint32_t tag =
@@ -6586,8 +6609,16 @@ static const char* _upb_Decoder_DecodeToMap(
     if (status != kUpb_EncodeStatus_Ok) {
       _upb_Decoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
     }
-    _upb_Decoder_AddUnknownVarints(d, msg, tag, size);
-    if (!UPB_PRIVATE(_upb_Message_AddUnknown)(msg, buf, size, &d->arena)) {
+    char delim_buf[2 * kUpb_Decoder_EncodeVarint32MaxSize];
+    char* delim_end = delim_buf;
+    delim_end = upb_Decoder_EncodeVarint32(tag, delim_end);
+    delim_end = upb_Decoder_EncodeVarint32(size, delim_end);
+    upb_StringView unknown[] = {
+        {delim_buf, delim_end - delim_buf},
+        {buf, size},
+    };
+
+    if (!UPB_PRIVATE(_upb_Message_AddUnknownV)(msg, &d->arena, unknown, 2)) {
       _upb_Decoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
     }
   } else {
@@ -6746,7 +6777,7 @@ static void upb_Decoder_AddUnknownMessageSetItem(upb_Decoder* d,
                                                  uint32_t type_id,
                                                  const char* message_data,
                                                  uint32_t message_size) {
-  char buf[60];
+  char buf[6 * kUpb_Decoder_EncodeVarint32MaxSize];
   char* ptr = buf;
   ptr = upb_Decoder_EncodeVarint32(kStartItemTag, ptr);
   ptr = upb_Decoder_EncodeVarint32(kTypeIdTag, ptr);
@@ -6757,12 +6788,12 @@ static void upb_Decoder_AddUnknownMessageSetItem(upb_Decoder* d,
 
   ptr = upb_Decoder_EncodeVarint32(kEndItemTag, ptr);
   char* end = ptr;
-
-  if (!UPB_PRIVATE(_upb_Message_AddUnknown)(msg, buf, split - buf, &d->arena) ||
-      !UPB_PRIVATE(_upb_Message_AddUnknown)(msg, message_data, message_size,
-                                            &d->arena) ||
-      !UPB_PRIVATE(_upb_Message_AddUnknown)(msg, split, end - split,
-                                            &d->arena)) {
+  upb_StringView unknown[] = {
+      {buf, split - buf},
+      {message_data, message_size},
+      {split, end - split},
+  };
+  if (!UPB_PRIVATE(_upb_Message_AddUnknownV)(msg, &d->arena, unknown, 3)) {
     _upb_Decoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
   }
 }
@@ -7908,11 +7939,22 @@ static void encode_message(upb_encstate* e, const upb_Message* msg,
   }
 
   if ((e->options & kUpb_EncodeOption_SkipUnknown) == 0) {
-    size_t unknown_size;
-    const char* unknown = upb_Message_GetUnknown(msg, &unknown_size);
-
-    if (unknown) {
-      encode_bytes(e, unknown, unknown_size);
+    size_t unknown_size = 0;
+    uintptr_t iter = kUpb_Message_UnknownBegin;
+    upb_StringView unknown;
+    // Need to write in reverse order, but list is single-linked; scan to
+    // reserve capacity up front, then write in-order
+    while (upb_Message_NextUnknown(msg, &unknown, &iter)) {
+      unknown_size += unknown.size;
+    }
+    if (unknown_size != 0) {
+      encode_reserve(e, unknown_size);
+      char* ptr = e->ptr;
+      iter = kUpb_Message_UnknownBegin;
+      while (upb_Message_NextUnknown(msg, &unknown, &iter)) {
+        memcpy(ptr, unknown.data, unknown.size);
+        ptr += unknown.size;
+      }
     }
   }
 
