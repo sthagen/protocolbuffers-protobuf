@@ -61,6 +61,15 @@ Error, UINTPTR_MAX is undefined
  */
 #define UPB_PTR_AT(msg, ofs, type) ((type*)((char*)(msg) + (ofs)))
 
+// A flexible array member may have lower alignment requirements than the struct
+// overall - in that case, it can overlap with the trailing padding of the rest
+// of the struct, and a naive sizeof(base) + sizeof(flex) * count calculation
+// will not take into account that overlap, and allocate more than is required.
+#define UPB_SIZEOF_FLEX(type, member, count) \
+  (UPB_MAX(sizeof(type),                     \
+           (offsetof(type, member) +         \
+            count * (offsetof(type, member[1]) - offsetof(type, member[0])))))
+
 #define UPB_MAPTYPE_STRING 0
 
 // UPB_EXPORT: always generate a public symbol.
@@ -765,18 +774,13 @@ extern "C" {
 // this invariant.
 #define kUpb_EpsCopyInputStream_SlopBytes 16
 
-enum {
-  kUpb_EpsCopyInputStream_NoAliasing = 0,
-  kUpb_EpsCopyInputStream_OnPatch = 1,
-  kUpb_EpsCopyInputStream_NoDelta = 2
-};
-
 typedef struct {
   const char* end;        // Can read up to SlopBytes bytes beyond this.
   const char* limit_ptr;  // For bounds checks, = end + UPB_MIN(limit, 0)
-  uintptr_t aliasing;
+  uintptr_t input_delta;  // Diff between the original input pointer and patch
   int limit;   // Submessage limit relative to end
   bool error;  // To distinguish between EOF and error.
+  bool aliasing;
   char patch[kUpb_EpsCopyInputStream_SlopBytes * 2];
 } upb_EpsCopyInputStream;
 
@@ -802,17 +806,16 @@ UPB_INLINE void upb_EpsCopyInputStream_Init(upb_EpsCopyInputStream* e,
   if (size <= kUpb_EpsCopyInputStream_SlopBytes) {
     memset(&e->patch, 0, 32);
     if (size) memcpy(&e->patch, *ptr, size);
-    e->aliasing = enable_aliasing ? (uintptr_t)*ptr - (uintptr_t)e->patch
-                                  : kUpb_EpsCopyInputStream_NoAliasing;
+    e->input_delta = (uintptr_t)*ptr - (uintptr_t)e->patch;
     *ptr = e->patch;
     e->end = *ptr + size;
     e->limit = 0;
   } else {
     e->end = *ptr + size - kUpb_EpsCopyInputStream_SlopBytes;
     e->limit = kUpb_EpsCopyInputStream_SlopBytes;
-    e->aliasing = enable_aliasing ? kUpb_EpsCopyInputStream_NoDelta
-                                  : kUpb_EpsCopyInputStream_NoAliasing;
+    e->input_delta = 0;
   }
+  e->aliasing = enable_aliasing;
   e->limit_ptr = e->end;
   e->error = false;
 }
@@ -955,7 +958,7 @@ UPB_INLINE bool upb_EpsCopyInputStream_CheckSubMessageSizeAvailable(
 // upb_EpsCopyInputStream_Init() when this stream was initialized.
 UPB_INLINE bool upb_EpsCopyInputStream_AliasingEnabled(
     upb_EpsCopyInputStream* e) {
-  return e->aliasing != kUpb_EpsCopyInputStream_NoAliasing;
+  return e->aliasing;
 }
 
 // Returns true if aliasing_enabled=true was passed to
@@ -965,8 +968,16 @@ UPB_INLINE bool upb_EpsCopyInputStream_AliasingAvailable(
     upb_EpsCopyInputStream* e, const char* ptr, size_t size) {
   // When EpsCopyInputStream supports streaming, this will need to become a
   // runtime check.
-  return upb_EpsCopyInputStream_CheckDataSizeAvailable(e, ptr, size) &&
-         e->aliasing >= kUpb_EpsCopyInputStream_NoDelta;
+  return e->aliasing &&
+         upb_EpsCopyInputStream_CheckDataSizeAvailable(e, ptr, size);
+}
+
+// Returns a pointer into an input buffer that corresponds to the parsing
+// pointer `ptr`.  The returned pointer may be the same as `ptr`, but also may
+// be different if we are currently parsing out of the patch buffer.
+UPB_INLINE const char* upb_EpsCopyInputStream_GetInputPtr(
+    upb_EpsCopyInputStream* e, const char* ptr) {
+  return (const char*)(((uintptr_t)ptr) + e->input_delta);
 }
 
 // Returns a pointer into an input buffer that corresponds to the parsing
@@ -978,9 +989,7 @@ UPB_INLINE bool upb_EpsCopyInputStream_AliasingAvailable(
 UPB_INLINE const char* upb_EpsCopyInputStream_GetAliasedPtr(
     upb_EpsCopyInputStream* e, const char* ptr) {
   UPB_ASSUME(upb_EpsCopyInputStream_AliasingAvailable(e, ptr, 0));
-  uintptr_t delta =
-      e->aliasing == kUpb_EpsCopyInputStream_NoDelta ? 0 : e->aliasing;
-  return (const char*)((uintptr_t)ptr + delta);
+  return upb_EpsCopyInputStream_GetInputPtr(e, ptr);
 }
 
 // Reads string data from the input, aliasing into the input buffer instead of
@@ -1094,9 +1103,7 @@ UPB_INLINE const char* _upb_EpsCopyInputStream_IsDoneFallbackInline(
     e->limit -= kUpb_EpsCopyInputStream_SlopBytes;
     e->limit_ptr = e->end + e->limit;
     UPB_ASSERT(ptr < e->limit_ptr);
-    if (e->aliasing != kUpb_EpsCopyInputStream_NoAliasing) {
-      e->aliasing = (uintptr_t)old_end - (uintptr_t)new_start;
-    }
+    e->input_delta = (uintptr_t)old_end - (uintptr_t)new_start;
     return callback(e, old_end, new_start);
   } else {
     UPB_ASSERT(overrun > e->limit);
@@ -13851,8 +13858,7 @@ typedef enum {
 } upb_UnknownCompareResult;
 
 upb_UnknownCompareResult UPB_PRIVATE(_upb_Message_UnknownFieldsAreEqual)(
-    const char* buf1, size_t size1, const char* buf2, size_t size2,
-    int max_depth);
+    const upb_Message* msg1, const upb_Message* msg2, int max_depth);
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -13883,6 +13889,236 @@ bool UPB_PRIVATE(_upb_Message_NextExtension)(
     const upb_MiniTableExtension** out_e, upb_MessageValue* out_v,
     size_t* iter);
 #endif  // THIRD_PARTY_UPB_UPB_MESSAGE_INTERNAL_ITERATOR_H_
+
+#ifndef UPB_WIRE_READER_H_
+#define UPB_WIRE_READER_H_
+
+
+#ifndef UPB_WIRE_INTERNAL_READER_H_
+#define UPB_WIRE_INTERNAL_READER_H_
+
+// Must be last.
+
+#define kUpb_WireReader_WireTypeBits 3
+#define kUpb_WireReader_WireTypeMask 7
+
+typedef struct {
+  const char* ptr;
+  uint64_t val;
+} UPB_PRIVATE(_upb_WireReader_LongVarint);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UPB_PRIVATE(_upb_WireReader_LongVarint)
+UPB_PRIVATE(_upb_WireReader_ReadLongVarint)(const char* ptr, uint64_t val);
+
+UPB_FORCEINLINE const char* UPB_PRIVATE(_upb_WireReader_ReadVarint)(
+    const char* ptr, uint64_t* val, int maxlen, uint64_t maxval) {
+  uint64_t byte = (uint8_t)*ptr;
+  if (UPB_LIKELY((byte & 0x80) == 0)) {
+    *val = (uint32_t)byte;
+    return ptr + 1;
+  }
+  const char* start = ptr;
+  UPB_PRIVATE(_upb_WireReader_LongVarint)
+  res = UPB_PRIVATE(_upb_WireReader_ReadLongVarint)(ptr, byte);
+  if (!res.ptr || (maxlen < 10 && res.ptr - start > maxlen) ||
+      res.val > maxval) {
+    return NULL;  // Malformed.
+  }
+  *val = res.val;
+  return res.ptr;
+}
+
+UPB_API_INLINE uint32_t upb_WireReader_GetFieldNumber(uint32_t tag) {
+  return tag >> kUpb_WireReader_WireTypeBits;
+}
+
+UPB_API_INLINE uint8_t upb_WireReader_GetWireType(uint32_t tag) {
+  return tag & kUpb_WireReader_WireTypeMask;
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif  // UPB_WIRE_INTERNAL_READER_H_
+
+#ifndef UPB_WIRE_TYPES_H_
+#define UPB_WIRE_TYPES_H_
+
+// A list of types as they are encoded on the wire.
+typedef enum {
+  kUpb_WireType_Varint = 0,
+  kUpb_WireType_64Bit = 1,
+  kUpb_WireType_Delimited = 2,
+  kUpb_WireType_StartGroup = 3,
+  kUpb_WireType_EndGroup = 4,
+  kUpb_WireType_32Bit = 5
+} upb_WireType;
+
+#endif /* UPB_WIRE_TYPES_H_ */
+
+// Must be last.
+
+// The upb_WireReader interface is suitable for general-purpose parsing of
+// protobuf binary wire format. It is designed to be used along with
+// upb_EpsCopyInputStream for buffering, and all parsing routines in this file
+// assume that at least kUpb_EpsCopyInputStream_SlopBytes worth of data is
+// available to read without any bounds checks.
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Parses a tag into `tag`, and returns a pointer past the end of the tag, or
+// NULL if there was an error in the tag data.
+//
+// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
+// Bounds checks must be performed before calling this function, preferably
+// by calling upb_EpsCopyInputStream_IsDone().
+UPB_FORCEINLINE const char* upb_WireReader_ReadTag(const char* ptr,
+                                                   uint32_t* tag) {
+  uint64_t val;
+  ptr = UPB_PRIVATE(_upb_WireReader_ReadVarint)(ptr, &val, 5, UINT32_MAX);
+  if (!ptr) return NULL;
+  *tag = val;
+  return ptr;
+}
+
+// Given a tag, returns the field number.
+UPB_API_INLINE uint32_t upb_WireReader_GetFieldNumber(uint32_t tag);
+
+// Given a tag, returns the wire type.
+UPB_API_INLINE uint8_t upb_WireReader_GetWireType(uint32_t tag);
+
+UPB_INLINE const char* upb_WireReader_ReadVarint(const char* ptr,
+                                                 uint64_t* val) {
+  return UPB_PRIVATE(_upb_WireReader_ReadVarint)(ptr, val, 10, UINT64_MAX);
+}
+
+// Skips data for a varint, returning a pointer past the end of the varint, or
+// NULL if there was an error in the varint data.
+//
+// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
+// Bounds checks must be performed before calling this function, preferably
+// by calling upb_EpsCopyInputStream_IsDone().
+UPB_INLINE const char* upb_WireReader_SkipVarint(const char* ptr) {
+  uint64_t val;
+  return upb_WireReader_ReadVarint(ptr, &val);
+}
+
+// Reads a varint indicating the size of a delimited field into `size`, or
+// NULL if there was an error in the varint data.
+//
+// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
+// Bounds checks must be performed before calling this function, preferably
+// by calling upb_EpsCopyInputStream_IsDone().
+UPB_INLINE const char* upb_WireReader_ReadSize(const char* ptr, int* size) {
+  uint64_t size64;
+  ptr = upb_WireReader_ReadVarint(ptr, &size64);
+  if (!ptr || size64 >= INT32_MAX) return NULL;
+  *size = size64;
+  return ptr;
+}
+
+// Reads a fixed32 field, performing byte swapping if necessary.
+//
+// REQUIRES: there must be at least 4 bytes of data available at `ptr`.
+// Bounds checks must be performed before calling this function, preferably
+// by calling upb_EpsCopyInputStream_IsDone().
+UPB_INLINE const char* upb_WireReader_ReadFixed32(const char* ptr, void* val) {
+  uint32_t uval;
+  memcpy(&uval, ptr, 4);
+  uval = upb_BigEndian32(uval);
+  memcpy(val, &uval, 4);
+  return ptr + 4;
+}
+
+// Reads a fixed64 field, performing byte swapping if necessary.
+//
+// REQUIRES: there must be at least 4 bytes of data available at `ptr`.
+// Bounds checks must be performed before calling this function, preferably
+// by calling upb_EpsCopyInputStream_IsDone().
+UPB_INLINE const char* upb_WireReader_ReadFixed64(const char* ptr, void* val) {
+  uint64_t uval;
+  memcpy(&uval, ptr, 8);
+  uval = upb_BigEndian64(uval);
+  memcpy(val, &uval, 8);
+  return ptr + 8;
+}
+
+const char* UPB_PRIVATE(_upb_WireReader_SkipGroup)(
+    const char* ptr, uint32_t tag, int depth_limit,
+    upb_EpsCopyInputStream* stream);
+
+// Skips data for a group, returning a pointer past the end of the group, or
+// NULL if there was an error parsing the group.  The `tag` argument should be
+// the start group tag that begins the group.  The `depth_limit` argument
+// indicates how many levels of recursion the group is allowed to have before
+// reporting a parse error (this limit exists to protect against stack
+// overflow).
+//
+// TODO: evaluate how the depth_limit should be specified. Do users need
+// control over this?
+UPB_INLINE const char* upb_WireReader_SkipGroup(
+    const char* ptr, uint32_t tag, upb_EpsCopyInputStream* stream) {
+  return UPB_PRIVATE(_upb_WireReader_SkipGroup)(ptr, tag, 100, stream);
+}
+
+UPB_INLINE const char* _upb_WireReader_SkipValue(
+    const char* ptr, uint32_t tag, int depth_limit,
+    upb_EpsCopyInputStream* stream) {
+  switch (upb_WireReader_GetWireType(tag)) {
+    case kUpb_WireType_Varint:
+      return upb_WireReader_SkipVarint(ptr);
+    case kUpb_WireType_32Bit:
+      return ptr + 4;
+    case kUpb_WireType_64Bit:
+      return ptr + 8;
+    case kUpb_WireType_Delimited: {
+      int size;
+      ptr = upb_WireReader_ReadSize(ptr, &size);
+      if (!ptr) return NULL;
+      ptr += size;
+      return ptr;
+    }
+    case kUpb_WireType_StartGroup:
+      return UPB_PRIVATE(_upb_WireReader_SkipGroup)(ptr, tag, depth_limit,
+                                                    stream);
+    case kUpb_WireType_EndGroup:
+      return NULL;  // Should be handled before now.
+    default:
+      return NULL;  // Unknown wire type.
+  }
+}
+
+// Skips data for a wire value of any type, returning a pointer past the end of
+// the data, or NULL if there was an error parsing the group. The `tag` argument
+// should be the tag that was just parsed. The `depth_limit` argument indicates
+// how many levels of recursion a group is allowed to have before reporting a
+// parse error (this limit exists to protect against stack overflow).
+//
+// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
+// Bounds checks must be performed before calling this function, preferably
+// by calling upb_EpsCopyInputStream_IsDone().
+//
+// TODO: evaluate how the depth_limit should be specified. Do users need
+// control over this?
+UPB_INLINE const char* upb_WireReader_SkipValue(
+    const char* ptr, uint32_t tag, upb_EpsCopyInputStream* stream) {
+  return _upb_WireReader_SkipValue(ptr, tag, 100, stream);
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+
+#endif  // UPB_WIRE_READER_H_
 
 #ifndef UPB_MESSAGE_COPY_H_
 #define UPB_MESSAGE_COPY_H_
@@ -14269,17 +14505,18 @@ enum {
 #ifndef UPB_WIRE_INTERNAL_DECODER_H_
 #define UPB_WIRE_INTERNAL_DECODER_H_
 
+#include <stddef.h>
+
 #include "utf8_range.h"
 
 // Must be last.
 
-#define DECODE_NOGROUP (uint32_t) - 1
+#define DECODE_NOGROUP (uint32_t)-1
 
 typedef struct upb_Decoder {
   upb_EpsCopyInputStream input;
   const upb_ExtensionRegistry* extreg;
-  const char* unknown;       // Start of unknown data, preserve at buffer flip
-  upb_Message* unknown_msg;  // Pointer to preserve data to
+  upb_Message* original_msg;  // Pointer to preserve data to
   int depth;                 // Tracks recursion depth to bound stack usage.
   uint32_t end_group;  // field number of END_GROUP tag, else DECODE_NOGROUP.
   uint16_t options;
@@ -14339,14 +14576,6 @@ UPB_INLINE const char* _upb_Decoder_BufferFlipCallback(
     upb_EpsCopyInputStream* e, const char* old_end, const char* new_start) {
   upb_Decoder* d = (upb_Decoder*)e;
   if (!old_end) _upb_FastDecoder_ErrorJmp(d, kUpb_DecodeStatus_Malformed);
-
-  if (d->unknown) {
-    if (!UPB_PRIVATE(_upb_Message_AddUnknown)(
-            d->unknown_msg, d->unknown, old_end - d->unknown, &d->arena)) {
-      _upb_FastDecoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
-    }
-    d->unknown = new_start;
-  }
   return new_start;
 }
 
@@ -14375,236 +14604,6 @@ UPB_INLINE uint32_t _upb_FastDecoder_LoadTag(const char* ptr) {
 
 
 #endif /* UPB_WIRE_INTERNAL_DECODER_H_ */
-
-#ifndef UPB_WIRE_READER_H_
-#define UPB_WIRE_READER_H_
-
-
-#ifndef UPB_WIRE_INTERNAL_READER_H_
-#define UPB_WIRE_INTERNAL_READER_H_
-
-// Must be last.
-
-#define kUpb_WireReader_WireTypeBits 3
-#define kUpb_WireReader_WireTypeMask 7
-
-typedef struct {
-  const char* ptr;
-  uint64_t val;
-} UPB_PRIVATE(_upb_WireReader_LongVarint);
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-UPB_PRIVATE(_upb_WireReader_LongVarint)
-UPB_PRIVATE(_upb_WireReader_ReadLongVarint)(const char* ptr, uint64_t val);
-
-UPB_FORCEINLINE const char* UPB_PRIVATE(_upb_WireReader_ReadVarint)(
-    const char* ptr, uint64_t* val, int maxlen, uint64_t maxval) {
-  uint64_t byte = (uint8_t)*ptr;
-  if (UPB_LIKELY((byte & 0x80) == 0)) {
-    *val = (uint32_t)byte;
-    return ptr + 1;
-  }
-  const char* start = ptr;
-  UPB_PRIVATE(_upb_WireReader_LongVarint)
-  res = UPB_PRIVATE(_upb_WireReader_ReadLongVarint)(ptr, byte);
-  if (!res.ptr || (maxlen < 10 && res.ptr - start > maxlen) ||
-      res.val > maxval) {
-    return NULL;  // Malformed.
-  }
-  *val = res.val;
-  return res.ptr;
-}
-
-UPB_API_INLINE uint32_t upb_WireReader_GetFieldNumber(uint32_t tag) {
-  return tag >> kUpb_WireReader_WireTypeBits;
-}
-
-UPB_API_INLINE uint8_t upb_WireReader_GetWireType(uint32_t tag) {
-  return tag & kUpb_WireReader_WireTypeMask;
-}
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif  // UPB_WIRE_INTERNAL_READER_H_
-
-#ifndef UPB_WIRE_TYPES_H_
-#define UPB_WIRE_TYPES_H_
-
-// A list of types as they are encoded on the wire.
-typedef enum {
-  kUpb_WireType_Varint = 0,
-  kUpb_WireType_64Bit = 1,
-  kUpb_WireType_Delimited = 2,
-  kUpb_WireType_StartGroup = 3,
-  kUpb_WireType_EndGroup = 4,
-  kUpb_WireType_32Bit = 5
-} upb_WireType;
-
-#endif /* UPB_WIRE_TYPES_H_ */
-
-// Must be last.
-
-// The upb_WireReader interface is suitable for general-purpose parsing of
-// protobuf binary wire format. It is designed to be used along with
-// upb_EpsCopyInputStream for buffering, and all parsing routines in this file
-// assume that at least kUpb_EpsCopyInputStream_SlopBytes worth of data is
-// available to read without any bounds checks.
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Parses a tag into `tag`, and returns a pointer past the end of the tag, or
-// NULL if there was an error in the tag data.
-//
-// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
-// Bounds checks must be performed before calling this function, preferably
-// by calling upb_EpsCopyInputStream_IsDone().
-UPB_FORCEINLINE const char* upb_WireReader_ReadTag(const char* ptr,
-                                                   uint32_t* tag) {
-  uint64_t val;
-  ptr = UPB_PRIVATE(_upb_WireReader_ReadVarint)(ptr, &val, 5, UINT32_MAX);
-  if (!ptr) return NULL;
-  *tag = val;
-  return ptr;
-}
-
-// Given a tag, returns the field number.
-UPB_API_INLINE uint32_t upb_WireReader_GetFieldNumber(uint32_t tag);
-
-// Given a tag, returns the wire type.
-UPB_API_INLINE uint8_t upb_WireReader_GetWireType(uint32_t tag);
-
-UPB_INLINE const char* upb_WireReader_ReadVarint(const char* ptr,
-                                                 uint64_t* val) {
-  return UPB_PRIVATE(_upb_WireReader_ReadVarint)(ptr, val, 10, UINT64_MAX);
-}
-
-// Skips data for a varint, returning a pointer past the end of the varint, or
-// NULL if there was an error in the varint data.
-//
-// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
-// Bounds checks must be performed before calling this function, preferably
-// by calling upb_EpsCopyInputStream_IsDone().
-UPB_INLINE const char* upb_WireReader_SkipVarint(const char* ptr) {
-  uint64_t val;
-  return upb_WireReader_ReadVarint(ptr, &val);
-}
-
-// Reads a varint indicating the size of a delimited field into `size`, or
-// NULL if there was an error in the varint data.
-//
-// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
-// Bounds checks must be performed before calling this function, preferably
-// by calling upb_EpsCopyInputStream_IsDone().
-UPB_INLINE const char* upb_WireReader_ReadSize(const char* ptr, int* size) {
-  uint64_t size64;
-  ptr = upb_WireReader_ReadVarint(ptr, &size64);
-  if (!ptr || size64 >= INT32_MAX) return NULL;
-  *size = size64;
-  return ptr;
-}
-
-// Reads a fixed32 field, performing byte swapping if necessary.
-//
-// REQUIRES: there must be at least 4 bytes of data available at `ptr`.
-// Bounds checks must be performed before calling this function, preferably
-// by calling upb_EpsCopyInputStream_IsDone().
-UPB_INLINE const char* upb_WireReader_ReadFixed32(const char* ptr, void* val) {
-  uint32_t uval;
-  memcpy(&uval, ptr, 4);
-  uval = upb_BigEndian32(uval);
-  memcpy(val, &uval, 4);
-  return ptr + 4;
-}
-
-// Reads a fixed64 field, performing byte swapping if necessary.
-//
-// REQUIRES: there must be at least 4 bytes of data available at `ptr`.
-// Bounds checks must be performed before calling this function, preferably
-// by calling upb_EpsCopyInputStream_IsDone().
-UPB_INLINE const char* upb_WireReader_ReadFixed64(const char* ptr, void* val) {
-  uint64_t uval;
-  memcpy(&uval, ptr, 8);
-  uval = upb_BigEndian64(uval);
-  memcpy(val, &uval, 8);
-  return ptr + 8;
-}
-
-const char* UPB_PRIVATE(_upb_WireReader_SkipGroup)(
-    const char* ptr, uint32_t tag, int depth_limit,
-    upb_EpsCopyInputStream* stream);
-
-// Skips data for a group, returning a pointer past the end of the group, or
-// NULL if there was an error parsing the group.  The `tag` argument should be
-// the start group tag that begins the group.  The `depth_limit` argument
-// indicates how many levels of recursion the group is allowed to have before
-// reporting a parse error (this limit exists to protect against stack
-// overflow).
-//
-// TODO: evaluate how the depth_limit should be specified. Do users need
-// control over this?
-UPB_INLINE const char* upb_WireReader_SkipGroup(
-    const char* ptr, uint32_t tag, upb_EpsCopyInputStream* stream) {
-  return UPB_PRIVATE(_upb_WireReader_SkipGroup)(ptr, tag, 100, stream);
-}
-
-UPB_INLINE const char* _upb_WireReader_SkipValue(
-    const char* ptr, uint32_t tag, int depth_limit,
-    upb_EpsCopyInputStream* stream) {
-  switch (upb_WireReader_GetWireType(tag)) {
-    case kUpb_WireType_Varint:
-      return upb_WireReader_SkipVarint(ptr);
-    case kUpb_WireType_32Bit:
-      return ptr + 4;
-    case kUpb_WireType_64Bit:
-      return ptr + 8;
-    case kUpb_WireType_Delimited: {
-      int size;
-      ptr = upb_WireReader_ReadSize(ptr, &size);
-      if (!ptr) return NULL;
-      ptr += size;
-      return ptr;
-    }
-    case kUpb_WireType_StartGroup:
-      return UPB_PRIVATE(_upb_WireReader_SkipGroup)(ptr, tag, depth_limit,
-                                                    stream);
-    case kUpb_WireType_EndGroup:
-      return NULL;  // Should be handled before now.
-    default:
-      return NULL;  // Unknown wire type.
-  }
-}
-
-// Skips data for a wire value of any type, returning a pointer past the end of
-// the data, or NULL if there was an error parsing the group. The `tag` argument
-// should be the tag that was just parsed. The `depth_limit` argument indicates
-// how many levels of recursion a group is allowed to have before reporting a
-// parse error (this limit exists to protect against stack overflow).
-//
-// REQUIRES: there must be at least 10 bytes of data available at `ptr`.
-// Bounds checks must be performed before calling this function, preferably
-// by calling upb_EpsCopyInputStream_IsDone().
-//
-// TODO: evaluate how the depth_limit should be specified. Do users need
-// control over this?
-UPB_INLINE const char* upb_WireReader_SkipValue(
-    const char* ptr, uint32_t tag, upb_EpsCopyInputStream* stream) {
-  return _upb_WireReader_SkipValue(ptr, tag, 100, stream);
-}
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif  // UPB_WIRE_READER_H_
 
 #ifndef UPB_LEX_STRTOD_H_
 #define UPB_LEX_STRTOD_H_
@@ -15351,6 +15350,7 @@ upb_MethodDef* _upb_MethodDefs_New(upb_DefBuilder* ctx, int n,
 
 #undef UPB_SIZE
 #undef UPB_PTR_AT
+#undef UPB_SIZEOF_FLEX
 #undef UPB_MAPTYPE_STRING
 #undef UPB_EXPORT
 #undef UPB_INLINE
