@@ -2323,7 +2323,7 @@ void _upb_Message_DiscardUnknown_shallow(struct upb_Message* msg);
 // The data is copied into the message instance.
 bool UPB_PRIVATE(_upb_Message_AddUnknown)(struct upb_Message* msg,
                                           const char* data, size_t len,
-                                          upb_Arena* arena);
+                                          upb_Arena* arena, bool alias);
 
 // Adds unknown data (serialized protobuf data) to the given message.
 // The data is copied into the message instance. Data when concatenated together
@@ -4314,6 +4314,19 @@ UPB_API_INLINE const upb_Array* upb_Message_GetExtensionArray(
   return ret;
 }
 
+UPB_API_INLINE upb_Array* upb_Message_GetExtensionMutableArray(
+    struct upb_Message* msg, const upb_MiniTableExtension* e) {
+  UPB_ASSERT(!upb_Message_IsFrozen(msg));
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(&e->UPB_PRIVATE(field)) ==
+             kUpb_FieldRep_NativePointer);
+  UPB_ASSUME(upb_MiniTableField_IsArray(&e->UPB_PRIVATE(field)));
+  UPB_ASSUME(e->UPB_PRIVATE(field).presence == 0);
+  upb_Array* ret;
+  upb_Array* default_val = NULL;
+  _upb_Message_GetExtensionField(msg, e, &default_val, &ret);
+  return ret;
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
@@ -4654,6 +4667,9 @@ UPB_API_INLINE upb_Message* upb_Message_GetExtensionMessage(
 
 UPB_API_INLINE const upb_Array* upb_Message_GetExtensionArray(
     const upb_Message* msg, const upb_MiniTableExtension* f);
+
+UPB_API_INLINE upb_Array* upb_Message_GetExtensionMutableArray(
+    upb_Message* msg, const upb_MiniTableExtension* f);
 
 // Extension Setters ///////////////////////////////////////////////////////////
 
