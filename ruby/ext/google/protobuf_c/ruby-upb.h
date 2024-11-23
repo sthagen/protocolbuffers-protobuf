@@ -65,10 +65,10 @@ Error, UINTPTR_MAX is undefined
 // overall - in that case, it can overlap with the trailing padding of the rest
 // of the struct, and a naive sizeof(base) + sizeof(flex) * count calculation
 // will not take into account that overlap, and allocate more than is required.
-#define UPB_SIZEOF_FLEX(type, member, count) \
-  (UPB_MAX(sizeof(type),                     \
-           (offsetof(type, member) +         \
-            count * (offsetof(type, member[1]) - offsetof(type, member[0])))))
+#define UPB_SIZEOF_FLEX(type, member, count)                                \
+  (UPB_MAX(sizeof(type),                                                    \
+           (offsetof(type, member) + (count) * (offsetof(type, member[1]) - \
+                                                offsetof(type, member[0])))))
 
 #define UPB_MAPTYPE_STRING 0
 
@@ -2610,8 +2610,11 @@ bool UPB_PRIVATE(_upb_Message_AddUnknownV)(struct upb_Message* msg,
                                            upb_Arena* arena,
                                            upb_StringView data[], size_t count);
 
-bool UPB_PRIVATE(_upb_Message_Realloc)(struct upb_Message* msg, size_t need,
-                                       upb_Arena* arena);
+// Ensure at least `need` unused bytes are available for unknown fields or
+// extensions. Returns false if a reallocation is needed to satisfy the request,
+// and fails.
+bool UPB_PRIVATE(_upb_Message_EnsureAvailable)(struct upb_Message* msg,
+                                               size_t need, upb_Arena* arena);
 
 #define kUpb_Message_UnknownBegin 0
 #define kUpb_Message_ExtensionBegin 0
