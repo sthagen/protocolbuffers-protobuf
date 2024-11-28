@@ -49,15 +49,17 @@ typedef enum {
   kUpb_LayoutItemType_Max = kUpb_LayoutItemType_Field,
 } upb_LayoutItemType;
 
-#define kUpb_LayoutItem_IndexSentinel ((uint16_t) - 1)
+#define kUpb_LayoutItem_IndexSentinel ((uint16_t)-1)
 
 typedef struct {
   // Index of the corresponding field.  When this is a oneof field, the field's
   // offset will be the index of the next field in a linked list.
   uint16_t field_index;
   uint16_t offset;
-  upb_FieldRep rep;
-  upb_LayoutItemType type;
+  // These two enums are stored in bytes to avoid trailing padding while
+  // preserving two-byte alignment.
+  uint8_t /* upb_FieldRep*/ rep;
+  uint8_t /* upb_LayoutItemType*/ type;
 } upb_LayoutItem;
 
 typedef struct {
@@ -742,7 +744,7 @@ static upb_MiniTable* upb_MtDecoder_DoBuildMiniTableWithBuf(
   decoder->table->UPB_PRIVATE(dense_below) = 0;
   decoder->table->UPB_PRIVATE(table_mask) = -1;
   decoder->table->UPB_PRIVATE(required_count) = 0;
-#if UPB_TRACING_ENABLED
+#ifdef UPB_TRACING_ENABLED
   // MiniTables built from MiniDescriptors will not be able to vend the message
   // name unless it is explicitly set with upb_MiniTable_SetFullName().
   decoder->table->UPB_PRIVATE(full_name) = 0;

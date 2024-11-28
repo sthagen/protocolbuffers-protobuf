@@ -5038,15 +5038,17 @@ typedef enum {
   kUpb_LayoutItemType_Max = kUpb_LayoutItemType_Field,
 } upb_LayoutItemType;
 
-#define kUpb_LayoutItem_IndexSentinel ((uint16_t) - 1)
+#define kUpb_LayoutItem_IndexSentinel ((uint16_t)-1)
 
 typedef struct {
   // Index of the corresponding field.  When this is a oneof field, the field's
   // offset will be the index of the next field in a linked list.
   uint16_t field_index;
   uint16_t offset;
-  upb_FieldRep rep;
-  upb_LayoutItemType type;
+  // These two enums are stored in bytes to avoid trailing padding while
+  // preserving two-byte alignment.
+  uint8_t /* upb_FieldRep*/ rep;
+  uint8_t /* upb_LayoutItemType*/ type;
 } upb_LayoutItem;
 
 typedef struct {
@@ -5731,7 +5733,7 @@ static upb_MiniTable* upb_MtDecoder_DoBuildMiniTableWithBuf(
   decoder->table->UPB_PRIVATE(dense_below) = 0;
   decoder->table->UPB_PRIVATE(table_mask) = -1;
   decoder->table->UPB_PRIVATE(required_count) = 0;
-#if UPB_TRACING_ENABLED
+#ifdef UPB_TRACING_ENABLED
   // MiniTables built from MiniDescriptors will not be able to vend the message
   // name unless it is explicitly set with upb_MiniTable_SetFullName().
   decoder->table->UPB_PRIVATE(full_name) = 0;
@@ -6042,24 +6044,32 @@ upb_ExtensionRegistry* upb_ExtensionRegistry_New(upb_Arena* arena) {
   return r;
 }
 
-UPB_API bool upb_ExtensionRegistry_Add(upb_ExtensionRegistry* r,
-                                       const upb_MiniTableExtension* e) {
+UPB_API upb_ExtensionRegistryStatus upb_ExtensionRegistry_Add(
+    upb_ExtensionRegistry* r, const upb_MiniTableExtension* e) {
   char buf[EXTREG_KEY_SIZE];
   extreg_key(buf, e->UPB_PRIVATE(extendee), upb_MiniTableExtension_Number(e));
-  if (upb_strtable_lookup2(&r->exts, buf, EXTREG_KEY_SIZE, NULL)) return false;
-  return upb_strtable_insert(&r->exts, buf, EXTREG_KEY_SIZE,
-                             upb_value_constptr(e), r->arena);
+
+  if (upb_strtable_lookup2(&r->exts, buf, EXTREG_KEY_SIZE, NULL)) {
+    return kUpb_ExtensionRegistryStatus_DuplicateEntry;
+  }
+
+  if (!upb_strtable_insert(&r->exts, buf, EXTREG_KEY_SIZE,
+                           upb_value_constptr(e), r->arena)) {
+    return kUpb_ExtensionRegistryStatus_OutOfMemory;
+  }
+  return kUpb_ExtensionRegistryStatus_Ok;
 }
 
-bool upb_ExtensionRegistry_AddArray(upb_ExtensionRegistry* r,
-                                    const upb_MiniTableExtension** e,
-                                    size_t count) {
+upb_ExtensionRegistryStatus upb_ExtensionRegistry_AddArray(
+    upb_ExtensionRegistry* r, const upb_MiniTableExtension** e, size_t count) {
   const upb_MiniTableExtension** start = e;
   const upb_MiniTableExtension** end = UPB_PTRADD(e, count);
+  upb_ExtensionRegistryStatus status = kUpb_ExtensionRegistryStatus_Ok;
   for (; e < end; e++) {
-    if (!upb_ExtensionRegistry_Add(r, *e)) goto failure;
+    status = upb_ExtensionRegistry_Add(r, *e);
+    if (status != kUpb_ExtensionRegistryStatus_Ok) goto failure;
   }
-  return true;
+  return kUpb_ExtensionRegistryStatus_Ok;
 
 failure:
   // Back out the entries previously added.
@@ -6070,7 +6080,8 @@ failure:
                upb_MiniTableExtension_Number(ext));
     upb_strtable_remove2(&r->exts, buf, EXTREG_KEY_SIZE, NULL);
   }
-  return false;
+  UPB_ASSERT(status != kUpb_ExtensionRegistryStatus_Ok);
+  return status;
 }
 
 #ifdef UPB_LINKARR_DECLARE
@@ -6083,7 +6094,9 @@ bool upb_ExtensionRegistry_AddAllLinkedExtensions(upb_ExtensionRegistry* r) {
   for (const upb_MiniTableExtension* p = start; p < stop; p++) {
     // Windows can introduce zero padding, so we have to skip zeroes.
     if (upb_MiniTableExtension_Number(p) != 0) {
-      if (!upb_ExtensionRegistry_Add(r, p)) return false;
+      if (upb_ExtensionRegistry_Add(r, p) != kUpb_ExtensionRegistryStatus_Ok) {
+        return false;
+      }
     }
   }
   return true;
@@ -12471,7 +12484,7 @@ bool UPB_PRIVATE(_upb_Message_EnsureAvailable)(struct upb_Message* msg,
   return true;
 }
 
-#if UPB_TRACING_ENABLED
+#ifdef UPB_TRACING_ENABLED
 static void (*_message_trace_handler)(const upb_MiniTable*, const upb_Arena*);
 
 void upb_Message_LogNewMessage(const upb_MiniTable* m, const upb_Arena* arena) {
@@ -15423,9 +15436,16 @@ void _upb_FileDef_Create(upb_DefBuilder* ctx,
   }
 
   if (file->ext_count) {
-    bool ok = upb_ExtensionRegistry_AddArray(
+    upb_ExtensionRegistryStatus status = upb_ExtensionRegistry_AddArray(
         _upb_DefPool_ExtReg(ctx->symtab), file->ext_layouts, file->ext_count);
-    if (!ok) _upb_DefBuilder_OomErr(ctx);
+    if (status != kUpb_ExtensionRegistryStatus_Ok) {
+      if (status == kUpb_ExtensionRegistryStatus_OutOfMemory) {
+        _upb_DefBuilder_OomErr(ctx);
+      }
+
+      UPB_ASSERT(status == kUpb_ExtensionRegistryStatus_DuplicateEntry);
+      _upb_DefBuilder_Errf(ctx, "duplicate extension entry");
+    }
   }
 }
 
