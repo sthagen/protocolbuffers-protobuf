@@ -3998,8 +3998,13 @@ bool upb_Message_DeleteUnknown(upb_Message* msg, upb_StringView* data,
 }
 
 size_t upb_Message_ExtensionCount(const upb_Message* msg) {
-  size_t count;
-  UPB_PRIVATE(_upb_Message_Getexts)(msg, &count);
+  const upb_MiniTableExtension* e;
+  upb_MessageValue val;
+  size_t iter = kUpb_Message_ExtensionBegin;
+  size_t count = 0;
+  while (upb_Message_NextExtension(msg, &e, &val, &iter)) {
+    count++;
+  }
   return count;
 }
 
@@ -4179,19 +4184,17 @@ static bool _upb_Message_ExtensionsAreEqual(const upb_Message* msg1,
                                             const upb_Message* msg2,
                                             const upb_MiniTable* m,
                                             int options) {
-  // Must have identical extension counts.
-  if (upb_Message_ExtensionCount(msg1) != upb_Message_ExtensionCount(msg2)) {
-    return false;
-  }
-
   const upb_MiniTableExtension* e;
   upb_MessageValue val1;
 
   // Iterate over all extensions for msg1, and search msg2 for each extension.
+  size_t count1 = 0;
   size_t iter1 = kUpb_Message_ExtensionBegin;
   while (upb_Message_NextExtension(msg1, &e, &val1, &iter1)) {
     const upb_Extension* ext2 = UPB_PRIVATE(_upb_Message_Getext)(msg2, e);
     if (!ext2) return false;
+
+    count1++;
 
     const upb_MessageValue val2 = ext2->data;
     const upb_MiniTableField* f = &e->UPB_PRIVATE(field);
@@ -4216,6 +4219,11 @@ static bool _upb_Message_ExtensionsAreEqual(const upb_Message* msg1,
     }
     if (!eq) return false;
   }
+
+  // Must have identical extension counts (this catches the case where msg2
+  // has extensions that msg1 doesn't).
+  if (count1 != upb_Message_ExtensionCount(msg2)) return false;
+
   return true;
 }
 
@@ -5029,7 +5037,6 @@ upb_MiniTableEnum* upb_MiniTableEnum_Build(const char* data, size_t len,
 // 64 is the first hasbit that we currently use.
 #define kUpb_Reserved_Hasbits (kUpb_Reserved_Hasbytes * 8)
 
-// Note: we sort by this number when calculating layout order.
 typedef enum {
   kUpb_LayoutItemType_OneofCase,   // Oneof case.
   kUpb_LayoutItemType_OneofField,  // Oneof field data.
@@ -5044,7 +5051,6 @@ typedef struct {
   // Index of the corresponding field.  When this is a oneof field, the field's
   // offset will be the index of the next field in a linked list.
   uint16_t field_index;
-  uint16_t offset;
   // These two enums are stored in bytes to avoid trailing padding while
   // preserving two-byte alignment.
   uint8_t /* upb_FieldRep*/ rep;
@@ -5064,6 +5070,9 @@ typedef struct {
   upb_MiniTablePlatform platform;
   upb_LayoutItemVector vec;
   upb_Arena* arena;
+  // Initially tracks the count of each field rep type; then, during assignment,
+  // tracks the base offset for the next processed field of the given rep.
+  uint16_t rep_counts_offsets[kUpb_FieldRep_Max + 1];
 } upb_MtDecoder;
 
 // In each field's offset, we temporarily store a presence classifier:
@@ -5256,6 +5265,7 @@ static void upb_MtDecoder_PushItem(upb_MtDecoder* d, upb_LayoutItem item) {
     upb_MdDecoder_CheckOutOfMemory(&d->base, d->vec.data);
     d->vec.capacity = new_cap;
   }
+  d->rep_counts_offsets[item.rep]++;
   d->vec.data[d->vec.size++] = item;
 }
 
@@ -5502,29 +5512,7 @@ static void upb_MtDecoder_ParseMessage(upb_MtDecoder* d, const char* data,
   upb_MtDecoder_AllocateSubs(d, sub_counts);
 }
 
-static int upb_MtDecoder_CompareFields(const void* _a, const void* _b) {
-  const upb_LayoutItem* a = _a;
-  const upb_LayoutItem* b = _b;
-  // Currently we just sort by:
-  //  1. rep (smallest fields first)
-  //  2. type (oneof cases first)
-  //  2. field_index (smallest numbers first)
-  // The main goal of this is to reduce space lost to padding.
-  // Later we may have more subtle reasons to prefer a different ordering.
-  const int rep_bits = upb_Log2Ceiling(kUpb_FieldRep_Max + 1);
-  const int type_bits = upb_Log2Ceiling(kUpb_LayoutItemType_Max + 1);
-  const int idx_bits = (sizeof(a->field_index) * 8);
-  UPB_ASSERT(idx_bits + rep_bits + type_bits < 32);
-#define UPB_COMBINE(rep, ty, idx) \
-  (((((rep) << type_bits) | (ty)) << idx_bits) | (idx))
-  uint32_t a_packed = UPB_COMBINE(a->rep, a->type, a->field_index);
-  uint32_t b_packed = UPB_COMBINE(b->rep, b->type, b->field_index);
-  UPB_ASSERT(a_packed != b_packed);
-#undef UPB_COMBINE
-  return a_packed < b_packed ? -1 : 1;
-}
-
-static bool upb_MtDecoder_SortLayoutItems(upb_MtDecoder* d) {
+static void upb_MtDecoder_CalculateAlignments(upb_MtDecoder* d) {
   // Add items for all non-oneof fields (oneofs were already added).
   int n = d->table->UPB_PRIVATE(field_count);
   for (int i = 0; i < n; i++) {
@@ -5536,12 +5524,33 @@ static bool upb_MtDecoder_SortLayoutItems(upb_MtDecoder* d) {
     upb_MtDecoder_PushItem(d, item);
   }
 
-  if (d->vec.size) {
-    qsort(d->vec.data, d->vec.size, sizeof(*d->vec.data),
-          upb_MtDecoder_CompareFields);
+  // Reserve properly aligned space for each type of field representation
+  // present in this message. When we iterate over the fields, they will obtain
+  // their offset from within the region matching their alignment requirements.
+  size_t base = d->table->UPB_PRIVATE(size);
+  // Start with the lowest alignment requirement, going up, because:
+  // 1. If there are presence bits, we won't be aligned to start, but adding
+  //    some lower-alignment fields may get us closer without wasting space to
+  //    padding.
+  // 2. The allocator enforces 8 byte alignment, so moving intermediate padding
+  //    to trailing padding doesn't save us anything.
+  for (upb_FieldRep rep = kUpb_FieldRep_1Byte; rep <= kUpb_FieldRep_Max;
+       rep++) {
+    uint16_t count = d->rep_counts_offsets[rep];
+    if (count) {
+      base = UPB_ALIGN_UP(base, upb_MtDecoder_AlignOfRep(rep, d->platform));
+      // This entry now tracks the base offset for this field representation
+      // type, instead of the count
+      d->rep_counts_offsets[rep] = base;
+      base += upb_MtDecoder_SizeOfRep(rep, d->platform) * count;
+    }
   }
-
-  return true;
+  static const size_t max = UINT16_MAX;
+  if (base > max) {
+    upb_MdDecoder_ErrorJmp(
+        &d->base, "Message size exceeded maximum size of %zu bytes", max);
+  }
+  d->table->UPB_PRIVATE(size) = (uint16_t)base;
 }
 
 static size_t upb_MiniTable_DivideRoundUp(size_t n, size_t d) {
@@ -5584,33 +5593,22 @@ static void upb_MtDecoder_AssignHasbits(upb_MtDecoder* d) {
 
 static size_t upb_MtDecoder_Place(upb_MtDecoder* d, upb_FieldRep rep) {
   size_t size = upb_MtDecoder_SizeOfRep(rep, d->platform);
-  size_t align = upb_MtDecoder_AlignOfRep(rep, d->platform);
-  size_t ret = UPB_ALIGN_UP(d->table->UPB_PRIVATE(size), align);
-  static const size_t max = UINT16_MAX;
-  size_t new_size = ret + size;
-  if (new_size > max) {
-    upb_MdDecoder_ErrorJmp(
-        &d->base, "Message size exceeded maximum size of %zu bytes", max);
-  }
-  d->table->UPB_PRIVATE(size) = new_size;
-  return ret;
+  size_t offset = d->rep_counts_offsets[rep];
+  d->rep_counts_offsets[rep] += size;
+  return offset;
 }
 
 static void upb_MtDecoder_AssignOffsets(upb_MtDecoder* d) {
   upb_LayoutItem* end = UPB_PTRADD(d->vec.data, d->vec.size);
-
-  // Compute offsets.
-  for (upb_LayoutItem* item = d->vec.data; item < end; item++) {
-    item->offset = upb_MtDecoder_Place(d, item->rep);
-  }
 
   // Assign oneof case offsets.  We must do these first, since assigning
   // actual offsets will overwrite the links of the linked list.
   for (upb_LayoutItem* item = d->vec.data; item < end; item++) {
     if (item->type != kUpb_LayoutItemType_OneofCase) continue;
     upb_MiniTableField* f = &d->fields[item->field_index];
+    uint16_t offset = upb_MtDecoder_Place(d, item->rep);
     while (true) {
-      f->presence = ~item->offset;
+      f->presence = ~offset;
       if (f->UPB_PRIVATE(offset) == kUpb_LayoutItem_IndexSentinel) break;
       UPB_ASSERT(f->UPB_PRIVATE(offset) - kOneofBase <
                  d->table->UPB_PRIVATE(field_count));
@@ -5620,18 +5618,20 @@ static void upb_MtDecoder_AssignOffsets(upb_MtDecoder* d) {
 
   // Assign offsets.
   for (upb_LayoutItem* item = d->vec.data; item < end; item++) {
+    if (item->type == kUpb_LayoutItemType_OneofCase) continue;
     upb_MiniTableField* f = &d->fields[item->field_index];
+    uint16_t offset = upb_MtDecoder_Place(d, item->rep);
     switch (item->type) {
       case kUpb_LayoutItemType_OneofField:
         while (true) {
           uint16_t next_offset = f->UPB_PRIVATE(offset);
-          f->UPB_PRIVATE(offset) = item->offset;
+          f->UPB_PRIVATE(offset) = offset;
           if (next_offset == kUpb_LayoutItem_IndexSentinel) break;
           f = &d->fields[next_offset - kOneofBase];
         }
         break;
       case kUpb_LayoutItemType_Field:
-        f->UPB_PRIVATE(offset) = item->offset;
+        f->UPB_PRIVATE(offset) = offset;
         break;
       default:
         break;
@@ -5752,7 +5752,7 @@ static upb_MiniTable* upb_MtDecoder_DoBuildMiniTableWithBuf(
     case kUpb_EncodedVersion_MessageV1:
       upb_MtDecoder_ParseMessage(decoder, data, len);
       upb_MtDecoder_AssignHasbits(decoder);
-      upb_MtDecoder_SortLayoutItems(decoder);
+      upb_MtDecoder_CalculateAlignments(decoder);
       upb_MtDecoder_AssignOffsets(decoder);
       break;
 
