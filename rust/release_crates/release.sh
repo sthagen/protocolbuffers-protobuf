@@ -1,9 +1,5 @@
 #!/bin/bash
-# Runs tests that are defined in the protobuf crate using Cargo. This also
-# performs a publish dry-run, which catches some but not all issues that
-# would prevent the crates from being published.
-# This is not a hermetic task because Cargo will fetch the needed
-# dependencies from crates.io
+# A script that publishes the protobuf crates to crates.io.
 
 # --- begin runfiles.bash initialization ---
 # Copy-pasted from Bazel's Bash runfiles library (tools/bash/runfiles/runfiles.bash).
@@ -27,6 +23,8 @@ else
     exit 1
 fi
 # --- end runfiles.bash initialization ---
+
+read -p 'Enter cratesio auth token: ' AUTH_TOKEN
 
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf -- "$TMP_DIR"' EXIT
@@ -59,17 +57,13 @@ echo "Expanding protobuf_example crate tar"
 tar -xvf $EXAMPLE_TAR -C $EXAMPLE_ROOT 
 
 cd $CRATE_ROOT
-# Run all tests except doctests
-CARGO_HOME=$CARGO_HOME cargo test --lib --bins --tests
-CARGO_HOME=$CARGO_HOME cargo publish --dry-run
+CARGO_HOME=$CARGO_HOME CARGO_REGISTRY_TOKEN=$AUTH_TOKEN cargo publish
 
 cd $CODEGEN_ROOT
-CARGO_HOME=$CARGO_HOME cargo test --lib --bins --tests
-CARGO_HOME=$CARGO_HOME cargo publish --dry-run
+CARGO_HOME=$CARGO_HOME CARGO_REGISTRY_TOKEN=$AUTH_TOKEN cargo publish
 
-cd $EXAMPLE_ROOT
-CARGO_HOME=$CARGO_HOME cargo test
-# TODO: Cannot enable this dry-run yet because it checks that the versions of
-# its dependencies are published on crates.io, which they are definitely not
-# in this case.
-# CARGO_HOME=$CARGO_HOME cargo publish --dry-run
+# The example crate cannot be published due to it having a build.rs that
+# modifies files outside of the OUT_DIR.
+#cd $EXAMPLE_ROOT
+# CARGO_HOME=$CARGO_HOME CARGO_REGISTRY_TOKEN=$AUTH_TOKEN cargo publish
+
