@@ -1387,6 +1387,116 @@ TEST_P(MapTestWithParams, SwapMapsFieldsViaReflection) {
   reflection_tester.ExpectMapFieldsSetViaReflectionIterator(rhs);
 }
 
+class MapTestCodegenOrDynamic : public testing::TestWithParam<bool> {};
+
+INSTANTIATE_TEST_SUITE_P(MapTestCodegenOrDynamicSuite, MapTestCodegenOrDynamic,
+                         testing::Bool());
+
+TEST_F(MapImplTest, CopyConstructMapSyncsRepeatedFieldRep) {
+  TestMap msg;
+
+  const auto* reflection = msg.GetReflection();
+  const auto* field = msg.GetDescriptor()->FindFieldByName("map_int32_int32");
+
+  {
+    auto* sub = reflection->AddMessage(&msg, field);
+    sub->GetReflection()->SetInt32(sub, sub->GetDescriptor()->map_key(), 10);
+    sub->GetReflection()->SetInt32(sub, sub->GetDescriptor()->map_value(), 100);
+  }
+
+  TestMap copy = msg;
+  EXPECT_THAT(msg,
+              EqualsProto(R"pb(map_int32_int32 { key: 10 value: 100 })pb"));
+  EXPECT_THAT(copy,
+              EqualsProto(R"pb(map_int32_int32 { key: 10 value: 100 })pb"));
+}
+
+TEST_F(MapImplTest, CopyAssignMapSyncsRepeatedFieldRep) {
+  TestMap msg;
+
+  const auto* reflection = msg.GetReflection();
+  const auto* field = msg.GetDescriptor()->FindFieldByName("map_int32_int32");
+
+  {
+    auto* sub = reflection->AddMessage(&msg, field);
+    sub->GetReflection()->SetInt32(sub, sub->GetDescriptor()->map_key(), 10);
+    sub->GetReflection()->SetInt32(sub, sub->GetDescriptor()->map_value(), 100);
+  }
+
+  TestMap dst;
+  dst = msg;
+  EXPECT_THAT(msg,
+              EqualsProto(R"pb(map_int32_int32 { key: 10 value: 100 })pb"));
+  EXPECT_THAT(dst,
+              EqualsProto(R"pb(map_int32_int32 { key: 10 value: 100 })pb"));
+}
+
+TEST_F(MapImplTest, MergeMapSyncsRepeatedFieldRep) {
+  TestMap msg;
+
+  const auto* reflection = msg.GetReflection();
+  const auto* field = msg.GetDescriptor()->FindFieldByName("map_int32_int32");
+
+  {
+    auto* sub = reflection->AddMessage(&msg, field);
+    sub->GetReflection()->SetInt32(sub, sub->GetDescriptor()->map_key(), 10);
+    sub->GetReflection()->SetInt32(sub, sub->GetDescriptor()->map_value(), 100);
+  }
+
+  TestMap dst;
+  {
+    auto* sub = reflection->AddMessage(&dst, field);
+    // A duplicate key
+    sub->GetReflection()->SetInt32(sub, sub->GetDescriptor()->map_key(), 10);
+    sub->GetReflection()->SetInt32(sub, sub->GetDescriptor()->map_value(), 200);
+    sub = reflection->AddMessage(&dst, field);
+    // A unique key
+    sub->GetReflection()->SetInt32(sub, sub->GetDescriptor()->map_key(), 11);
+    sub->GetReflection()->SetInt32(sub, sub->GetDescriptor()->map_value(), 17);
+  }
+  dst.MergeFrom(msg);
+  EXPECT_THAT(msg,
+              EqualsProto(R"pb(map_int32_int32 { key: 10 value: 100 })pb"));
+  EXPECT_THAT(dst, EqualsProto(R"pb(
+                map_int32_int32 { key: 10 value: 100 }
+                map_int32_int32 { key: 11 value: 17 }
+              )pb"));
+}
+
+TEST_P(MapTestCodegenOrDynamic, LookupMapValueSyncsRepeatedFieldRep) {
+  auto* descriptor = UNITTEST::TestMap::descriptor();
+  bool use_dynamic = GetParam();
+
+  DynamicMessageFactory factory;
+  std::unique_ptr<Message> dyn_message(
+      factory.GetPrototype(descriptor)->New());
+  TestMap gen_message;
+  Message* msg = use_dynamic ? dyn_message.get() : &gen_message;
+
+  const auto* reflection = msg->GetReflection();
+  const auto* field = msg->GetDescriptor()->FindFieldByName("map_int32_int32");
+
+  MapKey map_key;
+  map_key.SetInt32Value(10);
+  auto res =
+      MapReflectionTester::LookupMapValue(*reflection, *msg, *field, map_key);
+  // Check that we don't have it yet.
+  ASSERT_FALSE(res.has_value());
+
+  {
+    auto* sub = reflection->AddMessage(msg, field);
+    sub->GetReflection()->SetInt32(sub, sub->GetDescriptor()->map_key(), 10);
+    sub->GetReflection()->SetInt32(sub, sub->GetDescriptor()->map_value(), 100);
+  }
+
+
+  res = MapReflectionTester::LookupMapValue(*reflection, *msg, *field, map_key);
+  // If this fails, LookupMapValue might have failed to sync from the repeated
+  // field.
+  ASSERT_TRUE(res.has_value());
+  EXPECT_EQ(res->GetInt32Value(), 100);
+}
+
 TEST_F(MapImplTest, SpaceUsed) {
   constexpr size_t kMinCap = 16 / sizeof(void*);
 
