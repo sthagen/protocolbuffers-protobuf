@@ -979,6 +979,20 @@ class TextFormatParserTests(TextFormatBase):
          r'have multiple "optional_int32" fields.'), text_format.Parse, text,
         message)
 
+  def testParseDuplicateNegativeZero(self, message_module):
+    message = message_module.TestAllTypes()
+    text = 'optional_double: -0.0 optional_double: 3'
+    self.assertRaisesRegex(
+        text_format.ParseError,
+        (
+            r'1:40 : Message type "\w+.TestAllTypes" should not '
+            r'have multiple "optional_double" fields.'
+        ),
+        text_format.Parse,
+        text,
+        message,
+    )
+
   def testParseExistingScalarInMessage(self, message_module):
     message = message_module.TestAllTypes(optional_int32=42)
     text = 'optional_int32: 67'
@@ -2267,6 +2281,15 @@ class TokenizerTest(_parameterized.TestCase):
       dict(
           testcase_name='_float_suffix',
           text='ID13: 1.23456f ',
+          expected=[
+              (text_format.Tokenizer.ConsumeIdentifier, 'ID13'),
+              _CreateConsumeLiteralToken(':'),
+              (text_format.Tokenizer.ConsumeFloat, 1.23456),
+          ],
+      ),
+      dict(
+          testcase_name='_float_capital_suffix',
+          text='ID13: 1.23456F ',
           expected=[
               (text_format.Tokenizer.ConsumeIdentifier, 'ID13'),
               _CreateConsumeLiteralToken(':'),
