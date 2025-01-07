@@ -221,8 +221,18 @@ Error, UINTPTR_MAX is undefined
 #define UPB_LONGJMP(buf, val) longjmp(buf, val)
 #endif
 
-#ifdef __GNUC__
+#if ((__STDC_VERSION__ >= 201112L) && !defined(__STDC_NO_ATOMICS__))
 #define UPB_USE_C11_ATOMICS
+#elif defined(__has_extension)
+#if __has_extension(c_atomic)
+#define UPB_USE_C11_ATOMICS
+#endif
+#elif defined(__GNUC__)
+// GCC supported atomics as an extension before it supported __has_extension
+#define UPB_USE_C11_ATOMICS
+#endif
+
+#if defined(UPB_USE_C11_ATOMICS)
 #define UPB_ATOMIC(T) _Atomic(T)
 #else
 #define UPB_ATOMIC(T) T
@@ -311,7 +321,7 @@ Error, UINTPTR_MAX is undefined
  */
 
 /* Due to preprocessor limitations, the conditional logic for setting
- * UPN_CLANG_ASAN below cannot be consolidated into a portable one-liner.
+ * UPB_CLANG_ASAN below cannot be consolidated into a portable one-liner.
  * See https://gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fattribute.html.
  */
 #if defined(__has_feature)
@@ -320,8 +330,14 @@ Error, UINTPTR_MAX is undefined
 #else
 #define UPB_CLANG_ASAN 0
 #endif
+#if __has_feature(thread_sanitizer)
+#define UPB_CLANG_TSAN 1
+#else
+#define UPB_CLANG_TSAN 0
+#endif
 #else
 #define UPB_CLANG_ASAN 0
+#define UPB_CLANG_TSAN 0
 #endif
 
 #if defined(__SANITIZE_ADDRESS__) || UPB_CLANG_ASAN
@@ -346,6 +362,21 @@ void __asan_unpoison_memory_region(void const volatile *addr, size_t size);
   ((void)(addr), (void)(size))
 #define UPB_UNPOISON_MEMORY_REGION(addr, size) \
   ((void)(addr), (void)(size))
+#endif
+
+#if defined(__SANITIZE_THREAD__) || UPB_CLANG_TSAN
+#define UPB_TSAN_PUBLISHED_MEMBER uintptr_t upb_tsan_safely_published;
+#define UPB_TSAN_INIT_PUBLISHED(ptr) (ptr)->upb_tsan_safely_published = 0x5AFE
+#define UPB_TSAN_CHECK_PUBLISHED(ptr) \
+  UPB_ASSERT((ptr)->upb_tsan_safely_published == 0x5AFE)
+#define UPB_TSAN_PUBLISH 1
+#else
+#define UPB_TSAN_PUBLISHED_MEMBER
+#define UPB_TSAN_INIT_PUBLISHED(ptr)
+#define UPB_TSAN_CHECK_PUBLISHED(ptr) \
+  do {                                \
+  } while (false && (ptr))
+#define UPB_TSAN_PUBLISH 0
 #endif
 
 /* Disable proto2 arena behavior (TEMPORARY) **********************************/

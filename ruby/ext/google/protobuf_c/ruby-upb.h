@@ -218,8 +218,18 @@ Error, UINTPTR_MAX is undefined
 #define UPB_LONGJMP(buf, val) longjmp(buf, val)
 #endif
 
-#ifdef __GNUC__
+#if ((__STDC_VERSION__ >= 201112L) && !defined(__STDC_NO_ATOMICS__))
 #define UPB_USE_C11_ATOMICS
+#elif defined(__has_extension)
+#if __has_extension(c_atomic)
+#define UPB_USE_C11_ATOMICS
+#endif
+#elif defined(__GNUC__)
+// GCC supported atomics as an extension before it supported __has_extension
+#define UPB_USE_C11_ATOMICS
+#endif
+
+#if defined(UPB_USE_C11_ATOMICS)
 #define UPB_ATOMIC(T) _Atomic(T)
 #else
 #define UPB_ATOMIC(T) T
@@ -308,7 +318,7 @@ Error, UINTPTR_MAX is undefined
  */
 
 /* Due to preprocessor limitations, the conditional logic for setting
- * UPN_CLANG_ASAN below cannot be consolidated into a portable one-liner.
+ * UPB_CLANG_ASAN below cannot be consolidated into a portable one-liner.
  * See https://gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fattribute.html.
  */
 #if defined(__has_feature)
@@ -317,8 +327,14 @@ Error, UINTPTR_MAX is undefined
 #else
 #define UPB_CLANG_ASAN 0
 #endif
+#if __has_feature(thread_sanitizer)
+#define UPB_CLANG_TSAN 1
+#else
+#define UPB_CLANG_TSAN 0
+#endif
 #else
 #define UPB_CLANG_ASAN 0
+#define UPB_CLANG_TSAN 0
 #endif
 
 #if defined(__SANITIZE_ADDRESS__) || UPB_CLANG_ASAN
@@ -343,6 +359,21 @@ void __asan_unpoison_memory_region(void const volatile *addr, size_t size);
   ((void)(addr), (void)(size))
 #define UPB_UNPOISON_MEMORY_REGION(addr, size) \
   ((void)(addr), (void)(size))
+#endif
+
+#if defined(__SANITIZE_THREAD__) || UPB_CLANG_TSAN
+#define UPB_TSAN_PUBLISHED_MEMBER uintptr_t upb_tsan_safely_published;
+#define UPB_TSAN_INIT_PUBLISHED(ptr) (ptr)->upb_tsan_safely_published = 0x5AFE
+#define UPB_TSAN_CHECK_PUBLISHED(ptr) \
+  UPB_ASSERT((ptr)->upb_tsan_safely_published == 0x5AFE)
+#define UPB_TSAN_PUBLISH 1
+#else
+#define UPB_TSAN_PUBLISHED_MEMBER
+#define UPB_TSAN_INIT_PUBLISHED(ptr)
+#define UPB_TSAN_CHECK_PUBLISHED(ptr) \
+  do {                                \
+  } while (false && (ptr))
+#define UPB_TSAN_PUBLISH 0
 #endif
 
 /* Disable proto2 arena behavior (TEMPORARY) **********************************/
@@ -518,7 +549,8 @@ void upb_Status_VAppendErrorFormat(upb_Status* status, const char* fmt,
  * to be freed.  However the Arena does allow users to register cleanup
  * functions that will run when the arena is destroyed.
  *
- * A upb_Arena is *not* thread-safe.
+ * A upb_Arena is *not* thread-safe, although some functions related to its
+ * managing its lifetime are, and are documented as such.
  *
  * You could write a thread-safe arena allocator that satisfies the
  * upb_alloc interface, but it would not be as efficient for the
@@ -615,7 +647,7 @@ UPB_INLINE void upb_gfree(void* ptr) { upb_free(&upb_alloc_global, ptr); }
 //
 // We need this because the decoder inlines a upb_Arena for performance but
 // the full struct is not visible outside of arena.c. Yes, I know, it's awful.
-#define UPB_ARENA_SIZE_HACK 9
+#define UPB_ARENA_SIZE_HACK (9 + UPB_TSAN_PUBLISH)
 
 // LINT.IfChange(upb_Arena)
 
@@ -724,16 +756,27 @@ UPB_API void upb_Arena_Free(upb_Arena* a);
 // freed.
 UPB_API void upb_Arena_SetAllocCleanup(upb_Arena* a,
                                        upb_AllocCleanupFunc* func);
+
+// Fuses the lifetime of two arenas, such that no arenas that have been
+// transitively fused together will be freed until all of them have reached a
+// zero refcount. This operation is safe to use concurrently from multiple
+// threads.
 UPB_API bool upb_Arena_Fuse(const upb_Arena* a, const upb_Arena* b);
+
+// This operation is safe to use concurrently from multiple threads.
 UPB_API bool upb_Arena_IsFused(const upb_Arena* a, const upb_Arena* b);
 
 // Returns the upb_alloc used by the arena.
 UPB_API upb_alloc* upb_Arena_GetUpbAlloc(upb_Arena* a);
 
+// This operation is safe to use concurrently from multiple threads.
 bool upb_Arena_IncRefFor(const upb_Arena* a, const void* owner);
+// This operation is safe to use concurrently from multiple threads.
 void upb_Arena_DecRefFor(const upb_Arena* a, const void* owner);
 
+// This operation is safe to use concurrently from multiple threads.
 size_t upb_Arena_SpaceAllocated(upb_Arena* a, size_t* fused_count);
+// This operation is safe to use concurrently from multiple threads.
 uint32_t upb_Arena_DebugRefCount(upb_Arena* a);
 
 UPB_API_INLINE upb_Arena* upb_Arena_New(void) {
@@ -752,6 +795,7 @@ UPB_API_INLINE void* upb_Arena_Realloc(upb_Arena* a, void* ptr, size_t oldsize,
 //
 // This API is meant for experimentation only. It will likely be removed in
 // the future.
+// This operation is safe to use concurrently from multiple threads.
 void upb_Arena_SetMaxBlockSize(size_t max);
 
 // Shrinks the last alloc from arena.
@@ -15585,6 +15629,10 @@ upb_MethodDef* _upb_MethodDefs_New(upb_DefBuilder* ctx, int n,
 #undef UPB_ASAN
 #undef UPB_ASAN_GUARD_SIZE
 #undef UPB_CLANG_ASAN
+#undef UPB_TSAN_PUBLISHED_MEMBER
+#undef UPB_TSAN_INIT_PUBLISHED
+#undef UPB_TSAN_CHECK_PUBLISHED
+#undef UPB_TSAN_PUBLISH
 #undef UPB_TREAT_CLOSED_ENUMS_LIKE_OPEN
 #undef UPB_DEPRECATED
 #undef UPB_GNUC_MIN
