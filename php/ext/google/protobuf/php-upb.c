@@ -226,10 +226,14 @@ Error, UINTPTR_MAX is undefined
 #elif defined(__GNUC__)
 // GCC supported atomics as an extension before it supported __has_extension
 #define UPB_USE_C11_ATOMICS
+#elif defined(_MSC_VER)
+#define UPB_USE_MSC_ATOMICS
 #endif
 
 #if defined(UPB_USE_C11_ATOMICS)
 #define UPB_ATOMIC(T) _Atomic(T)
+#elif defined(UPB_USE_MSC_ATOMICS)
+#define UPB_ATOMIC(T) volatile T
 #else
 #define UPB_ATOMIC(T) T
 #endif
@@ -2954,17 +2958,17 @@ typedef struct upb_ArenaInternal {
   // == NULL at end of list.
   UPB_ATOMIC(struct upb_ArenaInternal*) next;
 
-  // The last element of the linked list. This is present only as an
-  // optimization, so that we do not have to iterate over all members for every
-  // fuse.  Only significant for an arena root. In other cases it is ignored.
-  // == self when no other list members.
-  UPB_ATOMIC(struct upb_ArenaInternal*) tail;
+  // If the low bit is set, is a pointer to the tail of the list (populated for
+  // roots, set to self for roots with no fused arenas). If the low bit is not
+  // set, is a pointer to the previous node in the list, such that
+  // a->previous_or_tail->next == a.
+  UPB_ATOMIC(uintptr_t) previous_or_tail;
 
   // Linked list of blocks to free/cleanup.
   upb_MemBlock* blocks;
 
   // Total space allocated in blocks, atomic only for SpaceAllocated
-  UPB_ATOMIC(size_t) space_allocated;
+  UPB_ATOMIC(uintptr_t) space_allocated;
 
   UPB_TSAN_PUBLISHED_MEMBER
 } upb_ArenaInternal;
@@ -3017,6 +3021,38 @@ static uintptr_t _upb_Arena_TaggedFromPointer(upb_ArenaInternal* ai) {
   uintptr_t parent_or_count = (uintptr_t)ai;
   UPB_ASSERT(_upb_Arena_IsTaggedPointer(parent_or_count));
   return parent_or_count;
+}
+
+static bool _upb_Arena_IsTaggedTail(uintptr_t previous_or_tail) {
+  return (previous_or_tail & 1) == 1;
+}
+
+static bool _upb_Arena_IsTaggedPrevious(uintptr_t previous_or_tail) {
+  return (previous_or_tail & 1) == 0;
+}
+
+static upb_ArenaInternal* _upb_Arena_TailFromTagged(
+    uintptr_t previous_or_tail) {
+  UPB_ASSERT(_upb_Arena_IsTaggedTail(previous_or_tail));
+  return (upb_ArenaInternal*)(previous_or_tail ^ 1);
+}
+
+static uintptr_t _upb_Arena_TaggedFromTail(upb_ArenaInternal* tail) {
+  uintptr_t previous_or_tail = (uintptr_t)tail | 1;
+  UPB_ASSERT(_upb_Arena_IsTaggedTail(previous_or_tail));
+  return previous_or_tail;
+}
+
+static upb_ArenaInternal* _upb_Arena_PreviousFromTagged(
+    uintptr_t previous_or_tail) {
+  UPB_ASSERT(_upb_Arena_IsTaggedPrevious(previous_or_tail));
+  return (upb_ArenaInternal*)previous_or_tail;
+}
+
+static uintptr_t _upb_Arena_TaggedFromPrevious(upb_ArenaInternal* ai) {
+  uintptr_t previous = (uintptr_t)ai;
+  UPB_ASSERT(_upb_Arena_IsTaggedPrevious(previous));
+  return previous;
 }
 
 static upb_alloc* _upb_ArenaInternal_BlockAlloc(upb_ArenaInternal* ai) {
@@ -3100,16 +3136,43 @@ static upb_ArenaRoot _upb_Arena_FindRoot(upb_ArenaInternal* ai) {
   return (upb_ArenaRoot){.root = ai, .tagged_count = poc};
 }
 
-size_t upb_Arena_SpaceAllocated(upb_Arena* arena, size_t* fused_count) {
-  upb_ArenaInternal* ai = _upb_Arena_FindRoot(upb_Arena_Internal(arena)).root;
-  size_t memsize = 0;
+uintptr_t upb_Arena_SpaceAllocated(const upb_Arena* arena,
+                                   size_t* fused_count) {
+  upb_ArenaInternal* ai = upb_Arena_Internal(arena);
+  uintptr_t memsize = 0;
   size_t local_fused_count = 0;
-
+  // Our root would get updated by any racing fuses before our target arena
+  // became reachable from the root via the linked list; in order to preserve
+  // monotonic output (any arena counted by a previous invocation is counted by
+  // this one), we instead iterate forwards and backwards so that we only see
+  // the results of completed fuses.
+  uintptr_t previous_or_tail =
+      upb_Atomic_Load(&ai->previous_or_tail, memory_order_acquire);
+  while (_upb_Arena_IsTaggedPrevious(previous_or_tail)) {
+    upb_ArenaInternal* previous =
+        _upb_Arena_PreviousFromTagged(previous_or_tail);
+    UPB_ASSERT(previous != ai);
+    UPB_TSAN_CHECK_PUBLISHED(previous);
+    // Unfortunate macro behavior; prior to C11 when using nonstandard atomics
+    // this returns a void* and can't be used with += without an intermediate
+    // conversion to an integer.
+    // Relaxed is safe - no subsequent reads depend this one
+    uintptr_t allocated =
+        upb_Atomic_Load(&previous->space_allocated, memory_order_relaxed);
+    memsize += allocated;
+    previous_or_tail =
+        upb_Atomic_Load(&previous->previous_or_tail, memory_order_acquire);
+    local_fused_count++;
+  }
   while (ai != NULL) {
     UPB_TSAN_CHECK_PUBLISHED(ai);
+    // Unfortunate macro behavior; prior to C11 when using nonstandard atomics
+    // this returns a void* and can't be used with += without an intermediate
+    // conversion to an integer.
     // Relaxed is safe - no subsequent reads depend this one
-    memsize += upb_Atomic_Load(&ai->space_allocated, memory_order_relaxed);
-
+    uintptr_t allocated =
+        upb_Atomic_Load(&ai->space_allocated, memory_order_relaxed);
+    memsize += allocated;
     ai = upb_Atomic_Load(&ai->next, memory_order_acquire);
     local_fused_count++;
   }
@@ -3118,16 +3181,9 @@ size_t upb_Arena_SpaceAllocated(upb_Arena* arena, size_t* fused_count) {
   return memsize;
 }
 
-uint32_t upb_Arena_DebugRefCount(upb_Arena* a) {
-  upb_ArenaInternal* ai = upb_Arena_Internal(a);
-  UPB_TSAN_CHECK_PUBLISHED(ai);
-  uintptr_t poc = upb_Atomic_Load(&ai->parent_or_count, memory_order_acquire);
-  while (_upb_Arena_IsTaggedPointer(poc)) {
-    ai = _upb_Arena_PointerFromTagged(poc);
-    UPB_TSAN_CHECK_PUBLISHED(ai);
-    poc = upb_Atomic_Load(&ai->parent_or_count, memory_order_acquire);
-  }
-  return _upb_Arena_RefCountFromTagged(poc);
+uint32_t upb_Arena_DebugRefCount(const upb_Arena* a) {
+  uintptr_t tagged = _upb_Arena_FindRoot(upb_Arena_Internal(a)).tagged_count;
+  return (uint32_t)_upb_Arena_RefCountFromTagged(tagged);
 }
 
 static void _upb_Arena_AddBlock(upb_Arena* a, void* ptr, size_t size) {
@@ -3175,7 +3231,8 @@ static bool _upb_Arena_AllocBlock(upb_Arena* a, size_t size) {
   // atomic fetch-add is slower than load/add/store on arm devices compiled
   // targetting pre-v8.1. Relaxed order is safe as nothing depends on order of
   // size allocated.
-  size_t old_space_allocated =
+
+  uintptr_t old_space_allocated =
       upb_Atomic_Load(&ai->space_allocated, memory_order_relaxed);
   upb_Atomic_Store(&ai->space_allocated, old_space_allocated + block_size,
                    memory_order_relaxed);
@@ -3206,7 +3263,8 @@ static upb_Arena* _upb_Arena_InitSlow(upb_alloc* alloc) {
   a->body.block_alloc = _upb_Arena_MakeBlockAlloc(alloc, 0);
   upb_Atomic_Init(&a->body.parent_or_count, _upb_Arena_TaggedFromRefcount(1));
   upb_Atomic_Init(&a->body.next, NULL);
-  upb_Atomic_Init(&a->body.tail, &a->body);
+  upb_Atomic_Init(&a->body.previous_or_tail,
+                  _upb_Arena_TaggedFromTail(&a->body));
   upb_Atomic_Init(&a->body.space_allocated, n);
   a->body.blocks = NULL;
   a->body.upb_alloc_cleanup = NULL;
@@ -3247,7 +3305,8 @@ upb_Arena* upb_Arena_Init(void* mem, size_t n, upb_alloc* alloc) {
 
   upb_Atomic_Init(&a->body.parent_or_count, _upb_Arena_TaggedFromRefcount(1));
   upb_Atomic_Init(&a->body.next, NULL);
-  upb_Atomic_Init(&a->body.tail, &a->body);
+  upb_Atomic_Init(&a->body.previous_or_tail,
+                  _upb_Arena_TaggedFromTail(&a->body));
   upb_Atomic_Init(&a->body.space_allocated, 0);
   a->body.blocks = NULL;
   a->body.upb_alloc_cleanup = NULL;
@@ -3325,16 +3384,20 @@ retry:
   goto retry;
 }
 
-// Thread safe.
 static void _upb_Arena_DoFuseArenaLists(upb_ArenaInternal* const parent,
                                         upb_ArenaInternal* child) {
   UPB_TSAN_CHECK_PUBLISHED(parent);
-  upb_ArenaInternal* parent_tail =
-      upb_Atomic_Load(&parent->tail, memory_order_acquire);
-
-  do {
-    UPB_TSAN_CHECK_PUBLISHED(parent_tail);
+  uintptr_t parent_previous_or_tail =
+      upb_Atomic_Load(&parent->previous_or_tail, memory_order_acquire);
+  upb_ArenaInternal* parent_tail = parent;
+  if (_upb_Arena_IsTaggedTail(parent_previous_or_tail)) {
     // Our tail might be stale, but it will always converge to the true tail.
+    parent_tail = _upb_Arena_TailFromTagged(parent_previous_or_tail);
+  }
+
+  // Link parent to child going forwards
+  while (true) {
+    UPB_TSAN_CHECK_PUBLISHED(parent_tail);
     upb_ArenaInternal* parent_tail_next =
         upb_Atomic_Load(&parent_tail->next, memory_order_acquire);
     while (parent_tail_next != NULL) {
@@ -3343,18 +3406,38 @@ static void _upb_Arena_DoFuseArenaLists(upb_ArenaInternal* const parent,
       parent_tail_next =
           upb_Atomic_Load(&parent_tail->next, memory_order_acquire);
     }
+    if (upb_Atomic_CompareExchangeWeak(&parent_tail->next, &parent_tail_next,
+                                       child, memory_order_release,
+                                       memory_order_acquire)) {
+      break;
+    }
+    if (parent_tail_next != NULL) {
+      parent_tail = parent_tail_next;
+    }
+  }
 
-    UPB_TSAN_CHECK_PUBLISHED(child);
-    upb_ArenaInternal* displaced =
-        upb_Atomic_Exchange(&parent_tail->next, child, memory_order_acq_rel);
-    parent_tail = upb_Atomic_Load(&child->tail, memory_order_acquire);
+  // Update parent's tail (may be stale).
+  uintptr_t child_previous_or_tail =
+      upb_Atomic_Load(&child->previous_or_tail, memory_order_acquire);
+  upb_ArenaInternal* new_parent_tail =
+      _upb_Arena_TailFromTagged(child_previous_or_tail);
+  UPB_TSAN_CHECK_PUBLISHED(new_parent_tail);
 
-    // If we displaced something that got installed racily, we can simply
-    // reinstall it on our new tail.
-    child = displaced;
-  } while (child != NULL);
+  // If another thread fused with us, don't overwrite their previous pointer
+  // with our tail. Relaxed order is fine here as we only inspect the tag bit
+  parent_previous_or_tail =
+      upb_Atomic_Load(&parent->previous_or_tail, memory_order_relaxed);
+  if (_upb_Arena_IsTaggedTail(parent_previous_or_tail)) {
+    upb_Atomic_CompareExchangeStrong(
+        &parent->previous_or_tail, &parent_previous_or_tail,
+        _upb_Arena_TaggedFromTail(new_parent_tail), memory_order_release,
+        memory_order_relaxed);
+  }
 
-  upb_Atomic_Store(&parent->tail, parent_tail, memory_order_release);
+  // Link child to parent going backwards, for SpaceAllocated
+  upb_Atomic_Store(&child->previous_or_tail,
+                   _upb_Arena_TaggedFromPrevious(parent_tail),
+                   memory_order_release);
 }
 
 void upb_Arena_SetAllocCleanup(upb_Arena* a, upb_AllocCleanupFunc* func) {
@@ -17469,6 +17552,7 @@ upb_ServiceDef* _upb_ServiceDefs_New(upb_DefBuilder* ctx, int n,
 #undef UPB_IS_GOOGLE3
 #undef UPB_ATOMIC
 #undef UPB_USE_C11_ATOMICS
+#undef UPB_USE_MSC_ATOMICS
 #undef UPB_PRIVATE
 #undef UPB_ONLYBITS
 #undef UPB_LINKARR_DECLARE
