@@ -24,9 +24,9 @@
  */
 
 #if !((defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || \
-      (defined(__cplusplus) && __cplusplus >= 201402L) ||           \
+      (defined(__cplusplus) && __cplusplus >= 201703L) ||           \
       (defined(_MSC_VER) && _MSC_VER >= 1900))
-#error upb requires C99 or C++14 or MSVC >= 2015.
+#error upb requires C99 or C++17 or MSVC >= 2015.
 #endif
 
 // Portable check for GCC minimum version:
@@ -58,7 +58,7 @@ Error, UINTPTR_MAX is undefined
 /* If we always read/write as a consistent type to each address, this shouldn't
  * violate aliasing.
  */
-#define UPB_PTR_AT(msg, ofs, type) ((type*)((char*)(msg) + (ofs)))
+#define UPB_PTR_AT(msg, ofs, type) ((type *)((char *)(msg) + (ofs)))
 
 // A flexible array member may have lower alignment requirements than the struct
 // overall - in that case, it can overlap with the trailing padding of the rest
@@ -79,7 +79,7 @@ Error, UINTPTR_MAX is undefined
 // UPB_INLINE: inline if possible, emit standalone code if required.
 #ifdef __cplusplus
 #define UPB_INLINE inline
-#elif defined (__GNUC__) || defined(__clang__)
+#elif defined(__GNUC__) || defined(__clang__)
 #define UPB_INLINE static __inline__
 #else
 #define UPB_INLINE static
@@ -113,7 +113,13 @@ Error, UINTPTR_MAX is undefined
 #ifdef __clang__
 #define UPB_ALIGN_OF(type) _Alignof(type)
 #else
-#define UPB_ALIGN_OF(type) offsetof (struct { char c; type member; }, member)
+#define UPB_ALIGN_OF(type) \
+  offsetof(                \
+      struct {             \
+        char c;            \
+        type member;       \
+      },                   \
+      member)
 #endif
 
 #ifdef _MSC_VER
@@ -124,7 +130,7 @@ Error, UINTPTR_MAX is undefined
 #endif
 
 // Hints to the compiler about likely/unlikely branches.
-#if defined (__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) || defined(__clang__)
 #define UPB_LIKELY(x) __builtin_expect((bool)(x), 1)
 #define UPB_UNLIKELY(x) __builtin_expect((bool)(x), 0)
 #else
@@ -148,13 +154,14 @@ Error, UINTPTR_MAX is undefined
 #define UPB_FORCEINLINE __inline__ __attribute__((always_inline)) static
 #define UPB_NOINLINE __attribute__((noinline))
 #define UPB_NORETURN __attribute__((__noreturn__))
-#define UPB_PRINTF(str, first_vararg) __attribute__((format (printf, str, first_vararg)))
+#define UPB_PRINTF(str, first_vararg) \
+  __attribute__((format(printf, str, first_vararg)))
 #elif defined(_MSC_VER)
 #define UPB_NOINLINE
 #define UPB_FORCEINLINE static
 #define UPB_NORETURN __declspec(noreturn)
 #define UPB_PRINTF(str, first_vararg)
-#else  /* !defined(__GNUC__) */
+#else /* !defined(__GNUC__) */
 #define UPB_FORCEINLINE static
 #define UPB_NOINLINE
 #define UPB_NORETURN
@@ -169,11 +176,15 @@ Error, UINTPTR_MAX is undefined
 // UPB_ASSUME(): in release mode, we tell the compiler to assume this is true.
 #ifdef NDEBUG
 #ifdef __GNUC__
-#define UPB_ASSUME(expr) if (!(expr)) __builtin_unreachable()
+#define UPB_ASSUME(expr) \
+  if (!(expr)) __builtin_unreachable()
 #elif defined _MSC_VER
-#define UPB_ASSUME(expr) if (!(expr)) __assume(0)
+#define UPB_ASSUME(expr) \
+  if (!(expr)) __assume(0)
 #else
-#define UPB_ASSUME(expr) do {} while (false && (expr))
+#define UPB_ASSUME(expr) \
+  do {                   \
+  } while (false && (expr))
 #endif
 #else
 #define UPB_ASSUME(expr) assert(expr)
@@ -182,13 +193,19 @@ Error, UINTPTR_MAX is undefined
 /* UPB_ASSERT(): in release mode, we use the expression without letting it be
  * evaluated.  This prevents "unused variable" warnings. */
 #ifdef NDEBUG
-#define UPB_ASSERT(expr) do {} while (false && (expr))
+#define UPB_ASSERT(expr) \
+  do {                   \
+  } while (false && (expr))
 #else
 #define UPB_ASSERT(expr) assert(expr)
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#define UPB_UNREACHABLE() do { assert(0); __builtin_unreachable(); } while(0)
+#define UPB_UNREACHABLE()    \
+  do {                       \
+    assert(0);               \
+    __builtin_unreachable(); \
+  } while (0)
 #elif defined(_MSC_VER)
 #define UPB_UNREACHABLE() \
   do {                    \
@@ -196,7 +213,16 @@ Error, UINTPTR_MAX is undefined
     __assume(0);          \
   } while (0)
 #else
-#define UPB_UNREACHABLE() do { assert(0); } while(0)
+#define UPB_UNREACHABLE() \
+  do {                    \
+    assert(0);            \
+  } while (0)
+#endif
+
+#ifdef __ANDROID__
+#define UPB_DEFAULT_MAX_BLOCK_SIZE 8192;
+#else
+#define UPB_DEFAULT_MAX_BLOCK_SIZE 32768;
 #endif
 
 /* UPB_SETJMP() / UPB_LONGJMP() */
@@ -344,10 +370,10 @@ Error, UINTPTR_MAX is undefined
 #ifdef __cplusplus
     extern "C" {
 #endif
-void __asan_poison_memory_region(void const volatile *addr, size_t size);
-void __asan_unpoison_memory_region(void const volatile *addr, size_t size);
+  void __asan_poison_memory_region(void const volatile *addr, size_t size);
+  void __asan_unpoison_memory_region(void const volatile *addr, size_t size);
 #ifdef __cplusplus
-}  /* extern "C" */
+} /* extern "C" */
 #endif
 #define UPB_POISON_MEMORY_REGION(addr, size) \
   __asan_poison_memory_region((addr), (size))
@@ -356,10 +382,8 @@ void __asan_unpoison_memory_region(void const volatile *addr, size_t size);
 #else
 #define UPB_ASAN 0
 #define UPB_ASAN_GUARD_SIZE 0
-#define UPB_POISON_MEMORY_REGION(addr, size) \
-  ((void)(addr), (void)(size))
-#define UPB_UNPOISON_MEMORY_REGION(addr, size) \
-  ((void)(addr), (void)(size))
+#define UPB_POISON_MEMORY_REGION(addr, size) ((void)(addr), (void)(size))
+#define UPB_UNPOISON_MEMORY_REGION(addr, size) ((void)(addr), (void)(size))
 #endif
 
 #if defined(__SANITIZE_THREAD__) || UPB_CLANG_TSAN
@@ -2937,7 +2961,7 @@ upb_alloc upb_alloc_global = {&upb_global_allocfunc};
 
 // Must be last.
 
-static UPB_ATOMIC(size_t) g_max_block_size = 32 << 10;
+static UPB_ATOMIC(size_t) g_max_block_size = UPB_DEFAULT_MAX_BLOCK_SIZE;
 
 void upb_Arena_SetMaxBlockSize(size_t max) {
   upb_Atomic_Store(&g_max_block_size, max, memory_order_relaxed);
@@ -11448,14 +11472,9 @@ uint32_t _upb_Hash(const void* p, size_t n, uint64_t seed) {
   return Wyhash(p, n, seed, kWyhashSalt);
 }
 
-static const void* const _upb_seed;
-
-// Returns a random seed for upb's hash function. This does not provide
-// high-quality randomness, but it should be enough to prevent unit tests from
-// relying on a deterministic map ordering. By returning the address of a
-// variable, we are able to get some randomness for free provided that ASLR is
-// enabled.
-static uint64_t _upb_Seed(void) { return (uint64_t)&_upb_seed; }
+// Returns a seed for upb's hash function. For now this is just a hard-coded
+// constant, but we are going to randomize it soon.
+static uint64_t _upb_Seed(void) { return 0x69835f69597ec1cc; }
 
 static uint32_t _upb_Hash_NoSeed(const char* p, size_t n) {
   return _upb_Hash(p, n, _upb_Seed());
@@ -17047,6 +17066,7 @@ upb_ServiceDef* _upb_ServiceDefs_New(upb_DefBuilder* ctx, int n,
 #undef UPB_ASSUME
 #undef UPB_ASSERT
 #undef UPB_UNREACHABLE
+#undef UPB_DEFAULT_MAX_BLOCK_SIZE
 #undef UPB_SETJMP
 #undef UPB_LONGJMP
 #undef UPB_PTRADD
