@@ -5594,9 +5594,17 @@ static const char* upb_MtDecoder_DecodeOneofField(upb_MtDecoder* d,
 
   // Oneof storage must be large enough to accommodate the largest member.
   int rep = f->UPB_PRIVATE(mode) >> kUpb_FieldRep_Shift;
-  if (upb_MtDecoder_SizeOfRep(rep, d->platform) >
-      upb_MtDecoder_SizeOfRep(item->rep, d->platform)) {
+  size_t new_size = upb_MtDecoder_SizeOfRep(rep, d->platform);
+  size_t new_align = upb_MtDecoder_AlignOfRep(rep, d->platform);
+  size_t current_size = upb_MtDecoder_SizeOfRep(item->rep, d->platform);
+  size_t current_align = upb_MtDecoder_AlignOfRep(item->rep, d->platform);
+
+  if (new_size > current_size ||
+      (new_size == current_size && new_align > current_align)) {
+    UPB_ASSERT(new_align >= current_align);
     item->rep = rep;
+  } else {
+    UPB_ASSERT(current_align >= new_align);
   }
   // Prepend this field to the linked list.
   f->UPB_PRIVATE(offset) = item->field_index;
@@ -6178,6 +6186,10 @@ bool upb_MiniTable_SetSubEnum(upb_MiniTable* table, upb_MiniTableField* field,
              (uintptr_t)field < (uintptr_t)(table->UPB_PRIVATE(fields) +
                                             table->UPB_PRIVATE(field_count)));
   UPB_ASSERT(sub);
+
+  if (field->UPB_PRIVATE(descriptortype) != kUpb_FieldType_Enum) {
+    return false;
+  }
 
   upb_MiniTableSub* table_sub =
       (void*)&table->UPB_PRIVATE(subs)[field->UPB_PRIVATE(submsg_index)];
