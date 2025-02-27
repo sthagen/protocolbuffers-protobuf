@@ -29,6 +29,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/base/casts.h"
+#include "absl/base/macros.h"
 #include "absl/log/absl_check.h"
 #include "absl/numeric/bits.h"
 #include "absl/strings/cord.h"
@@ -81,6 +82,7 @@ namespace internal {
 
 namespace v2 {
 class TableDriven;
+class TableDrivenMessage;
 class TableDrivenParse;
 }  // namespace v2
 
@@ -1051,6 +1053,7 @@ class PROTOBUF_EXPORT MessageLite {
   friend class internal::WireFormatLite;
   friend class internal::RustMapHelper;
   friend class internal::v2::TableDriven;
+  friend class internal::v2::TableDrivenMessage;
   friend class internal::v2::TableDrivenParse;
   friend internal::MessageCreator;
 
