@@ -11701,6 +11701,7 @@ _upb_DefPool_Init google_protobuf_descriptor_proto_upbdefinit = {
  * Implementation is heavily inspired by Lua's ltable.c.
  */
 
+#include <stdint.h>
 #include <string.h>
 
 
@@ -11762,7 +11763,14 @@ typedef bool eqlfunc_t(upb_tabkey k1, lookupkey_t k2);
 
 /* Base table (shared code) ***************************************************/
 
-static uint32_t upb_inthash(uintptr_t key) { return (uint32_t)key; }
+static uint32_t upb_inthash(uintptr_t key) {
+  if (sizeof(uintptr_t) == 8) {
+    return (uint32_t)key ^ (uint32_t)(key >> 32);
+  } else {
+    UPB_ASSERT(sizeof(uintptr_t) == 4);
+    return (uint32_t)key;
+  }
+}
 
 static const upb_tabent* upb_getentry(const upb_table* t, uint32_t hash) {
   return t->entries + (hash & t->mask);
@@ -12807,17 +12815,6 @@ upb_Extension* UPB_PRIVATE(_upb_Message_GetOrCreateExtension)(
   return ext;
 }
 
-void upb_Message_ReplaceUnknownWithExtension(struct upb_Message* msg,
-                                             uintptr_t iter,
-                                             const upb_Extension* ext) {
-  UPB_ASSERT(iter != 0);
-  upb_Message_Internal* in = UPB_PRIVATE(_upb_Message_GetInternal)(msg);
-  UPB_ASSERT(in);
-  size_t index = iter - 1;
-  upb_TaggedAuxPtr tagged_ptr = in->aux_data[index];
-  UPB_ASSERT(upb_TaggedAuxPtr_IsUnknown(tagged_ptr));
-  in->aux_data[index] = upb_TaggedAuxPtr_MakeExtension(ext);
-}
 
 #include <math.h>
 #include <stddef.h>
