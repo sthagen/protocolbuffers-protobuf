@@ -65,7 +65,7 @@ rules_jvm_external_setup()
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 
 maven_install(
-    name = "protobuf_maven",
+    name = "maven",
     artifacts = PROTOBUF_MAVEN_ARTIFACTS,
     # For updating instructions, see:
     # https://github.com/bazelbuild/rules_jvm_external#updating-maven_installjson
@@ -76,9 +76,33 @@ maven_install(
     ],
 )
 
-load("@protobuf_maven//:defs.bzl", "pinned_maven_install")
-
+load("@maven//:defs.bzl", "pinned_maven_install")
 pinned_maven_install()
+
+maven_install(
+    name = "protobuf_maven",
+    artifacts = [
+        "com.google.caliper:caliper:1.0-beta-3",
+        "com.google.guava:guava-testlib:32.0.1-jre",
+        "com.google.testparameterinjector:test-parameter-injector:1.18",
+        "com.google.truth:truth:1.1.2",
+        "junit:junit:4.13.2",
+        "org.mockito:mockito-core:4.3.1",
+        "biz.aQute.bnd:biz.aQute.bndlib:6.4.0",
+        "info.picocli:picocli:4.6.3",
+    ],
+    # For updating instructions, see:
+    # https://github.com/bazelbuild/rules_jvm_external#updating-maven_installjson
+    maven_install_json = "//:maven_dev_install.json",
+    repositories = [
+        "https://repo1.maven.org/maven2",
+        "https://repo.maven.apache.org/maven2",
+    ],
+)
+
+load("@protobuf_maven//:defs.bzl", pinned_protobuf_maven_install = "pinned_maven_install")
+pinned_protobuf_maven_install()
+
 
 # For `cc_proto_blacklist_test` and `build_test`.
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
@@ -169,9 +193,9 @@ http_archive(
     name = "com_google_googleapis",
     build_file = "//benchmarks:BUILD.googleapis",
     patch_cmds = ["find google -type f -name BUILD.bazel -delete"],
-    sha256 = "d986023c3d8d2e1b161e9361366669cac9fb97c2a07e656c2548aca389248bb4",
-    strip_prefix = "googleapis-d81d0b9e6993d6ab425dff4d7c3d05fb2e59fa57",
-    urls = ["https://github.com/googleapis/googleapis/archive/d81d0b9e6993d6ab425dff4d7c3d05fb2e59fa57.zip"],
+    sha256 = "f5d1f45a03e608632084811a5870b4ebdf0b95edbe899e6448d337427d8f38dc",
+    strip_prefix = "googleapis-c414002bae922fc4577637a542e11fb9700af10f",
+    urls = ["https://github.com/googleapis/googleapis/archive/c414002bae922fc4577637a542e11fb9700af10f.zip"],
 )
 
 load("@system_python//:pip.bzl", "pip_parse")
