@@ -742,36 +742,10 @@ UPB_API_INLINE void* upb_Arena_Malloc(struct upb_Arena* a, size_t size) {
   return ret;
 }
 
-UPB_API_INLINE void* upb_Arena_Realloc(struct upb_Arena* a, void* ptr,
-                                       size_t oldsize, size_t size) {
-  UPB_TSAN_CHECK_WRITE(a->UPB_ONLYBITS(ptr));
-  oldsize = UPB_ALIGN_MALLOC(oldsize);
-  size = UPB_ALIGN_MALLOC(size);
-  bool is_most_recent_alloc =
-      (uintptr_t)ptr + oldsize == (uintptr_t)a->UPB_ONLYBITS(ptr);
-
-  if (is_most_recent_alloc) {
-    ptrdiff_t diff = size - oldsize;
-    if ((ptrdiff_t)UPB_PRIVATE(_upb_ArenaHas)(a) >= diff) {
-      a->UPB_ONLYBITS(ptr) += diff;
-      return ptr;
-    }
-  } else if (size <= oldsize) {
-    return ptr;
-  }
-
-  void* ret = upb_Arena_Malloc(a, size);
-
-  if (ret && oldsize > 0) {
-    memcpy(ret, ptr, UPB_MIN(oldsize, size));
-  }
-
-  return ret;
-}
-
 UPB_API_INLINE void upb_Arena_ShrinkLast(struct upb_Arena* a, void* ptr,
                                          size_t oldsize, size_t size) {
   UPB_TSAN_CHECK_WRITE(a->UPB_ONLYBITS(ptr));
+  UPB_ASSERT(ptr);
   UPB_ASSERT(size <= oldsize);
   size = UPB_ALIGN_MALLOC(size) + UPB_ASAN_GUARD_SIZE;
   oldsize = UPB_ALIGN_MALLOC(oldsize) + UPB_ASAN_GUARD_SIZE;
@@ -791,7 +765,58 @@ UPB_API_INLINE void upb_Arena_ShrinkLast(struct upb_Arena* a, void* ptr,
     UPB_ASSERT(_upb_Arena_WasLastAlloc(a, ptr, oldsize));
 #endif
   }
-  UPB_POISON_MEMORY_REGION((char*)ptr + size, oldsize - size);
+  UPB_POISON_MEMORY_REGION((char*)ptr + (size - UPB_ASAN_GUARD_SIZE),
+                           oldsize - size);
+}
+
+UPB_API_INLINE bool upb_Arena_TryExtend(struct upb_Arena* a, void* ptr,
+                                        size_t oldsize, size_t size) {
+  UPB_TSAN_CHECK_WRITE(a->UPB_ONLYBITS(ptr));
+  UPB_ASSERT(ptr);
+  UPB_ASSERT(size > oldsize);
+  size = UPB_ALIGN_MALLOC(size) + UPB_ASAN_GUARD_SIZE;
+  oldsize = UPB_ALIGN_MALLOC(oldsize) + UPB_ASAN_GUARD_SIZE;
+  if (size == oldsize) {
+    return true;
+  }
+  size_t extend = size - oldsize;
+  if ((char*)ptr + oldsize == a->UPB_ONLYBITS(ptr) &&
+      UPB_PRIVATE(_upb_ArenaHas)(a) >= extend) {
+    a->UPB_ONLYBITS(ptr) += extend;
+    UPB_UNPOISON_MEMORY_REGION((char*)ptr + (oldsize - UPB_ASAN_GUARD_SIZE),
+                               extend);
+    return true;
+  }
+  return false;
+}
+
+UPB_API_INLINE void* upb_Arena_Realloc(struct upb_Arena* a, void* ptr,
+                                       size_t oldsize, size_t size) {
+  UPB_TSAN_CHECK_WRITE(a->UPB_ONLYBITS(ptr));
+  if (ptr) {
+    if (size == oldsize) {
+      return ptr;
+    }
+    if (size > oldsize) {
+      if (upb_Arena_TryExtend(a, ptr, oldsize, size)) return ptr;
+    } else {
+      if ((char*)ptr + (UPB_ALIGN_MALLOC(oldsize) + UPB_ASAN_GUARD_SIZE) ==
+          a->UPB_ONLYBITS(ptr)) {
+        upb_Arena_ShrinkLast(a, ptr, oldsize, size);
+      } else {
+        UPB_POISON_MEMORY_REGION((char*)ptr + size, oldsize - size);
+      }
+      return ptr;
+    }
+  }
+  void* ret = upb_Arena_Malloc(a, size);
+
+  if (ret && oldsize > 0) {
+    memcpy(ret, ptr, UPB_MIN(oldsize, size));
+    UPB_POISON_MEMORY_REGION(ptr, oldsize);
+  }
+
+  return ret;
 }
 
 #ifdef __cplusplus
@@ -882,6 +907,16 @@ void upb_Arena_SetMaxBlockSize(size_t max);
 // this was not the last alloc.
 UPB_API_INLINE void upb_Arena_ShrinkLast(upb_Arena* a, void* ptr,
                                          size_t oldsize, size_t size);
+
+// Attempts to extend the given alloc from arena, in place. Is generally
+// only likely to succeed for the most recent allocation from this arena. If it
+// succeeds, returns true and `ptr`'s allocation is now `size` rather than
+// `oldsize`. Returns false if the allocation cannot be extended; `ptr`'s
+// allocation is unmodified. See also upb_Arena_Realloc.
+// REQUIRES: `size > oldsize`; to shrink, use `upb_Arena_Realloc` or
+// `upb_Arena_ShrinkLast`.
+UPB_API_INLINE bool upb_Arena_TryExtend(upb_Arena* a, void* ptr, size_t oldsize,
+                                        size_t size);
 
 #ifdef UPB_TRACING_ENABLED
 void upb_Arena_SetTraceHandler(void (*initArenaTraceHandler)(const upb_Arena*,
@@ -3182,14 +3217,24 @@ upb_MiniTableExtension_GetSubEnum(const struct upb_MiniTableExtension* e) {
   return upb_MiniTableSub_Enum(e->UPB_PRIVATE(sub));
 }
 
-UPB_API_INLINE void upb_MiniTableExtension_SetSubMessage(
+UPB_API_INLINE bool upb_MiniTableExtension_SetSubMessage(
     struct upb_MiniTableExtension* e, const struct upb_MiniTable* m) {
+  if (e->UPB_PRIVATE(field).UPB_PRIVATE(descriptortype) !=
+      kUpb_FieldType_Message) {
+    return false;
+  }
   e->UPB_PRIVATE(sub).UPB_PRIVATE(submsg) = m;
+  return true;
 }
 
-UPB_API_INLINE void upb_MiniTableExtension_SetSubEnum(
+UPB_API_INLINE bool upb_MiniTableExtension_SetSubEnum(
     struct upb_MiniTableExtension* e, const struct upb_MiniTableEnum* en) {
+  if (e->UPB_PRIVATE(field).UPB_PRIVATE(descriptortype) !=
+      kUpb_FieldType_Enum) {
+    return false;
+  }
   e->UPB_PRIVATE(sub).UPB_PRIVATE(subenum) = en;
+  return true;
 }
 
 UPB_INLINE upb_FieldRep UPB_PRIVATE(_upb_MiniTableExtension_GetRep)(
@@ -3224,10 +3269,10 @@ UPB_API_INLINE const upb_MiniTable* upb_MiniTableExtension_GetSubMessage(
 UPB_API_INLINE const upb_MiniTableEnum* upb_MiniTableExtension_GetSubEnum(
     const upb_MiniTableExtension* e);
 
-UPB_API_INLINE void upb_MiniTableExtension_SetSubMessage(
+UPB_API_INLINE bool upb_MiniTableExtension_SetSubMessage(
     upb_MiniTableExtension* e, const upb_MiniTable* m);
 
-UPB_API_INLINE void upb_MiniTableExtension_SetSubEnum(
+UPB_API_INLINE bool upb_MiniTableExtension_SetSubEnum(
     upb_MiniTableExtension* e, const upb_MiniTableEnum* m);
 
 #ifdef __cplusplus
@@ -3317,6 +3362,10 @@ extern const double kUpb_NaN;
 // extensions. We can change this without breaking binary compatibility.
 
 typedef struct upb_TaggedAuxPtr {
+  // Two lowest bits form a tag:
+  // 00 - non-aliased unknown data
+  // 10 - aliased unknown data
+  // 01 - extension
   uintptr_t ptr;
 } upb_TaggedAuxPtr;
 
@@ -3332,14 +3381,18 @@ UPB_INLINE bool upb_TaggedAuxPtr_IsUnknown(upb_TaggedAuxPtr ptr) {
   return (ptr.ptr != 0) && ((ptr.ptr & 1) == 0);
 }
 
+UPB_INLINE bool upb_TaggedAuxPtr_IsUnknownAliased(upb_TaggedAuxPtr ptr) {
+  return (ptr.ptr != 0) && ((ptr.ptr & 2) == 2);
+}
+
 UPB_INLINE upb_Extension* upb_TaggedAuxPtr_Extension(upb_TaggedAuxPtr ptr) {
   UPB_ASSERT(upb_TaggedAuxPtr_IsExtension(ptr));
-  return (upb_Extension*)(ptr.ptr & ~1ULL);
+  return (upb_Extension*)(ptr.ptr & ~3ULL);
 }
 
 UPB_INLINE upb_StringView* upb_TaggedAuxPtr_UnknownData(upb_TaggedAuxPtr ptr) {
   UPB_ASSERT(!upb_TaggedAuxPtr_IsExtension(ptr));
-  return (upb_StringView*)(ptr.ptr);
+  return (upb_StringView*)(ptr.ptr & ~3ULL);
 }
 
 UPB_INLINE upb_TaggedAuxPtr upb_TaggedAuxPtr_Null(void) {
@@ -3355,10 +3408,22 @@ upb_TaggedAuxPtr_MakeExtension(const upb_Extension* e) {
   return ptr;
 }
 
+// This tag means that the original allocation for this field starts with the
+// string view and ends with the end of the content referenced by the string
+// view.
 UPB_INLINE upb_TaggedAuxPtr
 upb_TaggedAuxPtr_MakeUnknownData(const upb_StringView* sv) {
   upb_TaggedAuxPtr ptr;
   ptr.ptr = (uintptr_t)sv;
+  return ptr;
+}
+
+// This tag implies no guarantee between the relationship of the string view and
+// the data it points to.
+UPB_INLINE upb_TaggedAuxPtr
+upb_TaggedAuxPtr_MakeUnknownDataAliased(const upb_StringView* sv) {
+  upb_TaggedAuxPtr ptr;
+  ptr.ptr = (uintptr_t)sv | 2;
   return ptr;
 }
 

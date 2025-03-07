@@ -4262,17 +4262,38 @@ bool UPB_PRIVATE(_upb_Message_AddUnknown)(upb_Message* msg, const char* data,
                                           size_t len, upb_Arena* arena,
                                           bool alias) {
   UPB_ASSERT(!upb_Message_IsFrozen(msg));
-  if (alias) {
-    // Fast path if the field we're adding is immediately after the last added
-    // unknown field.
+  {
     upb_Message_Internal* in = UPB_PRIVATE(_upb_Message_GetInternal)(msg);
     if (in && in->size) {
       upb_TaggedAuxPtr ptr = in->aux_data[in->size - 1];
       if (upb_TaggedAuxPtr_IsUnknown(ptr)) {
         upb_StringView* existing = upb_TaggedAuxPtr_UnknownData(ptr);
-        if (existing->data + existing->size == data) {
-          existing->size += len;
-          return true;
+        bool was_aliased = upb_TaggedAuxPtr_IsUnknownAliased(ptr);
+        if (alias) {
+          // Fast path if the field we're adding is immediately after the last
+          // added unknown field.
+          if (was_aliased && existing->data + existing->size == data) {
+            existing->size += len;
+            return true;
+          }
+        } else if (!was_aliased) {
+          // If part of the existing field was deleted at the beginning, we can
+          // reconstruct it by comparing the address of the end with the address
+          // of the entry itself; having the non-aliased tag means that the
+          // string_view and the data it points to are part of the same original
+          // upb_Arena_Malloc allocation, and the end of the string view
+          // represents the end of that allocation.
+          size_t prev_alloc_size =
+              (existing->data + existing->size) - (char*)existing;
+          if (SIZE_MAX - prev_alloc_size >= len) {
+            size_t new_alloc_size = prev_alloc_size + len;
+            if (upb_Arena_TryExtend(arena, existing, prev_alloc_size,
+                                    new_alloc_size)) {
+              memcpy(UPB_PTR_AT(existing, prev_alloc_size, void), data, len);
+              existing->size += len;
+              return true;
+            }
+          }
         }
       }
     }
@@ -4297,7 +4318,9 @@ bool UPB_PRIVATE(_upb_Message_AddUnknown)(upb_Message* msg, const char* data,
   }
   view->size = len;
   upb_Message_Internal* in = UPB_PRIVATE(_upb_Message_GetInternal)(msg);
-  in->aux_data[in->size++] = upb_TaggedAuxPtr_MakeUnknownData(view);
+  in->aux_data[in->size++] = alias
+                                 ? upb_TaggedAuxPtr_MakeUnknownDataAliased(view)
+                                 : upb_TaggedAuxPtr_MakeUnknownData(view);
   return true;
 }
 
@@ -4309,8 +4332,40 @@ bool UPB_PRIVATE(_upb_Message_AddUnknownV)(struct upb_Message* msg,
   UPB_ASSERT(count > 0);
   size_t total_len = 0;
   for (size_t i = 0; i < count; i++) {
+    if (SIZE_MAX - total_len < data[i].size) {
+      return false;
+    }
     total_len += data[i].size;
   }
+
+  {
+    upb_Message_Internal* in = UPB_PRIVATE(_upb_Message_GetInternal)(msg);
+    if (in && in->size) {
+      upb_TaggedAuxPtr ptr = in->aux_data[in->size - 1];
+      if (upb_TaggedAuxPtr_IsUnknown(ptr)) {
+        upb_StringView* existing = upb_TaggedAuxPtr_UnknownData(ptr);
+        if (!upb_TaggedAuxPtr_IsUnknownAliased(ptr)) {
+          size_t prev_alloc_size =
+              (existing->data + existing->size) - (char*)existing;
+          if (SIZE_MAX - prev_alloc_size >= total_len) {
+            size_t new_alloc_size = prev_alloc_size + total_len;
+            if (upb_Arena_TryExtend(arena, existing, prev_alloc_size,
+                                    new_alloc_size)) {
+              char* copy = UPB_PTR_AT(existing, prev_alloc_size, char);
+              for (size_t i = 0; i < count; i++) {
+                memcpy(copy, data[i].data, data[i].size);
+                copy += data[i].size;
+              }
+              existing->size += total_len;
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (SIZE_MAX - sizeof(upb_StringView) < total_len) return false;
   if (!UPB_PRIVATE(_upb_Message_ReserveSlot)(msg, arena)) return false;
 
   upb_StringView* view =
@@ -4368,6 +4423,10 @@ upb_Message_DeleteUnknownStatus upb_Message_DeleteUnknown(upb_Message* msg,
   } else if (unknown->data + unknown->size == data->data + data->size) {
     // Truncate existing field
     unknown->size -= data->size;
+    if (!upb_TaggedAuxPtr_IsUnknownAliased(unknown_ptr)) {
+      in->aux_data[*iter - 1] =
+          upb_TaggedAuxPtr_MakeUnknownDataAliased(unknown);
+    }
   } else {
     UPB_ASSERT(unknown->data < data->data &&
                unknown->data + unknown->size > data->data + data->size);
@@ -4386,7 +4445,10 @@ upb_Message_DeleteUnknownStatus upb_Message_DeleteUnknown(upb_Message* msg,
       memmove(&in->aux_data[*iter + 1], &in->aux_data[*iter],
               sizeof(upb_TaggedAuxPtr) * (in->size - *iter));
     }
-    in->aux_data[*iter] = upb_TaggedAuxPtr_MakeUnknownData(suffix);
+    in->aux_data[*iter] = upb_TaggedAuxPtr_MakeUnknownDataAliased(suffix);
+    if (!upb_TaggedAuxPtr_IsUnknownAliased(unknown_ptr)) {
+      in->aux_data[*iter - 1] = upb_TaggedAuxPtr_MakeUnknownDataAliased(prefix);
+    }
     in->size++;
     suffix->data = data->data + data->size;
     suffix->size = (prefix->data + prefix->size) - suffix->data;
@@ -8202,7 +8264,8 @@ UPB_NORETURN static void encode_err(upb_encstate* e, upb_EncodeStatus s) {
 UPB_NOINLINE
 static void encode_growbuffer(upb_encstate* e, size_t bytes) {
   size_t old_size = e->limit - e->buf;
-  size_t new_size = upb_roundup_pow2(bytes + (e->limit - e->ptr));
+  size_t needed_size = bytes + (e->limit - e->ptr);
+  size_t new_size = upb_roundup_pow2(needed_size);
   char* new_buf = upb_Arena_Realloc(e->arena, e->buf, old_size, new_size);
 
   if (!new_buf) encode_err(e, kUpb_EncodeStatus_OutOfMemory);
@@ -8211,14 +8274,12 @@ static void encode_growbuffer(upb_encstate* e, size_t bytes) {
   // TODO: This is somewhat inefficient since we are copying twice.
   // Maybe create a realloc() that copies to the end of the new buffer?
   if (old_size > 0) {
-    memmove(new_buf + new_size - old_size, e->buf, old_size);
+    memmove(new_buf + new_size - old_size, new_buf, old_size);
   }
 
-  e->ptr = new_buf + new_size - (e->limit - e->ptr);
-  e->limit = new_buf + new_size;
   e->buf = new_buf;
-
-  e->ptr -= bytes;
+  e->limit = new_buf + new_size;
+  e->ptr = new_buf + new_size - needed_size;
 }
 
 /* Call to ensure that at least "bytes" bytes are available for writing at
