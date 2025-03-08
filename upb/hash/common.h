@@ -31,7 +31,6 @@
 #include <string.h>
 
 #include "upb/base/string_view.h"
-#include "upb/mem/arena.h"
 
 // Must be last.
 #include "upb/port/def.inc"
@@ -132,14 +131,13 @@ typedef struct upb_tabval {
   uint64_t val;
 } upb_tabval;
 
-#define UPB_TABVALUE_EMPTY_INIT \
-  { -1 }
+#define UPB_TABVALUE_EMPTY_INIT {-1}
 
 /* upb_table ******************************************************************/
 
 typedef struct _upb_tabent {
-  upb_tabkey key;
   upb_tabval val;
+  upb_tabkey key;
 
   /* Internal chaining.  This is const so we can create static initializers for
    * tables.  We cast away const sometimes, but *only* when the containing
@@ -149,20 +147,27 @@ typedef struct _upb_tabent {
 } upb_tabent;
 
 typedef struct {
-  size_t count;       /* Number of entries in the hash part. */
-  uint32_t mask;      /* Mask to turn hash value -> bucket. */
-  uint32_t max_count; /* Max count before we hit our load limit. */
-  uint8_t size_lg2;   /* Size of the hashtable part is 2^size_lg2 entries. */
   upb_tabent* entries;
+  /* Number of entries in the hash part. */
+  uint32_t count;
+
+  /* Mask to turn hash value -> bucket. The map's allocated size is mask + 1.*/
+  uint32_t mask;
 } upb_table;
 
-UPB_INLINE size_t upb_table_size(const upb_table* t) {
-  return t->size_lg2 ? 1 << t->size_lg2 : 0;
-}
+UPB_INLINE size_t upb_table_size(const upb_table* t) { return t->mask + 1; }
 
 // Internal-only functions, in .h file only out of necessity.
 
 UPB_INLINE bool upb_tabent_isempty(const upb_tabent* e) { return e->key == 0; }
+
+UPB_INLINE bool upb_arrhas(upb_tabval val) { return val.val != (uint64_t)-1; }
+
+UPB_INLINE upb_value _upb_value_val(uint64_t val) {
+  upb_value ret;
+  _upb_value_setval(&ret, val);
+  return ret;
+}
 
 uint32_t _upb_Hash(const void* p, size_t n, uint64_t seed);
 
