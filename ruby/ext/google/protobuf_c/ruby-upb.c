@@ -67,6 +67,10 @@ Error, UINTPTR_MAX is undefined
 #define UPB_SIZEOF_FLEX(type, member, count) \
   UPB_MAX(sizeof(type), offsetof(type, member[count]))
 
+#define UPB_SIZEOF_FLEX_WOULD_OVERFLOW(type, member, count) \
+  (((SIZE_MAX - offsetof(type, member[0])) /                \
+    (offsetof(type, member[1]) - offsetof(type, member[0]))) < (size_t)count)
+
 #define UPB_MAPTYPE_STRING 0
 
 // UPB_EXPORT: always generate a public symbol.
@@ -3735,8 +3739,6 @@ bool _upb_Arena_WasLastAlloc(struct upb_Arena* a, void* ptr, size_t oldsize) {
 }
 
 
-#include <string.h>
-
 
 // Must be last.
 
@@ -3753,12 +3755,9 @@ bool upb_Message_SetMapEntry(upb_Map* map, const upb_MiniTable* m,
       upb_MiniTable_MapValue(map_entry_mini_table);
   // Map key/value cannot have explicit defaults,
   // hence assuming a zero default is valid.
-  upb_MessageValue default_key;
-  memset(&default_key, 0, map->key_size);
-  upb_MessageValue default_val;
-  memset(&default_val, 0, map->val_size);
+  upb_MessageValue default_val = upb_MessageValue_Zero();
   upb_MessageValue map_entry_key =
-      upb_Message_GetField(map_entry_message, map_entry_key_field, default_key);
+      upb_Message_GetField(map_entry_message, map_entry_key_field, default_val);
   upb_MessageValue map_entry_value = upb_Message_GetField(
       map_entry_message, map_entry_value_field, default_val);
   return upb_Map_Set(map, map_entry_key, map_entry_value, arena);
@@ -5412,7 +5411,7 @@ typedef struct {
   uint32_t enum_data_capacity;
 } upb_MdEnumDecoder;
 
-static size_t upb_MiniTableEnum_Size(size_t count) {
+static size_t upb_MiniTableEnum_Size(uint32_t count) {
   return UPB_SIZEOF_FLEX(upb_MiniTableEnum, UPB_PRIVATE(data), count);
 }
 
@@ -5420,10 +5419,18 @@ static upb_MiniTableEnum* _upb_MiniTable_AddEnumDataMember(upb_MdEnumDecoder* d,
                                                            uint32_t val) {
   if (d->enum_data_count == d->enum_data_capacity) {
     size_t old_sz = upb_MiniTableEnum_Size(d->enum_data_capacity);
-    d->enum_data_capacity = UPB_MAX(2, d->enum_data_capacity * 2);
-    size_t new_sz = upb_MiniTableEnum_Size(d->enum_data_capacity);
+    if (d->enum_data_capacity > UINT32_MAX / 2) {
+      upb_MdDecoder_ErrorJmp(&d->base, "Out of memory");
+    }
+    uint32_t new_capacity = UPB_MAX(2, d->enum_data_capacity * 2);
+    if (UPB_SIZEOF_FLEX_WOULD_OVERFLOW(upb_MiniTableEnum, UPB_PRIVATE(data),
+                                       new_capacity)) {
+      upb_MdDecoder_ErrorJmp(&d->base, "Out of memory");
+    }
+    size_t new_sz = upb_MiniTableEnum_Size(new_capacity);
     d->enum_table = upb_Arena_Realloc(d->arena, d->enum_table, old_sz, new_sz);
     upb_MdDecoder_CheckOutOfMemory(&d->base, d->enum_table);
+    d->enum_data_capacity = new_capacity;
   }
   d->enum_table->UPB_PRIVATE(data)[d->enum_data_count++] = val;
   return d->enum_table;
@@ -5504,6 +5511,7 @@ static upb_MiniTableEnum* upb_MtDecoder_BuildMiniTableEnum(
 upb_MiniTableEnum* upb_MiniTableEnum_Build(const char* data, size_t len,
                                            upb_Arena* arena,
                                            upb_Status* status) {
+  uint32_t initial_capacity = 2;
   upb_MdEnumDecoder decoder = {
       .base =
           {
@@ -5511,10 +5519,11 @@ upb_MiniTableEnum* upb_MiniTableEnum_Build(const char* data, size_t len,
               .status = status,
           },
       .arena = arena,
-      .enum_table = upb_Arena_Malloc(arena, upb_MiniTableEnum_Size(2)),
+      .enum_table =
+          upb_Arena_Malloc(arena, upb_MiniTableEnum_Size(initial_capacity)),
       .enum_value_count = 0,
       .enum_data_count = 0,
-      .enum_data_capacity = 1,
+      .enum_data_capacity = initial_capacity,
   };
 
   return upb_MtDecoder_BuildMiniTableEnum(&decoder, data, len);
@@ -7944,17 +7953,6 @@ const char* _upb_Decoder_DecodeKnownField(upb_Decoder* d, const char* ptr,
   }
 }
 
-static const char* _upb_Decoder_ReverseSkipVarint(const char* ptr,
-                                                  uint32_t val) {
-  uint32_t seen = 0;
-  do {
-    ptr--;
-    seen <<= 7;
-    seen |= *ptr & 0x7f;
-  } while (seen != val);
-  return ptr;
-}
-
 static const char* _upb_Decoder_DecodeUnknownField(upb_Decoder* d,
                                                    const char* ptr,
                                                    upb_Message* msg,
@@ -7974,7 +7972,9 @@ static const char* _upb_Decoder_DecodeUnknownField(upb_Decoder* d,
     switch (wire_type) {
       case kUpb_WireType_Varint:
       case kUpb_WireType_Delimited:
+        // Skip the last byte
         start--;
+        // Skip bytes until we encounter the final byte of the tag varint.
         while (start[-1] & 0x80) start--;
         break;
       case kUpb_WireType_32Bit:
@@ -7988,8 +7988,23 @@ static const char* _upb_Decoder_DecodeUnknownField(upb_Decoder* d,
     }
 
     assert(start == d->debug_valstart);
-    uint32_t tag = ((uint32_t)field_number << 3) | wire_type;
-    start = _upb_Decoder_ReverseSkipVarint(start, tag);
+    {
+      // The varint parser does not enforce that integers are encoded with their
+      // minimum size; for example the value 1 could be encoded with three
+      // bytes: 0x81, 0x80, 0x00. These unnecessary trailing zeroes mean that we
+      // cannot skip backwards by the minimum encoded size of the tag; and
+      // unlike the loop for delimited or varint fields, we can't stop at a
+      // sentinel value because anything can precede a tag. Instead, parse back
+      // one byte at a time until we read the same tag value that was parsed
+      // earlier.
+      uint32_t tag = ((uint32_t)field_number << 3) | wire_type;
+      uint32_t seen = 0;
+      do {
+        start--;
+        seen <<= 7;
+        seen |= *start & 0x7f;
+      } while (seen != tag);
+    }
     assert(start == d->debug_tagstart);
 
     const char* input_start =
@@ -18094,6 +18109,7 @@ google_protobuf_ServiceDescriptorProto* upb_ServiceDef_ToProto(const upb_Service
 #undef UPB_SIZE
 #undef UPB_PTR_AT
 #undef UPB_SIZEOF_FLEX
+#undef UPB_SIZEOF_FLEX_WOULD_OVERFLOW
 #undef UPB_MAPTYPE_STRING
 #undef UPB_EXPORT
 #undef UPB_INLINE
