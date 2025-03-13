@@ -684,16 +684,19 @@ static void check(upb_inttable* t) {
 #endif
 }
 
-bool upb_inttable_sizedinit(upb_inttable* t, size_t asize, int hsize_lg2,
+bool upb_inttable_sizedinit(upb_inttable* t, uint32_t asize, int hsize_lg2,
                             upb_Arena* a) {
-  size_t array_bytes;
-
   if (!init(&t->t, hsize_lg2, a)) return false;
   /* Always make the array part at least 1 long, so that we know key 0
    * won't be in the hash part, which simplifies things. */
   t->array_size = UPB_MAX(1, asize);
   t->array_count = 0;
-  array_bytes = t->array_size * sizeof(upb_value);
+#if UINT32_MAX >= SIZE_MAX
+  if (UPB_UNLIKELY(SIZE_MAX / sizeof(upb_value) < t->array_size)) {
+    return false;
+  }
+#endif
+  size_t array_bytes = t->array_size * sizeof(upb_value);
   t->array = upb_Arena_Malloc(a, array_bytes);
   if (!t->array) {
     return false;
@@ -779,9 +782,9 @@ bool upb_inttable_remove(upb_inttable* t, uintptr_t key, upb_value* val) {
   return success;
 }
 
-void upb_inttable_compact(upb_inttable* t, upb_Arena* a) {
+bool upb_inttable_compact(upb_inttable* t, upb_Arena* a) {
   /* A power-of-two histogram of the table keys. */
-  size_t counts[UPB_MAXARRSIZE + 1] = {0};
+  uint32_t counts[UPB_MAXARRSIZE + 1] = {0};
 
   /* The max key in each bucket. */
   uintptr_t max[UPB_MAXARRSIZE + 1] = {0};
@@ -799,11 +802,11 @@ void upb_inttable_compact(upb_inttable* t, upb_Arena* a) {
 
   /* Find the largest power of two that satisfies the MIN_DENSITY
    * definition (while actually having some keys). */
-  size_t arr_count = upb_inttable_count(t);
-  int size_lg2;
-  upb_inttable new_t;
+  uint32_t arr_count = upb_inttable_count(t);
 
-  for (size_lg2 = ARRAY_SIZE(counts) - 1; size_lg2 > 0; size_lg2--) {
+  // Scan all buckets except capped bucket
+  int size_lg2 = ARRAY_SIZE(counts) - 1;
+  for (; size_lg2 > 0; size_lg2--) {
     if (counts[size_lg2] == 0) {
       /* We can halve again without losing any entries. */
       continue;
@@ -816,14 +819,17 @@ void upb_inttable_compact(upb_inttable* t, upb_Arena* a) {
 
   UPB_ASSERT(arr_count <= upb_inttable_count(t));
 
+  upb_inttable new_t;
   {
     /* Insert all elements into new, perfectly-sized table. */
-    size_t arr_size = max[size_lg2] + 1; /* +1 so arr[max] will fit. */
-    size_t hash_count = upb_inttable_count(t) - arr_count;
+    uintptr_t arr_size = max[size_lg2] + 1; /* +1 so arr[max] will fit. */
+    uint32_t hash_count = upb_inttable_count(t) - arr_count;
     size_t hash_size = hash_count ? _upb_entries_needed_for(hash_count) : 0;
     int hashsize_lg2 = log2ceil(hash_size);
 
-    upb_inttable_sizedinit(&new_t, arr_size, hashsize_lg2, a);
+    if (!upb_inttable_sizedinit(&new_t, arr_size, hashsize_lg2, a)) {
+      return false;
+    }
 
     {
       intptr_t iter = UPB_INTTABLE_BEGIN;
@@ -837,6 +843,7 @@ void upb_inttable_compact(upb_inttable* t, upb_Arena* a) {
     UPB_ASSERT(new_t.array_size == arr_size);
   }
   *t = new_t;
+  return true;
 }
 
 void upb_inttable_clear(upb_inttable* t) {

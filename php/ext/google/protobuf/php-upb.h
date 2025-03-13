@@ -2744,10 +2744,10 @@ uint32_t _upb_Hash(const void* p, size_t n, uint64_t seed);
 // Must be last.
 
 typedef struct {
-  upb_table t;              // For entries that don't fit in the array part.
-  const upb_value* array;   // Array part of the table. See const note above.
-  size_t array_size;        // Array part size.
-  size_t array_count;       // Array part number of elements.
+  upb_table t;             // For entries that don't fit in the array part.
+  const upb_value* array;  // Array part of the table. See const note above.
+  uint32_t array_size;     // Array part size.
+  uint32_t array_count;    // Array part number of elements.
 } upb_inttable;
 
 #ifdef __cplusplus
@@ -2786,7 +2786,8 @@ bool upb_inttable_replace(upb_inttable* t, uintptr_t key, upb_value val);
 // Optimizes the table for the current set of entries, for both memory use and
 // lookup time. Client should call this after all entries have been inserted;
 // inserting more entries is legal, but will likely require a table resize.
-void upb_inttable_compact(upb_inttable* t, upb_Arena* a);
+// Returns false if reallocation fails.
+bool upb_inttable_compact(upb_inttable* t, upb_Arena* a);
 
 // Clears the table.
 void upb_inttable_clear(upb_inttable* t);
@@ -15737,7 +15738,7 @@ upb_EnumValueDef* _upb_EnumValueDefs_New(
     bool* is_sorted);
 
 const upb_EnumValueDef** _upb_EnumValueDefs_Sorted(const upb_EnumValueDef* v,
-                                                   int n, upb_Arena* a);
+                                                   size_t n, upb_Arena* a);
 
 #ifdef __cplusplus
 } /* extern "C" */
