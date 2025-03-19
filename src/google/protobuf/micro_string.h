@@ -137,13 +137,25 @@ class PROTOBUF_EXPORT MicroString {
     SetImpl(data, arena, inline_capacity);
   }
 
+  // Extra overloads to allow for other implicit conversions.
+  // Eg types that convert to `std::string` (like
+  // `std::reference_wrapper<std::string>`).
+  template <typename... Args>
+  void Set(const std::string& data, Args... args) {
+    Set(absl::string_view(data), args...);
+  }
+  template <typename... Args>
+  void Set(std::string&& data, Args... args) {
+    SetString(std::move(data), args...);
+  }
+  template <typename... Args>
+  void Set(const char* data, Args... args) {
+    Set(absl::string_view(data), args...);
+  }
+
   // Sets the payload to `data`. Might copy the data or alias the input buffer.
   void SetAlias(absl::string_view data, Arena* arena,
                 size_t inline_capacity = kInlineCapacity);
-
-  // Sets the payload to `str`. Might copy the data or take ownership of `str`.
-  void SetString(std::string&& data, Arena* arena,
-                 size_t inline_capacity = kInlineCapacity);
 
   // Set the payload to `unowned`. Will not allocate memory, but might free
   // memory if already set.
@@ -263,7 +275,12 @@ class PROTOBUF_EXPORT MicroString {
   }
   void set_inline_size(size_t size) {
     ABSL_DCHECK(kHasInlineRep);
-    rep_ = reinterpret_cast<void*>(size << kTagShift);
+    size <<= kTagShift;
+    PROTOBUF_ASSUME(size <= 0xFF);
+    // Only overwrite the size byte to avoid clobbering the char bytes in case
+    // of aliasing.
+    rep_ = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(rep_) & ~0xFF) |
+                                   size);
     ABSL_DCHECK(is_inline());
   }
   char* inline_head() {
@@ -301,6 +318,10 @@ class PROTOBUF_EXPORT MicroString {
     }
     self.SetFromOtherSlow(other, arena, Self::kInlineCapacity);
   }
+
+  // Sets the payload to `str`. Might copy the data or take ownership of `str`.
+  void SetString(std::string&& data, Arena* arena,
+                 size_t inline_capacity = kInlineCapacity);
 
   void SetFromOtherSlow(const MicroString& other, Arena* arena,
                         size_t inline_capacity);
@@ -363,11 +384,18 @@ class MicroStringExtraImpl : private MicroString {
   void Set(absl::string_view data, Arena* arena) {
     SetMaybeConstant(*this, data, arena);
   }
+  void Set(const std::string& data, Arena* arena) {
+    Set(absl::string_view(data), arena);
+  }
+  void Set(const char* data, Arena* arena) {
+    Set(absl::string_view(data), arena);
+  }
+  void Set(std::string&& str, Arena* arena) {
+    MicroString::SetString(std::move(str), arena, kInlineCapacity);
+  }
+
   void SetAlias(absl::string_view data, Arena* arena) {
     MicroString::SetAlias(data, arena, kInlineCapacity);
-  }
-  void SetString(std::string&& str, Arena* arena) {
-    MicroString::SetString(std::move(str), arena, kInlineCapacity);
   }
 
   using MicroString::Destroy;
@@ -403,6 +431,6 @@ using MicroStringExtra =
 }  // namespace protobuf
 }  // namespace google
 
-#endif  // GOOGLE_PROTOBUF_MICRO_STRING_H__
-
 #include "google/protobuf/port_undef.inc"
+
+#endif  // GOOGLE_PROTOBUF_MICRO_STRING_H__
