@@ -886,8 +886,7 @@ PROTOBUF_ALWAYS_INLINE void PrefetchEnumData(uint16_t xform_val,
 PROTOBUF_ALWAYS_INLINE bool EnumIsValidAux(int32_t val, uint16_t xform_val,
                                            TcParseTableBase::FieldAux aux) {
   if (xform_val == field_layout::kTvRange) {
-    auto lo = aux.enum_range.start;
-    return lo <= val && val < (lo + aux.enum_range.length);
+    return aux.enum_range.first <= val && val <= aux.enum_range.last;
   }
   if (PROTOBUF_BUILTIN_CONSTANT_P(xform_val)) {
     return internal::ValidateEnumInlined(val, aux.enum_data);
@@ -2743,7 +2742,10 @@ const char* TcParser::ParseOneMapEntry(
           ABSL_DCHECK_EQ(static_cast<int>(type_kind),
                          static_cast<int>(UntypedMapBase::TypeKind::kMessage));
           ABSL_DCHECK_EQ(inner_tag, value_tag);
-          ptr = ctx->ParseMessage(reinterpret_cast<MessageLite*>(obj), ptr);
+          ptr = ctx->ParseLengthDelimitedInlined(ptr, [&](const char* ptr) {
+            return ParseLoop(reinterpret_cast<MessageLite*>(obj), ptr, ctx,
+                             aux[1].table);
+          });
           if (ABSL_PREDICT_FALSE(ptr == nullptr)) return nullptr;
           continue;
         }

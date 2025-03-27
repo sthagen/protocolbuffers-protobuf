@@ -213,10 +213,9 @@ constexpr auto CppFeatures::InternalGenerateClassData_() {
   };
 }
 
-PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const ::google::protobuf::internal::ClassDataFull
-        CppFeatures_class_data_ =
-            CppFeatures::InternalGenerateClassData_();
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const
+    ::google::protobuf::internal::ClassDataFull CppFeatures_class_data_ =
+        CppFeatures::InternalGenerateClassData_();
 
 const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL CppFeatures::GetClassData() const {
   ::google::protobuf::internal::PrefetchToLocalCache(&CppFeatures_class_data_);
@@ -267,7 +266,7 @@ CppFeatures::_table_ = {
     (0 | ::_fl::kFcOptional | ::_fl::kBool)},
   }},
   {{
-      {0, 4},
+      {0, 3},
   }},
   {{
   }},
