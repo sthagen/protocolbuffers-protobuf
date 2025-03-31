@@ -543,9 +543,9 @@ void MessageProxiedInRepeated(Context& ctx, const Descriptor& msg) {
           ) -> $pb$::Mut<Self> {
             // SAFETY:
             // - `f.as_raw()` is a valid `upb_Array*`.
+            // - `f` is a an array of message-valued elements.
             // - `i < len(f)` is promised by the caller.
-            let msg_ptr = unsafe { $pbr$::upb_Array_GetMutable(f.as_raw($pbi$::Private), i).msg }
-              .expect("upb_Array* element should not be NULL.");
+            let msg_ptr = unsafe { $pbr$::upb_Array_GetMutable(f.as_raw($pbi$::Private), i) };
             unsafe {$pb$::Mut::<Self> { inner: $pbr$::MutatorMessageRef::from_raw_parts(msg_ptr, f.arena($pbi$::Private)) } }
           }
 
@@ -616,6 +616,15 @@ void TypeConversions(Context& ctx, const Descriptor& msg) {
                   debug_assert_eq!(value.tag, $pbr$::MapValueTag::Message);
                   unsafe { $Msg$View::new($pbi$::Private, value.val.m) }
               }
+
+              unsafe fn mut_from_map_value<'b>(value: $pbr$::MapValue) -> $Msg$Mut<'b> {
+                  debug_assert_eq!(value.tag, $pbr$::MapValueTag::Message);
+                  unsafe {
+                    $Msg$Mut {
+                      inner: $pbr$::MutatorMessageRef::from_raw_msg(&value.val.m)
+                    }
+                  }
+              }
           }
           )rs");
       return;
@@ -652,6 +661,15 @@ void TypeConversions(Context& ctx, const Descriptor& msg) {
                         $pbi$::Private,
                         unsafe { msg.msg_val }
                             .expect("expected present message value in map"))
+                }
+
+                unsafe fn from_message_mut<'msg>(msg: *mut $pbr$::upb_Message, arena: &'msg $pbr$::Arena)
+                    -> $Msg$Mut<'msg> {
+                    $Msg$Mut {
+                      inner: unsafe {
+                        $pbr$::MutatorMessageRef::from_raw_parts(std::ptr::NonNull::new(msg).expect("expected present message value in map"), arena)
+                      }
+                    }
                 }
             }
             )rs");

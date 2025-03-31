@@ -3786,12 +3786,14 @@ upb_MessageValue upb_Array_Get(const upb_Array* arr, size_t i) {
   return ret;
 }
 
-upb_MutableMessageValue upb_Array_GetMutable(upb_Array* arr, size_t i) {
+upb_Message* upb_Array_GetMutable(upb_Array* arr, size_t i) {
   UPB_ASSERT(i < upb_Array_Size(arr));
-  upb_MutableMessageValue ret;
+  size_t elem_size = sizeof(upb_Message*);
+  UPB_ASSERT(elem_size == (1 << UPB_PRIVATE(_upb_Array_ElemSizeLg2)(arr)));
   char* data = upb_Array_MutableDataPtr(arr);
-  const int lg2 = UPB_PRIVATE(_upb_Array_ElemSizeLg2)(arr);
-  memcpy(&ret, data + (i << lg2), 1 << lg2);
+  upb_Message* ret;
+  memcpy(&ret, data + (i * elem_size), elem_size);
+  UPB_ASSERT(!upb_Message_IsFrozen(ret));
   return ret;
 }
 
@@ -3956,6 +3958,16 @@ size_t upb_Map_Size(const upb_Map* map) { return _upb_Map_Size(map); }
 bool upb_Map_Get(const upb_Map* map, upb_MessageValue key,
                  upb_MessageValue* val) {
   return _upb_Map_Get(map, &key, map->key_size, val, map->val_size);
+}
+
+struct upb_Message* upb_Map_GetMutable(upb_Map* map, upb_MessageValue key) {
+  UPB_ASSERT(map->val_size == sizeof(upb_Message*));
+  upb_Message* val = NULL;
+  if (_upb_Map_Get(map, &key, map->key_size, &val, sizeof(upb_Message*))) {
+    return val;
+  } else {
+    return NULL;
+  }
 }
 
 void upb_Map_Clear(upb_Map* map) { _upb_Map_Clear(map); }
