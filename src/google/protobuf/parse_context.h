@@ -33,6 +33,7 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/message_lite.h"
 #include "google/protobuf/metadata_lite.h"
+#include "google/protobuf/micro_string.h"
 #include "google/protobuf/port.h"
 #include "google/protobuf/repeated_field.h"
 #include "google/protobuf/repeated_ptr_field.h"
@@ -204,6 +205,7 @@ class PROTOBUF_EXPORT EpsCopyInputStream {
     }
     return AppendStringFallback(ptr, size, s);
   }
+
   [[nodiscard]] const char* VerifyUTF8(const char* ptr, size_t size) {
     if (size <= static_cast<size_t>(BytesAvailable(ptr))) {
       return utf8_range::IsStructurallyValid({ptr, size}) ? ptr + size
@@ -211,6 +213,13 @@ class PROTOBUF_EXPORT EpsCopyInputStream {
     }
     return VerifyUTF8Fallback(ptr, size);
   }
+
+  [[nodiscard]] const char* ReadMicroString(const char* ptr, MicroString& str,
+                                            Arena* arena);
+  [[nodiscard]] const char* ReadMicroStringFallback(const char* ptr, int size,
+                                                    MicroString& str,
+                                                    Arena* arena);
+
   // Implemented in arenastring.cc
   [[nodiscard]] const char* ReadArenaString(const char* ptr, ArenaStringPtr* s,
                                             Arena* arena);
@@ -224,6 +233,16 @@ class PROTOBUF_EXPORT EpsCopyInputStream {
     return ReadCordFallback(ptr, size, cord);
   }
 
+
+  template <typename FuncT>
+  [[nodiscard]] const char* ReadChunkAndCallback(const char* ptr, int size,
+                                                 FuncT&& callback) {
+    if (size <= BytesAvailable(ptr)) {
+      callback(ptr, size);
+      return ptr + size;
+    }
+    return AppendSize(ptr, size, callback);
+  }
 
   template <typename Tag, typename T>
   [[nodiscard]] const char* ReadRepeatedFixed(const char* ptr, Tag expected_tag,
@@ -1165,6 +1184,19 @@ inline const char* ParseContext::ReadSizeAndPushLimitAndDepthInlined(
   *old_limit = PushLimit(ptr, size);
   --depth_;
   return ptr;
+}
+
+inline const char* EpsCopyInputStream::ReadMicroString(const char* ptr,
+                                                       MicroString& str,
+                                                       Arena* arena) {
+  int size = ReadSize(&ptr);
+  if (!ptr) return nullptr;
+
+  if (size <= BytesAvailable(ptr)) {
+    str.Set(absl::string_view(ptr, size), arena);
+    return ptr + size;
+  }
+  return ReadMicroStringFallback(ptr, size, str, arena);
 }
 
 
