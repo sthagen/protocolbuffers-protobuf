@@ -197,6 +197,7 @@ set(libprotobuf_hdrs
   ${protobuf_SOURCE_DIR}/src/google/protobuf/util/delimited_message_util.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/util/field_comparator.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/util/field_mask_util.h
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/util/internal_timeval.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/util/json_util.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/util/message_differencer.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/util/time_util.h
@@ -1327,7 +1328,7 @@ set(test_util_hdrs
   ${protobuf_SOURCE_DIR}/src/google/protobuf/test_util.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/test_util2.h
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unredacted_debug_format_for_test.h
-  ${protobuf_SOURCE_DIR}/src/google/protobuf/wire_format_unittest.inc
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/wire_format_unittest.h
 )
 
 # @//upb:test_util
