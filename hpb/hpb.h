@@ -46,8 +46,7 @@ namespace backend = internal::backend::cpp;
 
 template <typename T>
 typename T::Proxy CreateMessage(Arena& arena) {
-  return typename T::Proxy(upb_Message_New(T::minitable(), arena.ptr()),
-                           arena.ptr());
+  return backend::CreateMessage<T>(arena);
 }
 
 template <typename T>
@@ -61,9 +60,7 @@ typename T::Proxy CloneMessage(Ptr<T> message, Arena& arena) {
 template <typename T>
 void DeepCopy(Ptr<const T> source_message, Ptr<T> target_message) {
   static_assert(!std::is_const_v<T>);
-  internal::DeepCopy(interop::upb::GetMessage(target_message),
-                     interop::upb::GetMessage(source_message), T::minitable(),
-                     interop::upb::GetArena(target_message));
+  backend::DeepCopy(source_message, target_message);
 }
 
 template <typename T>

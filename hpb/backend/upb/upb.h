@@ -12,6 +12,7 @@
 #include "absl/strings/string_view.h"
 #include "google/protobuf/hpb/arena.h"
 #include "google/protobuf/hpb/backend/upb/interop.h"
+#include "google/protobuf/hpb/internal/internal.h"
 #include "google/protobuf/hpb/internal/message_lock.h"
 #include "google/protobuf/hpb/internal/template_help.h"
 #include "google/protobuf/hpb/ptr.h"
@@ -19,10 +20,23 @@
 namespace hpb::internal::backend::upb {
 
 template <typename T>
+typename T::Proxy CreateMessage(Arena& arena) {
+  return PrivateAccess::CreateMessage<T>(arena.ptr());
+}
+
+template <typename T>
 void ClearMessage(PtrOrRawMutable<T> message) {
   auto ptr = Ptr(message);
   auto minitable = interop::upb::GetMiniTable(ptr);
   upb_Message_Clear(interop::upb::GetMessage(ptr), minitable);
+}
+
+template <typename T>
+void DeepCopy(Ptr<const T> source_message, Ptr<T> target_message) {
+  static_assert(!std::is_const_v<T>);
+  internal::DeepCopy(interop::upb::GetMessage(target_message),
+                     interop::upb::GetMessage(source_message), T::minitable(),
+                     interop::upb::GetArena(target_message));
 }
 
 template <typename T>

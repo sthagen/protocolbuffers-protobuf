@@ -11,13 +11,24 @@
 #include "absl/strings/string_view.h"
 #include "google/protobuf/hpb/arena.h"
 #include "google/protobuf/hpb/internal/template_help.h"
+#include "google/protobuf/hpb/ptr.h"
 
 namespace hpb::internal::backend::cpp {
 
 // hpb(cpp) backend stubs.
 
 template <typename T>
+typename T::Proxy CreateMessage(Arena& arena) {
+  abort();
+}
+
+template <typename T>
 void ClearMessage(PtrOrRawMutable<T> message) {
+  abort();
+}
+
+template <typename T>
+void DeepCopy(Ptr<const T> source_message, Ptr<T> target_message) {
   abort();
 }
 
