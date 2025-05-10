@@ -62,8 +62,6 @@ typedef struct upb_Decoder {
  * noreturn. */
 const char* _upb_FastDecoder_ErrorJmp(upb_Decoder* d, int status);
 
-extern const uint8_t upb_utf8_offsets[];
-
 UPB_INLINE
 bool _upb_Decoder_VerifyUtf8Inline(const char* ptr, int len) {
   return utf8_range_IsValid(ptr, len);
@@ -100,27 +98,6 @@ UPB_INLINE const char* _upb_Decoder_BufferFlipCallback(
   upb_Decoder* d = (upb_Decoder*)e;
   if (!old_end) _upb_FastDecoder_ErrorJmp(d, kUpb_DecodeStatus_Malformed);
   return new_start;
-}
-
-UPB_INLINE
-const char* _upb_FastDecoder_TagDispatch(struct upb_Decoder* d, const char* ptr,
-                                         upb_Message* msg, intptr_t table,
-                                         uint64_t hasbits, uint64_t tag) {
-  const upb_MiniTable* table_p = decode_totablep(table);
-  uint8_t mask = table;
-  uint64_t data;
-  size_t idx = tag & mask;
-  UPB_ASSUME((idx & 7) == 0);
-  idx >>= 3;
-  data = table_p->UPB_PRIVATE(fasttable)[idx].field_data ^ tag;
-  UPB_MUSTTAIL return table_p->UPB_PRIVATE(fasttable)[idx].field_parser(
-      d, ptr, msg, table, hasbits, data);
-}
-
-UPB_INLINE uint32_t _upb_FastDecoder_LoadTag(const char* ptr) {
-  uint16_t tag;
-  memcpy(&tag, ptr, 2);
-  return tag;
 }
 
 #include "upb/port/undef.inc"
