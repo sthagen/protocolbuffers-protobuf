@@ -823,6 +823,7 @@ set(libupb_hdrs
   ${protobuf_SOURCE_DIR}/upb/wire/encode.h
   ${protobuf_SOURCE_DIR}/upb/wire/eps_copy_input_stream.h
   ${protobuf_SOURCE_DIR}/upb/wire/internal/decoder.h
+  ${protobuf_SOURCE_DIR}/upb/wire/internal/reader.h
   ${protobuf_SOURCE_DIR}/upb/wire/reader.h
   ${protobuf_SOURCE_DIR}/upb/wire/types.h
 )
@@ -1072,12 +1073,18 @@ set(test_util_hdrs
   ${protobuf_SOURCE_DIR}/src/google/protobuf/wire_format_unittest.h
 )
 
-# @//upb:test_util
-set(upb_test_util_files
+# @//pkg:upb_test_util
+set(upb_test_util_srcs
   ${protobuf_SOURCE_DIR}/upb/test/fuzz_util.cc
+  ${protobuf_SOURCE_DIR}/upb/wire/test_util/wire_message.cc
+)
+
+# @//pkg:upb_test_util
+set(upb_test_util_hdrs
   ${protobuf_SOURCE_DIR}/upb/test/fuzz_util.h
   ${protobuf_SOURCE_DIR}/upb/test/parse_text_proto.h
   ${protobuf_SOURCE_DIR}/upb/util/def_to_proto_test.h
+  ${protobuf_SOURCE_DIR}/upb/wire/test_util/wire_message.h
 )
 
 # @//pkg:conformance_cpp
