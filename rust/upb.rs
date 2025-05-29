@@ -9,7 +9,7 @@
 
 use crate::__internal::{Enum, MatcherEq, Private, SealedInternal};
 use crate::{
-    AsView, IntoProxied, Map, MapIter, MapMut, MapView, Message, MessageViewInterop, Mut,
+    AsMut, AsView, IntoProxied, Map, MapIter, MapMut, MapView, Message, Mut, MutProxied,
     ProtoBytes, ProtoStr, ProtoString, Proxied, ProxiedInMapValue, ProxiedInRepeated, Repeated,
     RepeatedMut, RepeatedView, View,
 };
@@ -875,16 +875,54 @@ pub unsafe fn upb_Map_InsertAndReturnIfInserted(
     }
 }
 
+/// Internal-only trait to support blanket impls that need const access to raw messages
+/// on codegen. Should never be used by application code.
+#[doc(hidden)]
+pub unsafe trait UpbGetRawMessage: SealedInternal {
+    fn get_raw_message(&self, _private: Private) -> RawMessage;
+}
+
+// The generated code only implements this trait on View proxies, so we use a blanket
+// implementation for owned messages and Mut proxies.
+unsafe impl<T> UpbGetRawMessage for T
+where
+    Self: AsMut + AsView,
+    for<'a> View<'a, <Self as AsView>::Proxied>: UpbGetRawMessage,
+{
+    fn get_raw_message(&self, _private: Private) -> RawMessage {
+        self.as_view().get_raw_message(_private)
+    }
+}
+
+/// Internal-only trait to support blanket impls that need mutable access to raw messages
+/// on codegen. Must not be implemented on View proxies. Should never be used by application code.
+#[doc(hidden)]
+pub unsafe trait UpbGetRawMessageMut: SealedInternal {
+    fn get_raw_message_mut(&mut self, _private: Private) -> RawMessage;
+}
+
+// The generated code only implements this trait on Mut proxies, so we use a blanket implementation
+// for owned messages.
+unsafe impl<T> UpbGetRawMessageMut for T
+where
+    Self: MutProxied,
+    for<'a> Mut<'a, Self>: UpbGetRawMessageMut,
+{
+    fn get_raw_message_mut(&mut self, _private: Private) -> RawMessage {
+        self.as_mut().get_raw_message_mut(_private)
+    }
+}
+
 impl<T> MatcherEq for T
 where
     Self: AssociatedMiniTable + AsView + Debug,
-    for<'a> View<'a, <Self as AsView>::Proxied>: MessageViewInterop<'a>,
+    for<'a> View<'a, <Self as AsView>::Proxied>: UpbGetRawMessage,
 {
     fn matches(&self, o: &Self) -> bool {
         unsafe {
             upb_Message_IsEqual(
-                NonNull::new_unchecked(self.as_view().__unstable_as_raw_message() as *mut _),
-                NonNull::new_unchecked(o.as_view().__unstable_as_raw_message() as *mut _),
+                self.as_view().get_raw_message(Private),
+                o.as_view().get_raw_message(Private),
                 Self::mini_table(),
                 0,
             )

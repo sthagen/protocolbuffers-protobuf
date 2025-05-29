@@ -7,9 +7,9 @@
 
 // Rust Protobuf runtime using the C++ kernel.
 
-use crate::__internal::{Enum, MatcherEq, Private};
+use crate::__internal::{Enum, MatcherEq, Private, SealedInternal};
 use crate::{
-    AsView, IntoProxied, Map, MapIter, MapMut, MapView, Message, MessageViewInterop, Mut,
+    AsMut, AsView, IntoProxied, Map, MapIter, MapMut, MapView, Message, Mut, MutProxied,
     ProtoBytes, ProtoStr, ProtoString, Proxied, ProxiedInMapValue, ProxiedInRepeated, Repeated,
     RepeatedMut, RepeatedView, View,
 };
@@ -105,11 +105,9 @@ pub struct InnerProtoString {
 extern "C" {
     pub fn proto2_rust_Message_delete(m: RawMessage);
     pub fn proto2_rust_Message_clear(m: RawMessage);
-    pub fn proto2_rust_Message_parse(m: RawMessage, input: SerializedData) -> bool;
-    pub fn proto2_rust_Message_parse_dont_enforce_required(
-        m: RawMessage,
-        input: SerializedData,
-    ) -> bool;
+    pub fn proto2_rust_Message_parse(m: RawMessage, input: PtrAndLen) -> bool;
+    pub fn proto2_rust_Message_parse_dont_enforce_required(m: RawMessage, input: PtrAndLen)
+        -> bool;
     pub fn proto2_rust_Message_serialize(m: RawMessage, output: &mut SerializedData) -> bool;
     pub fn proto2_rust_Message_copy_from(dst: RawMessage, src: RawMessage) -> bool;
     pub fn proto2_rust_Message_merge_from(dst: RawMessage, src: RawMessage) -> bool;
@@ -1278,16 +1276,54 @@ fn ptrlen_to_bytes<'msg>(val: PtrAndLen) -> &'msg [u8] {
     unsafe { val.as_ref() }
 }
 
+/// Internal-only trait to support blanket impls that need const access to raw messages
+/// on codegen. Should never be used by application code.
+#[doc(hidden)]
+pub unsafe trait CppGetRawMessage: SealedInternal {
+    fn get_raw_message(&self, _private: Private) -> RawMessage;
+}
+
+// The generated code only implements this trait on View proxies, so we use a blanket
+// implementation for owned messages and Mut proxies.
+unsafe impl<T> CppGetRawMessage for T
+where
+    Self: AsMut + AsView,
+    for<'a> View<'a, <Self as AsView>::Proxied>: CppGetRawMessage,
+{
+    fn get_raw_message(&self, _private: Private) -> RawMessage {
+        self.as_view().get_raw_message(_private)
+    }
+}
+
+/// Internal-only trait to support blanket impls that need mutable access to raw messages
+/// on codegen. Must not be implemented on View proxies. Should never be used by application code.
+#[doc(hidden)]
+pub unsafe trait CppGetRawMessageMut: SealedInternal {
+    fn get_raw_message_mut(&mut self, _private: Private) -> RawMessage;
+}
+
+// The generated code only implements this trait on Mut proxies, so we use a blanket implementation
+// for owned messages.
+unsafe impl<T> CppGetRawMessageMut for T
+where
+    Self: MutProxied,
+    for<'a> Mut<'a, Self>: CppGetRawMessageMut,
+{
+    fn get_raw_message_mut(&mut self, _private: Private) -> RawMessage {
+        self.as_mut().get_raw_message_mut(_private)
+    }
+}
+
 impl<T> MatcherEq for T
 where
     Self: AsView + Debug,
-    for<'a> View<'a, <Self as AsView>::Proxied>: MessageViewInterop<'a>,
+    for<'a> View<'a, <Self as AsView>::Proxied>: CppGetRawMessage,
 {
     fn matches(&self, o: &Self) -> bool {
         unsafe {
             raw_message_equals(
-                NonNull::new_unchecked(self.as_view().__unstable_as_raw_message() as *mut _),
-                NonNull::new_unchecked(o.as_view().__unstable_as_raw_message() as *mut _),
+                self.as_view().get_raw_message(Private),
+                o.as_view().get_raw_message(Private),
             )
         }
     }

@@ -128,16 +128,9 @@ void MessageMutClearAndParse(Context& ctx, const Descriptor& msg,
                            : "proto2_rust_Message_parse_dont_enforce_required";
       ctx.Emit({{"parse_function", parse_function}},
                R"rs(
-          let success = unsafe {
-            // SAFETY: `data.as_ptr()` is valid to read for `data.len()`.
-            let data = $pbr$::SerializedData::from_raw_parts(
-              $NonNull$::new(data.as_ptr() as *mut _).unwrap(),
-              data.len(),
-            );
-
-            $pbr$::$parse_function$(self.raw_msg(), data)
-          };
-          success.then_some(()).ok_or($pb$::ParseError)
+          unsafe {
+            $pbr$::$parse_function$(self.raw_msg(), data.into())
+          }.then_some(()).ok_or($pb$::ParseError)
         )rs");
       return;
     }
@@ -327,11 +320,26 @@ void UpbMiniTableLinking(Context& ctx, const Descriptor& msg,
   )rs");
 }
 
+void CppGeneratedMessageTraitImpls(Context& ctx, const Descriptor& msg) {
+  ABSL_CHECK(ctx.is_cpp());
+  ctx.Emit(R"rs(
+    unsafe impl $pbr$::CppGetRawMessageMut for $Msg$Mut<'_> {
+      fn get_raw_message_mut(&mut self, _private: $pbi$::Private) -> $pbr$::RawMessage {
+        self.inner.msg()
+      }
+    }
+
+    unsafe impl $pbr$::CppGetRawMessage for $Msg$View<'_> {
+      fn get_raw_message(&self, _private: $pbi$::Private) -> $pbr$::RawMessage {
+        self.msg
+      }
+    }
+  )rs");
+}
+
 void UpbGeneratedMessageTraitImpls(Context& ctx, const Descriptor& msg,
                                    const upb::DefPool& pool) {
-  if (!ctx.is_upb()) {
-    return;
-  }
+  ABSL_CHECK(ctx.is_upb());
   ctx.Emit(
       {{"name", RsSafeName(msg.name())},
        {"mini_table_impl",
@@ -384,23 +392,36 @@ void UpbGeneratedMessageTraitImpls(Context& ctx, const Descriptor& msg,
       }
     )rs");
 
-  if (!msg.options().map_entry()) {
-    ctx.Emit(R"rs(
-        unsafe impl $pbr$::AssociatedMiniTable for $Msg$View<'_> {
-          #[inline(always)]
-          fn mini_table() -> *const $pbr$::upb_MiniTable {
-            <$Msg$ as $pbr$::AssociatedMiniTable>::mini_table()
-          }
-        }
-
-        unsafe impl $pbr$::AssociatedMiniTable for $Msg$Mut<'_> {
-          #[inline(always)]
-          fn mini_table() -> *const $pbr$::upb_MiniTable {
-            <$Msg$ as $pbr$::AssociatedMiniTable>::mini_table()
-          }
-        }
-      )rs");
+  if (msg.options().map_entry()) {
+    return;
   }
+  ctx.Emit(R"rs(
+      unsafe impl $pbr$::AssociatedMiniTable for $Msg$View<'_> {
+        #[inline(always)]
+        fn mini_table() -> *const $pbr$::upb_MiniTable {
+          <$Msg$ as $pbr$::AssociatedMiniTable>::mini_table()
+        }
+      }
+
+      unsafe impl $pbr$::AssociatedMiniTable for $Msg$Mut<'_> {
+        #[inline(always)]
+        fn mini_table() -> *const $pbr$::upb_MiniTable {
+          <$Msg$ as $pbr$::AssociatedMiniTable>::mini_table()
+        }
+      }
+
+      unsafe impl $pbr$::UpbGetRawMessageMut for $Msg$Mut<'_> {
+        fn get_raw_message_mut(&mut self, _private: $pbi$::Private) -> $pbr$::RawMessage {
+          self.inner.msg()
+        }
+      }
+
+      unsafe impl $pbr$::UpbGetRawMessage for $Msg$View<'_> {
+        fn get_raw_message(&self, _private: $pbi$::Private) -> $pbr$::RawMessage {
+          self.msg
+        }
+      }
+    )rs");
 }
 
 void MessageMutTakeCopyMergeFrom(Context& ctx, const Descriptor& msg) {
@@ -935,8 +956,14 @@ void GenerateRs(Context& ctx, const Descriptor& msg, const upb::DefPool& pool) {
              }
            }},
           {"into_proxied_impl", [&] { IntoProxiedForMessage(ctx, msg); }},
-          {"upb_generated_message_trait_impls",
-           [&] { UpbGeneratedMessageTraitImpls(ctx, msg, pool); }},
+          {"generated_message_trait_impls",
+           [&] {
+             if (ctx.is_upb()) {
+               UpbGeneratedMessageTraitImpls(ctx, msg, pool);
+             } else {
+               CppGeneratedMessageTraitImpls(ctx, msg);
+             }
+           }},
           {"repeated_impl", [&] { MessageProxiedInRepeated(ctx, msg); }},
           {"type_conversions_impl", [&] { TypeConversions(ctx, msg); }},
           {"unwrap_upb",
@@ -1314,7 +1341,7 @@ void GenerateRs(Context& ctx, const Descriptor& msg, const upb::DefPool& pool) {
           }
         }
 
-        $upb_generated_message_trait_impls$
+        $generated_message_trait_impls$
 
         $nested_in_msg$
       )rs");
