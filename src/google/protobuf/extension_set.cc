@@ -31,7 +31,7 @@
 #include "absl/log/absl_log.h"
 #include "absl/numeric/bits.h"
 #include "google/protobuf/arena.h"
-#include "google/protobuf/extension_set_inl.h"
+#include "google/protobuf/extension_set_inl.h"  // IWYU pragma: keep
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/message_lite.h"
 #include "google/protobuf/metadata_lite.h"
@@ -1420,6 +1420,7 @@ size_t ExtensionSet::Extension::ByteSize(int number) const {
   return result;
 }
 
+
 int ExtensionSet::Extension::GetSize() const {
   ABSL_DCHECK(is_repeated);
   switch (cpp_type(type)) {
@@ -1920,7 +1921,7 @@ LazyEagerVerifyFnType FindExtensionLazyEagerVerifyFn(
   return nullptr;
 }
 
-std::atomic<ExtensionSet::LazyMessageExtension* (*)(Arena* arena)>
+std::atomic<ExtensionSet::LazyMessageExtension* (*)(Arena * arena)>
     ExtensionSet::maybe_create_lazy_extension_;
 
 }  // namespace internal

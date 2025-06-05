@@ -782,6 +782,14 @@ UPB_INLINE void *UPB_PRIVATE(_upb_Xsan_UnpoisonRegion)(void *addr, size_t size,
 #else
   UPB_UNUSED(size);
   UPB_UNUSED(tag);
+
+  // `addr` is the pointer that will be returned from arena alloc/realloc
+  // functions.  In this code-path we know it must be non-NULL, but the compiler
+  // doesn't know this unless we add a UPB_ASSUME() annotation.
+  //
+  // This will let the optimizer optimize away NULL-checks if it can see that
+  // this path was taken.
+  UPB_ASSUME(addr);
   return addr;
 #endif
 }
@@ -1752,14 +1760,16 @@ UPB_API_INLINE void* upb_Array_MutableDataPtr(struct upb_Array* array) {
   return (void*)upb_Array_DataPtr(array);
 }
 
-UPB_INLINE struct upb_Array* UPB_PRIVATE(_upb_Array_New)(upb_Arena* arena,
-                                                         size_t init_capacity,
-                                                         int elem_size_lg2) {
+UPB_INLINE struct upb_Array* UPB_PRIVATE(_upb_Array_NewMaybeAllowSlow)(
+    upb_Arena* arena, size_t init_capacity, int elem_size_lg2,
+    bool allow_slow) {
   UPB_ASSERT(elem_size_lg2 != 1);
   UPB_ASSERT(elem_size_lg2 <= 4);
   const size_t array_size =
       UPB_ALIGN_UP(sizeof(struct upb_Array), UPB_MALLOC_ALIGN);
   const size_t bytes = array_size + (init_capacity << elem_size_lg2);
+  size_t span = UPB_PRIVATE(_upb_Arena_AllocSpan)(bytes);
+  if (!allow_slow && UPB_PRIVATE(_upb_ArenaHas)(arena) < span) return NULL;
   struct upb_Array* array = (struct upb_Array*)upb_Arena_Malloc(arena, bytes);
   if (!array) return NULL;
   UPB_PRIVATE(_upb_Array_SetTaggedPtr)
@@ -1769,9 +1779,34 @@ UPB_INLINE struct upb_Array* UPB_PRIVATE(_upb_Array_New)(upb_Arena* arena,
   return array;
 }
 
+UPB_INLINE struct upb_Array* UPB_PRIVATE(_upb_Array_New)(upb_Arena* arena,
+                                                         size_t init_capacity,
+                                                         int elem_size_lg2) {
+  return UPB_PRIVATE(_upb_Array_NewMaybeAllowSlow)(arena, init_capacity,
+                                                   elem_size_lg2, true);
+}
+
+UPB_INLINE struct upb_Array* UPB_PRIVATE(_upb_Array_TryFastNew)(
+    upb_Arena* arena, size_t init_capacity, int elem_size_lg2) {
+  return UPB_PRIVATE(_upb_Array_NewMaybeAllowSlow)(arena, init_capacity,
+                                                   elem_size_lg2, false);
+}
+
 // Resizes the capacity of the array to be at least min_size.
 bool UPB_PRIVATE(_upb_Array_Realloc)(struct upb_Array* array, size_t min_size,
                                      upb_Arena* arena);
+
+UPB_FORCEINLINE
+bool UPB_PRIVATE(_upb_Array_TryFastRealloc)(struct upb_Array* array,
+                                            size_t capacity, int elem_size_lg2,
+                                            upb_Arena* arena) {
+  size_t old_bytes = array->UPB_PRIVATE(capacity) << elem_size_lg2;
+  size_t new_bytes = capacity << elem_size_lg2;
+  UPB_ASSUME(new_bytes > old_bytes);
+  if (!upb_Arena_TryExtend(arena, array, old_bytes, new_bytes)) return false;
+  array->UPB_PRIVATE(capacity) = capacity;
+  return true;
+}
 
 UPB_API_INLINE bool upb_Array_Reserve(struct upb_Array* array, size_t size,
                                       upb_Arena* arena) {
@@ -1807,6 +1842,10 @@ UPB_INLINE void UPB_PRIVATE(_upb_Array_Set)(struct upb_Array* array, size_t i,
 
 UPB_API_INLINE size_t upb_Array_Size(const struct upb_Array* arr) {
   return arr->UPB_ONLYBITS(size);
+}
+
+UPB_API_INLINE size_t upb_Array_Capacity(const struct upb_Array* arr) {
+  return arr->UPB_PRIVATE(capacity);
 }
 
 // LINT.ThenChange(GoogleInternalName0)
@@ -2735,6 +2774,9 @@ UPB_API upb_Array* upb_Array_New(upb_Arena* a, upb_CType type);
 
 // Returns the number of elements in the array.
 UPB_API_INLINE size_t upb_Array_Size(const upb_Array* arr);
+
+// Returns the number of elements in the array.
+UPB_API_INLINE size_t upb_Array_Capacity(const upb_Array* arr);
 
 // Returns the given element, which must be within the array's current size.
 UPB_API upb_MessageValue upb_Array_Get(const upb_Array* arr, size_t i);
@@ -4802,6 +4844,16 @@ UPB_API_INLINE void upb_Message_SetClosedEnum(struct upb_Message* msg,
 
 // Extension Setters ///////////////////////////////////////////////////////////
 
+UPB_API_INLINE bool upb_Message_SetExtensionMessage(
+    struct upb_Message* msg, const upb_MiniTableExtension* e,
+    struct upb_Message* value, upb_Arena* a) {
+  UPB_ASSERT(value);
+  UPB_ASSUME(upb_MiniTableExtension_CType(e) == kUpb_CType_Message);
+  UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableExtension_GetRep)(e) ==
+             UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte));
+  return upb_Message_SetExtension(msg, e, &value, a);
+}
+
 UPB_API_INLINE bool upb_Message_SetExtensionBool(
     struct upb_Message* msg, const upb_MiniTableExtension* e, bool value,
     upb_Arena* a) {
@@ -5514,6 +5566,10 @@ UPB_API_INLINE upb_Array* upb_Message_GetExtensionMutableArray(
 UPB_API_INLINE bool upb_Message_SetExtension(upb_Message* msg,
                                              const upb_MiniTableExtension* e,
                                              const void* value, upb_Arena* a);
+
+UPB_API_INLINE bool upb_Message_SetExtensionMessage(
+    struct upb_Message* msg, const upb_MiniTableExtension* e,
+    struct upb_Message* value, upb_Arena* a);
 
 UPB_API_INLINE bool upb_Message_SetExtensionBool(
     struct upb_Message* msg, const upb_MiniTableExtension* e, bool value,
