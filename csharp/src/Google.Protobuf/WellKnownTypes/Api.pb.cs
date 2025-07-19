@@ -32,16 +32,16 @@ namespace Google.Protobuf.WellKnownTypes {
             "b24YBCABKAkSNgoOc291cmNlX2NvbnRleHQYBSABKAsyHi5nb29nbGUucHJv",
             "dG9idWYuU291cmNlQ29udGV4dBImCgZtaXhpbnMYBiADKAsyFi5nb29nbGUu",
             "cHJvdG9idWYuTWl4aW4SJwoGc3ludGF4GAcgASgOMhcuZ29vZ2xlLnByb3Rv",
-            "YnVmLlN5bnRheBIPCgdlZGl0aW9uGAggASgJIuYBCgZNZXRob2QSDAoEbmFt",
+            "YnVmLlN5bnRheBIPCgdlZGl0aW9uGAggASgJIu4BCgZNZXRob2QSDAoEbmFt",
             "ZRgBIAEoCRIYChByZXF1ZXN0X3R5cGVfdXJsGAIgASgJEhkKEXJlcXVlc3Rf",
             "c3RyZWFtaW5nGAMgASgIEhkKEXJlc3BvbnNlX3R5cGVfdXJsGAQgASgJEhoK",
             "EnJlc3BvbnNlX3N0cmVhbWluZxgFIAEoCBIoCgdvcHRpb25zGAYgAygLMhcu",
-            "Z29vZ2xlLnByb3RvYnVmLk9wdGlvbhInCgZzeW50YXgYByABKA4yFy5nb29n",
-            "bGUucHJvdG9idWYuU3ludGF4Eg8KB2VkaXRpb24YCCABKAkiIwoFTWl4aW4S",
-            "DAoEbmFtZRgBIAEoCRIMCgRyb290GAIgASgJQnYKE2NvbS5nb29nbGUucHJv",
-            "dG9idWZCCEFwaVByb3RvUAFaLGdvb2dsZS5nb2xhbmcub3JnL3Byb3RvYnVm",
-            "L3R5cGVzL2tub3duL2FwaXBiogIDR1BCqgIeR29vZ2xlLlByb3RvYnVmLldl",
-            "bGxLbm93blR5cGVzYgZwcm90bzM="));
+            "Z29vZ2xlLnByb3RvYnVmLk9wdGlvbhIrCgZzeW50YXgYByABKA4yFy5nb29n",
+            "bGUucHJvdG9idWYuU3ludGF4QgIYARITCgdlZGl0aW9uGAggASgJQgIYASIj",
+            "CgVNaXhpbhIMCgRuYW1lGAEgASgJEgwKBHJvb3QYAiABKAlCdgoTY29tLmdv",
+            "b2dsZS5wcm90b2J1ZkIIQXBpUHJvdG9QAVosZ29vZ2xlLmdvbGFuZy5vcmcv",
+            "cHJvdG9idWYvdHlwZXMva25vd24vYXBpcGKiAgNHUEKqAh5Hb29nbGUuUHJv",
+            "dG9idWYuV2VsbEtub3duVHlwZXNiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::Google.Protobuf.WellKnownTypes.SourceContextReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.TypeReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
@@ -64,6 +64,11 @@ namespace Google.Protobuf.WellKnownTypes {
   /// sometimes simply referred to as "APIs" in other contexts, such as the name of
   /// this message itself. See https://cloud.google.com/apis/design/glossary for
   /// detailed terminology.
+  ///
+  /// New usages of this message as an alternative to ServiceDescriptorProto are
+  /// strongly discouraged. This message does not reliability preserve all
+  /// information necessary to model the schema and preserve semantics. Instead
+  /// make use of FileDescriptorSet which preserves the necessary information.
   /// </summary>
   [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
   public sealed partial class Api : pb::IMessage<Api>
@@ -544,6 +549,11 @@ namespace Google.Protobuf.WellKnownTypes {
 
   /// <summary>
   /// Method represents a method of an API interface.
+  ///
+  /// New usages of this message as an alternative to MethodDescriptorProto are
+  /// strongly discouraged. This message does not reliability preserve all
+  /// information necessary to model the schema and preserve semantics. Instead
+  /// make use of FileDescriptorSet which preserves the necessary information.
   /// </summary>
   [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
   public sealed partial class Method : pb::IMessage<Method>
@@ -691,7 +701,11 @@ namespace Google.Protobuf.WellKnownTypes {
     private global::Google.Protobuf.WellKnownTypes.Syntax syntax_ = global::Google.Protobuf.WellKnownTypes.Syntax.Proto2;
     /// <summary>
     /// The source syntax of this method.
+    ///
+    /// This field should be ignored, instead the syntax should be inherited from
+    /// Api. This is similar to Field and EnumValue.
     /// </summary>
+    [global::System.ObsoleteAttribute]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public global::Google.Protobuf.WellKnownTypes.Syntax Syntax {
@@ -706,7 +720,11 @@ namespace Google.Protobuf.WellKnownTypes {
     private string edition_ = "";
     /// <summary>
     /// The source edition string, only valid when syntax is SYNTAX_EDITIONS.
+    ///
+    /// This field should be ignored, instead the edition should be inherited from
+    /// Api. This is similar to Field and EnumValue.
     /// </summary>
+    [global::System.ObsoleteAttribute]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public string Edition {
