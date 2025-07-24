@@ -66,8 +66,7 @@ const UPB_SCRATCH_SPACE_BYTES: usize = 65_536;
 /// view, we can allocate a large block and refer to that when dealing
 /// with readonly access.
 #[repr(C, align(8))] // align to UPB_MALLOC_ALIGN = 8
-#[doc(hidden)]
-pub struct ScratchSpace([u8; UPB_SCRATCH_SPACE_BYTES]);
+struct ScratchSpace([u8; UPB_SCRATCH_SPACE_BYTES]);
 impl ScratchSpace {
     pub fn zeroed_block() -> RawMessage {
         static ZEROED_BLOCK: ScratchSpace = ScratchSpace([0; UPB_SCRATCH_SPACE_BYTES]);
@@ -196,9 +195,8 @@ impl<'msg, T: Message + AssociatedMiniTable> MessageMutInner<'msg, T> {
 
     pub fn from_parent<ParentT>(
         parent_msg: MessageMutInner<'msg, ParentT>,
-        raw_field_ptr: RawMessage,
+        ptr: MessagePtr<T>,
     ) -> Self {
-        let ptr = unsafe { MessagePtr::wrap(raw_field_ptr) };
         MessageMutInner { ptr, arena: parent_msg.arena }
     }
 
@@ -267,6 +265,17 @@ impl<'msg, T: Message + AssociatedMiniTable> MessageViewInner<'msg, T> {
 
     pub fn raw(&self) -> RawMessage {
         self.ptr.raw()
+    }
+}
+
+impl<T: Message + AssociatedMiniTable> Default for MessageViewInner<'static, T> {
+    fn default() -> Self {
+        unsafe {
+            // SAFETY:
+            // - `ScratchSpace::zeroed_block()` is a valid const `RawMessage` for all possible T.
+            // - `ScratchSpace::zeroed_block()' has 'static lifetime.
+            Self::wrap_raw(ScratchSpace::zeroed_block())
+        }
     }
 }
 
