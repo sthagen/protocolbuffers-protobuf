@@ -449,7 +449,7 @@ Struct::_table_ = {
     65535, 65535
   }}, {{
     // map<string, .google.protobuf.Value> fields = 1;
-    {PROTOBUF_FIELD_OFFSET(Struct, _impl_.fields_), 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMap)},
+    {PROTOBUF_FIELD_OFFSET(Struct, _impl_.fields_), -1, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMap)},
   }},
   {{
       {::_pbi::TcParser::GetMapAuxInfo(1, 0, 0,
@@ -559,8 +559,10 @@ PROTOBUF_NOINLINE void Struct::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void Struct::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<Struct*>(&to_msg);
+void Struct::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<Struct*>(&to_msg);
   auto& from = static_cast<const Struct&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -568,10 +570,11 @@ void Struct::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.Struct)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_impl_.fields_.MergeFrom(from._impl_.fields_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void Struct::CopyFrom(const Struct& from) {
@@ -976,8 +979,10 @@ PROTOBUF_NOINLINE void Value::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void Value::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<Value*>(&to_msg);
+void Value::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<Value*>(&to_msg);
   auto& from = static_cast<const Value&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -986,9 +991,10 @@ void Value::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::p
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.Value)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
-  if (const uint32_t oneof_from_case = from._impl_._oneof_case_[0]) {
+  if (const uint32_t oneof_from_case =
+          from._impl_._oneof_case_[0]) {
     const uint32_t oneof_to_case = _this->_impl_._oneof_case_[0];
     const bool oneof_needs_init = oneof_to_case != oneof_from_case;
     if (oneof_needs_init) {
@@ -1038,7 +1044,8 @@ void Value::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::p
         break;
     }
   }
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void Value::CopyFrom(const Value& from) {
@@ -1201,7 +1208,7 @@ ListValue::_table_ = {
     65535, 65535
   }}, {{
     // repeated .google.protobuf.Value values = 1;
-    {PROTOBUF_FIELD_OFFSET(ListValue, _impl_.values_), 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+    {PROTOBUF_FIELD_OFFSET(ListValue, _impl_.values_), -1, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
   {{
       {::_pbi::TcParser::GetTable<::google::protobuf::Value>()},
@@ -1286,8 +1293,10 @@ PROTOBUF_NOINLINE void ListValue::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void ListValue::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<ListValue*>(&to_msg);
+void ListValue::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<ListValue*>(&to_msg);
   auto& from = static_cast<const ListValue&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -1295,11 +1304,12 @@ void ListValue::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::googl
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.ListValue)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_values()->MergeFrom(
       from._internal_values());
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void ListValue::CopyFrom(const ListValue& from) {

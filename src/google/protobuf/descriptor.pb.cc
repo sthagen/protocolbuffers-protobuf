@@ -1876,206 +1876,207 @@ const char descriptor_table_protodef_google_2fprotobuf_2fdescriptor_2eproto[] AB
     "rvedRange\022\r\n\005start\030\001 \001(\005\022\013\n\003end\030\002 \001(\005\"l\n"
     "\030EnumValueDescriptorProto\022\014\n\004name\030\001 \001(\t\022"
     "\016\n\006number\030\002 \001(\005\0222\n\007options\030\003 \001(\0132!.googl"
-    "e.protobuf.EnumValueOptions\"\220\001\n\026ServiceD"
+    "e.protobuf.EnumValueOptions\"\236\001\n\026ServiceD"
     "escriptorProto\022\014\n\004name\030\001 \001(\t\0226\n\006method\030\002"
     " \003(\0132&.google.protobuf.MethodDescriptorP"
     "roto\0220\n\007options\030\003 \001(\0132\037.google.protobuf."
-    "ServiceOptions\"\301\001\n\025MethodDescriptorProto"
-    "\022\014\n\004name\030\001 \001(\t\022\022\n\ninput_type\030\002 \001(\t\022\023\n\013ou"
-    "tput_type\030\003 \001(\t\022/\n\007options\030\004 \001(\0132\036.googl"
-    "e.protobuf.MethodOptions\022\037\n\020client_strea"
-    "ming\030\005 \001(\010:\005false\022\037\n\020server_streaming\030\006 "
-    "\001(\010:\005false\"\313\006\n\013FileOptions\022\024\n\014java_packa"
-    "ge\030\001 \001(\t\022\034\n\024java_outer_classname\030\010 \001(\t\022\""
-    "\n\023java_multiple_files\030\n \001(\010:\005false\022)\n\035ja"
-    "va_generate_equals_and_hash\030\024 \001(\010B\002\030\001\022%\n"
-    "\026java_string_check_utf8\030\033 \001(\010:\005false\022F\n\014"
-    "optimize_for\030\t \001(\0162).google.protobuf.Fil"
-    "eOptions.OptimizeMode:\005SPEED\022\022\n\ngo_packa"
-    "ge\030\013 \001(\t\022\"\n\023cc_generic_services\030\020 \001(\010:\005f"
-    "alse\022$\n\025java_generic_services\030\021 \001(\010:\005fal"
-    "se\022\"\n\023py_generic_services\030\022 \001(\010:\005false\022\031"
-    "\n\ndeprecated\030\027 \001(\010:\005false\022\036\n\020cc_enable_a"
-    "renas\030\037 \001(\010:\004true\022\031\n\021objc_class_prefix\030$"
-    " \001(\t\022\030\n\020csharp_namespace\030% \001(\t\022\024\n\014swift_"
-    "prefix\030\' \001(\t\022\030\n\020php_class_prefix\030( \001(\t\022\025"
-    "\n\rphp_namespace\030) \001(\t\022\036\n\026php_metadata_na"
-    "mespace\030, \001(\t\022\024\n\014ruby_package\030- \001(\t\022-\n\010f"
-    "eatures\0302 \001(\0132\033.google.protobuf.FeatureS"
-    "et\022C\n\024uninterpreted_option\030\347\007 \003(\0132$.goog"
-    "le.protobuf.UninterpretedOption\":\n\014Optim"
-    "izeMode\022\t\n\005SPEED\020\001\022\r\n\tCODE_SIZE\020\002\022\020\n\014LIT"
-    "E_RUNTIME\020\003*\t\010\350\007\020\200\200\200\200\002J\004\010*\020+J\004\010&\020\'R\024php_"
-    "generic_services\"\347\002\n\016MessageOptions\022&\n\027m"
-    "essage_set_wire_format\030\001 \001(\010:\005false\022.\n\037n"
-    "o_standard_descriptor_accessor\030\002 \001(\010:\005fa"
-    "lse\022\031\n\ndeprecated\030\003 \001(\010:\005false\022\021\n\tmap_en"
-    "try\030\007 \001(\010\0222\n&deprecated_legacy_json_fiel"
-    "d_conflicts\030\013 \001(\010B\002\030\001\022-\n\010features\030\014 \001(\0132"
-    "\033.google.protobuf.FeatureSet\022C\n\024uninterp"
-    "reted_option\030\347\007 \003(\0132$.google.protobuf.Un"
-    "interpretedOption*\t\010\350\007\020\200\200\200\200\002J\004\010\004\020\005J\004\010\005\020\006"
-    "J\004\010\006\020\007J\004\010\010\020\tJ\004\010\t\020\n\"\247\013\n\014FieldOptions\022:\n\005c"
-    "type\030\001 \001(\0162#.google.protobuf.FieldOption"
-    "s.CType:\006STRING\022\016\n\006packed\030\002 \001(\010\022\?\n\006jstyp"
-    "e\030\006 \001(\0162$.google.protobuf.FieldOptions.J"
-    "SType:\tJS_NORMAL\022\023\n\004lazy\030\005 \001(\010:\005false\022\036\n"
-    "\017unverified_lazy\030\017 \001(\010:\005false\022\031\n\ndepreca"
-    "ted\030\003 \001(\010:\005false\022\027\n\004weak\030\n \001(\010:\005falseB\002\030"
-    "\001\022\033\n\014debug_redact\030\020 \001(\010:\005false\022@\n\tretent"
-    "ion\030\021 \001(\0162-.google.protobuf.FieldOptions"
-    ".OptionRetention\022\?\n\007targets\030\023 \003(\0162..goog"
-    "le.protobuf.FieldOptions.OptionTargetTyp"
-    "e\022F\n\020edition_defaults\030\024 \003(\0132,.google.pro"
-    "tobuf.FieldOptions.EditionDefault\022-\n\010fea"
-    "tures\030\025 \001(\0132\033.google.protobuf.FeatureSet"
-    "\022E\n\017feature_support\030\026 \001(\0132,.google.proto"
-    "buf.FieldOptions.FeatureSupport\022C\n\024unint"
-    "erpreted_option\030\347\007 \003(\0132$.google.protobuf"
-    ".UninterpretedOption\032J\n\016EditionDefault\022)"
-    "\n\007edition\030\003 \001(\0162\030.google.protobuf.Editio"
-    "n\022\r\n\005value\030\002 \001(\t\032\314\001\n\016FeatureSupport\0224\n\022e"
-    "dition_introduced\030\001 \001(\0162\030.google.protobu"
-    "f.Edition\0224\n\022edition_deprecated\030\002 \001(\0162\030."
-    "google.protobuf.Edition\022\033\n\023deprecation_w"
-    "arning\030\003 \001(\t\0221\n\017edition_removed\030\004 \001(\0162\030."
-    "google.protobuf.Edition\"/\n\005CType\022\n\n\006STRI"
-    "NG\020\000\022\010\n\004CORD\020\001\022\020\n\014STRING_PIECE\020\002\"5\n\006JSTy"
-    "pe\022\r\n\tJS_NORMAL\020\000\022\r\n\tJS_STRING\020\001\022\r\n\tJS_N"
-    "UMBER\020\002\"U\n\017OptionRetention\022\025\n\021RETENTION_"
-    "UNKNOWN\020\000\022\025\n\021RETENTION_RUNTIME\020\001\022\024\n\020RETE"
-    "NTION_SOURCE\020\002\"\214\002\n\020OptionTargetType\022\027\n\023T"
-    "ARGET_TYPE_UNKNOWN\020\000\022\024\n\020TARGET_TYPE_FILE"
-    "\020\001\022\037\n\033TARGET_TYPE_EXTENSION_RANGE\020\002\022\027\n\023T"
-    "ARGET_TYPE_MESSAGE\020\003\022\025\n\021TARGET_TYPE_FIEL"
-    "D\020\004\022\025\n\021TARGET_TYPE_ONEOF\020\005\022\024\n\020TARGET_TYP"
-    "E_ENUM\020\006\022\032\n\026TARGET_TYPE_ENUM_ENTRY\020\007\022\027\n\023"
-    "TARGET_TYPE_SERVICE\020\010\022\026\n\022TARGET_TYPE_MET"
-    "HOD\020\t*\t\010\350\007\020\200\200\200\200\002J\004\010\004\020\005J\004\010\022\020\023\"\215\001\n\014OneofOp"
-    "tions\022-\n\010features\030\001 \001(\0132\033.google.protobu"
-    "f.FeatureSet\022C\n\024uninterpreted_option\030\347\007 "
-    "\003(\0132$.google.protobuf.UninterpretedOptio"
-    "n*\t\010\350\007\020\200\200\200\200\002\"\366\001\n\013EnumOptions\022\023\n\013allow_al"
-    "ias\030\002 \001(\010\022\031\n\ndeprecated\030\003 \001(\010:\005false\0222\n&"
-    "deprecated_legacy_json_field_conflicts\030\006"
-    " \001(\010B\002\030\001\022-\n\010features\030\007 \001(\0132\033.google.prot"
-    "obuf.FeatureSet\022C\n\024uninterpreted_option\030"
-    "\347\007 \003(\0132$.google.protobuf.UninterpretedOp"
-    "tion*\t\010\350\007\020\200\200\200\200\002J\004\010\005\020\006\"\220\002\n\020EnumValueOptio"
-    "ns\022\031\n\ndeprecated\030\001 \001(\010:\005false\022-\n\010feature"
-    "s\030\002 \001(\0132\033.google.protobuf.FeatureSet\022\033\n\014"
-    "debug_redact\030\003 \001(\010:\005false\022E\n\017feature_sup"
-    "port\030\004 \001(\0132,.google.protobuf.FieldOption"
-    "s.FeatureSupport\022C\n\024uninterpreted_option"
+    "ServiceOptionsJ\004\010\004\020\005R\006stream\"\301\001\n\025MethodD"
+    "escriptorProto\022\014\n\004name\030\001 \001(\t\022\022\n\ninput_ty"
+    "pe\030\002 \001(\t\022\023\n\013output_type\030\003 \001(\t\022/\n\007options"
+    "\030\004 \001(\0132\036.google.protobuf.MethodOptions\022\037"
+    "\n\020client_streaming\030\005 \001(\010:\005false\022\037\n\020serve"
+    "r_streaming\030\006 \001(\010:\005false\"\313\006\n\013FileOptions"
+    "\022\024\n\014java_package\030\001 \001(\t\022\034\n\024java_outer_cla"
+    "ssname\030\010 \001(\t\022\"\n\023java_multiple_files\030\n \001("
+    "\010:\005false\022)\n\035java_generate_equals_and_has"
+    "h\030\024 \001(\010B\002\030\001\022%\n\026java_string_check_utf8\030\033 "
+    "\001(\010:\005false\022F\n\014optimize_for\030\t \001(\0162).googl"
+    "e.protobuf.FileOptions.OptimizeMode:\005SPE"
+    "ED\022\022\n\ngo_package\030\013 \001(\t\022\"\n\023cc_generic_ser"
+    "vices\030\020 \001(\010:\005false\022$\n\025java_generic_servi"
+    "ces\030\021 \001(\010:\005false\022\"\n\023py_generic_services\030"
+    "\022 \001(\010:\005false\022\031\n\ndeprecated\030\027 \001(\010:\005false\022"
+    "\036\n\020cc_enable_arenas\030\037 \001(\010:\004true\022\031\n\021objc_"
+    "class_prefix\030$ \001(\t\022\030\n\020csharp_namespace\030%"
+    " \001(\t\022\024\n\014swift_prefix\030\' \001(\t\022\030\n\020php_class_"
+    "prefix\030( \001(\t\022\025\n\rphp_namespace\030) \001(\t\022\036\n\026p"
+    "hp_metadata_namespace\030, \001(\t\022\024\n\014ruby_pack"
+    "age\030- \001(\t\022-\n\010features\0302 \001(\0132\033.google.pro"
+    "tobuf.FeatureSet\022C\n\024uninterpreted_option"
     "\030\347\007 \003(\0132$.google.protobuf.UninterpretedO"
-    "ption*\t\010\350\007\020\200\200\200\200\002\"\252\001\n\016ServiceOptions\022-\n\010f"
-    "eatures\030\" \001(\0132\033.google.protobuf.FeatureS"
-    "et\022\031\n\ndeprecated\030! \001(\010:\005false\022C\n\024uninter"
+    "ption\":\n\014OptimizeMode\022\t\n\005SPEED\020\001\022\r\n\tCODE"
+    "_SIZE\020\002\022\020\n\014LITE_RUNTIME\020\003*\t\010\350\007\020\200\200\200\200\002J\004\010*"
+    "\020+J\004\010&\020\'R\024php_generic_services\"\347\002\n\016Messa"
+    "geOptions\022&\n\027message_set_wire_format\030\001 \001"
+    "(\010:\005false\022.\n\037no_standard_descriptor_acce"
+    "ssor\030\002 \001(\010:\005false\022\031\n\ndeprecated\030\003 \001(\010:\005f"
+    "alse\022\021\n\tmap_entry\030\007 \001(\010\0222\n&deprecated_le"
+    "gacy_json_field_conflicts\030\013 \001(\010B\002\030\001\022-\n\010f"
+    "eatures\030\014 \001(\0132\033.google.protobuf.FeatureS"
+    "et\022C\n\024uninterpreted_option\030\347\007 \003(\0132$.goog"
+    "le.protobuf.UninterpretedOption*\t\010\350\007\020\200\200\200"
+    "\200\002J\004\010\004\020\005J\004\010\005\020\006J\004\010\006\020\007J\004\010\010\020\tJ\004\010\t\020\n\"\247\013\n\014Fie"
+    "ldOptions\022:\n\005ctype\030\001 \001(\0162#.google.protob"
+    "uf.FieldOptions.CType:\006STRING\022\016\n\006packed\030"
+    "\002 \001(\010\022\?\n\006jstype\030\006 \001(\0162$.google.protobuf."
+    "FieldOptions.JSType:\tJS_NORMAL\022\023\n\004lazy\030\005"
+    " \001(\010:\005false\022\036\n\017unverified_lazy\030\017 \001(\010:\005fa"
+    "lse\022\031\n\ndeprecated\030\003 \001(\010:\005false\022\027\n\004weak\030\n"
+    " \001(\010:\005falseB\002\030\001\022\033\n\014debug_redact\030\020 \001(\010:\005f"
+    "alse\022@\n\tretention\030\021 \001(\0162-.google.protobu"
+    "f.FieldOptions.OptionRetention\022\?\n\007target"
+    "s\030\023 \003(\0162..google.protobuf.FieldOptions.O"
+    "ptionTargetType\022F\n\020edition_defaults\030\024 \003("
+    "\0132,.google.protobuf.FieldOptions.Edition"
+    "Default\022-\n\010features\030\025 \001(\0132\033.google.proto"
+    "buf.FeatureSet\022E\n\017feature_support\030\026 \001(\0132"
+    ",.google.protobuf.FieldOptions.FeatureSu"
+    "pport\022C\n\024uninterpreted_option\030\347\007 \003(\0132$.g"
+    "oogle.protobuf.UninterpretedOption\032J\n\016Ed"
+    "itionDefault\022)\n\007edition\030\003 \001(\0162\030.google.p"
+    "rotobuf.Edition\022\r\n\005value\030\002 \001(\t\032\314\001\n\016Featu"
+    "reSupport\0224\n\022edition_introduced\030\001 \001(\0162\030."
+    "google.protobuf.Edition\0224\n\022edition_depre"
+    "cated\030\002 \001(\0162\030.google.protobuf.Edition\022\033\n"
+    "\023deprecation_warning\030\003 \001(\t\0221\n\017edition_re"
+    "moved\030\004 \001(\0162\030.google.protobuf.Edition\"/\n"
+    "\005CType\022\n\n\006STRING\020\000\022\010\n\004CORD\020\001\022\020\n\014STRING_P"
+    "IECE\020\002\"5\n\006JSType\022\r\n\tJS_NORMAL\020\000\022\r\n\tJS_ST"
+    "RING\020\001\022\r\n\tJS_NUMBER\020\002\"U\n\017OptionRetention"
+    "\022\025\n\021RETENTION_UNKNOWN\020\000\022\025\n\021RETENTION_RUN"
+    "TIME\020\001\022\024\n\020RETENTION_SOURCE\020\002\"\214\002\n\020OptionT"
+    "argetType\022\027\n\023TARGET_TYPE_UNKNOWN\020\000\022\024\n\020TA"
+    "RGET_TYPE_FILE\020\001\022\037\n\033TARGET_TYPE_EXTENSIO"
+    "N_RANGE\020\002\022\027\n\023TARGET_TYPE_MESSAGE\020\003\022\025\n\021TA"
+    "RGET_TYPE_FIELD\020\004\022\025\n\021TARGET_TYPE_ONEOF\020\005"
+    "\022\024\n\020TARGET_TYPE_ENUM\020\006\022\032\n\026TARGET_TYPE_EN"
+    "UM_ENTRY\020\007\022\027\n\023TARGET_TYPE_SERVICE\020\010\022\026\n\022T"
+    "ARGET_TYPE_METHOD\020\t*\t\010\350\007\020\200\200\200\200\002J\004\010\004\020\005J\004\010\022"
+    "\020\023\"\215\001\n\014OneofOptions\022-\n\010features\030\001 \001(\0132\033."
+    "google.protobuf.FeatureSet\022C\n\024uninterpre"
+    "ted_option\030\347\007 \003(\0132$.google.protobuf.Unin"
+    "terpretedOption*\t\010\350\007\020\200\200\200\200\002\"\366\001\n\013EnumOptio"
+    "ns\022\023\n\013allow_alias\030\002 \001(\010\022\031\n\ndeprecated\030\003 "
+    "\001(\010:\005false\0222\n&deprecated_legacy_json_fie"
+    "ld_conflicts\030\006 \001(\010B\002\030\001\022-\n\010features\030\007 \001(\013"
+    "2\033.google.protobuf.FeatureSet\022C\n\024uninter"
     "preted_option\030\347\007 \003(\0132$.google.protobuf.U"
-    "ninterpretedOption*\t\010\350\007\020\200\200\200\200\002\"\334\002\n\rMethod"
-    "Options\022\031\n\ndeprecated\030! \001(\010:\005false\022_\n\021id"
-    "empotency_level\030\" \001(\0162/.google.protobuf."
-    "MethodOptions.IdempotencyLevel:\023IDEMPOTE"
-    "NCY_UNKNOWN\022-\n\010features\030# \001(\0132\033.google.p"
-    "rotobuf.FeatureSet\022C\n\024uninterpreted_opti"
-    "on\030\347\007 \003(\0132$.google.protobuf.Uninterprete"
-    "dOption\"P\n\020IdempotencyLevel\022\027\n\023IDEMPOTEN"
-    "CY_UNKNOWN\020\000\022\023\n\017NO_SIDE_EFFECTS\020\001\022\016\n\nIDE"
-    "MPOTENT\020\002*\t\010\350\007\020\200\200\200\200\002\"\236\002\n\023UninterpretedOp"
-    "tion\022;\n\004name\030\002 \003(\0132-.google.protobuf.Uni"
-    "nterpretedOption.NamePart\022\030\n\020identifier_"
-    "value\030\003 \001(\t\022\032\n\022positive_int_value\030\004 \001(\004\022"
-    "\032\n\022negative_int_value\030\005 \001(\003\022\024\n\014double_va"
-    "lue\030\006 \001(\001\022\024\n\014string_value\030\007 \001(\014\022\027\n\017aggre"
-    "gate_value\030\010 \001(\t\0323\n\010NamePart\022\021\n\tname_par"
-    "t\030\001 \002(\t\022\024\n\014is_extension\030\002 \002(\010\"\203\016\n\nFeatur"
-    "eSet\022\202\001\n\016field_presence\030\001 \001(\0162).google.p"
-    "rotobuf.FeatureSet.FieldPresenceB\?\210\001\001\230\001\004"
-    "\230\001\001\242\001\r\022\010EXPLICIT\030\204\007\242\001\r\022\010IMPLICIT\030\347\007\242\001\r\022\010"
-    "EXPLICIT\030\350\007\262\001\003\010\350\007\022b\n\tenum_type\030\002 \001(\0162$.g"
-    "oogle.protobuf.FeatureSet.EnumTypeB)\210\001\001\230"
-    "\001\006\230\001\001\242\001\013\022\006CLOSED\030\204\007\242\001\t\022\004OPEN\030\347\007\262\001\003\010\350\007\022\201\001"
-    "\n\027repeated_field_encoding\030\003 \001(\01621.google"
-    ".protobuf.FeatureSet.RepeatedFieldEncodi"
-    "ngB-\210\001\001\230\001\004\230\001\001\242\001\r\022\010EXPANDED\030\204\007\242\001\013\022\006PACKED"
-    "\030\347\007\262\001\003\010\350\007\022n\n\017utf8_validation\030\004 \001(\0162*.goo"
-    "gle.protobuf.FeatureSet.Utf8ValidationB)"
-    "\210\001\001\230\001\004\230\001\001\242\001\t\022\004NONE\030\204\007\242\001\013\022\006VERIFY\030\347\007\262\001\003\010\350"
-    "\007\022m\n\020message_encoding\030\005 \001(\0162+.google.pro"
-    "tobuf.FeatureSet.MessageEncodingB&\210\001\001\230\001\004"
-    "\230\001\001\242\001\024\022\017LENGTH_PREFIXED\030\204\007\262\001\003\010\350\007\022v\n\013json"
-    "_format\030\006 \001(\0162&.google.protobuf.FeatureS"
-    "et.JsonFormatB9\210\001\001\230\001\003\230\001\006\230\001\001\242\001\027\022\022LEGACY_B"
-    "EST_EFFORT\030\204\007\242\001\n\022\005ALLOW\030\347\007\262\001\003\010\350\007\022\227\001\n\024enf"
-    "orce_naming_style\030\007 \001(\0162..google.protobu"
-    "f.FeatureSet.EnforceNamingStyleBI\210\001\002\230\001\001\230"
-    "\001\002\230\001\003\230\001\004\230\001\005\230\001\006\230\001\007\230\001\010\230\001\t\242\001\021\022\014STYLE_LEGACY"
-    "\030\204\007\242\001\016\022\tSTYLE2024\030\351\007\262\001\003\010\351\007\022\240\001\n\031default_s"
-    "ymbol_visibility\030\010 \001(\0162E.google.protobuf"
-    ".FeatureSet.VisibilityFeature.DefaultSym"
-    "bolVisibilityB6\210\001\002\230\001\001\242\001\017\022\nEXPORT_ALL\030\204\007\242"
-    "\001\025\022\020EXPORT_TOP_LEVEL\030\351\007\262\001\003\010\351\007\032\241\001\n\021Visibi"
-    "lityFeature\"\201\001\n\027DefaultSymbolVisibility\022"
-    "%\n!DEFAULT_SYMBOL_VISIBILITY_UNKNOWN\020\000\022\016"
-    "\n\nEXPORT_ALL\020\001\022\024\n\020EXPORT_TOP_LEVEL\020\002\022\r\n\t"
-    "LOCAL_ALL\020\003\022\n\n\006STRICT\020\004J\010\010\001\020\200\200\200\200\002\"\\\n\rFie"
-    "ldPresence\022\032\n\026FIELD_PRESENCE_UNKNOWN\020\000\022\014"
-    "\n\010EXPLICIT\020\001\022\014\n\010IMPLICIT\020\002\022\023\n\017LEGACY_REQ"
-    "UIRED\020\003\"7\n\010EnumType\022\025\n\021ENUM_TYPE_UNKNOWN"
-    "\020\000\022\010\n\004OPEN\020\001\022\n\n\006CLOSED\020\002\"V\n\025RepeatedFiel"
-    "dEncoding\022#\n\037REPEATED_FIELD_ENCODING_UNK"
-    "NOWN\020\000\022\n\n\006PACKED\020\001\022\014\n\010EXPANDED\020\002\"I\n\016Utf8"
-    "Validation\022\033\n\027UTF8_VALIDATION_UNKNOWN\020\000\022"
-    "\n\n\006VERIFY\020\002\022\010\n\004NONE\020\003\"\004\010\001\020\001\"S\n\017MessageEn"
-    "coding\022\034\n\030MESSAGE_ENCODING_UNKNOWN\020\000\022\023\n\017"
-    "LENGTH_PREFIXED\020\001\022\r\n\tDELIMITED\020\002\"H\n\nJson"
-    "Format\022\027\n\023JSON_FORMAT_UNKNOWN\020\000\022\t\n\005ALLOW"
-    "\020\001\022\026\n\022LEGACY_BEST_EFFORT\020\002\"W\n\022EnforceNam"
-    "ingStyle\022 \n\034ENFORCE_NAMING_STYLE_UNKNOWN"
-    "\020\000\022\r\n\tSTYLE2024\020\001\022\020\n\014STYLE_LEGACY\020\002*\006\010\350\007"
-    "\020\213N*\006\010\213N\020\220N*\006\010\220N\020\221NJ\006\010\347\007\020\350\007\"\230\003\n\022FeatureS"
-    "etDefaults\022N\n\010defaults\030\001 \003(\0132<.google.pr"
-    "otobuf.FeatureSetDefaults.FeatureSetEdit"
-    "ionDefault\0221\n\017minimum_edition\030\004 \001(\0162\030.go"
-    "ogle.protobuf.Edition\0221\n\017maximum_edition"
-    "\030\005 \001(\0162\030.google.protobuf.Edition\032\313\001\n\030Fea"
-    "tureSetEditionDefault\022)\n\007edition\030\003 \001(\0162\030"
-    ".google.protobuf.Edition\0229\n\024overridable_"
-    "features\030\004 \001(\0132\033.google.protobuf.Feature"
-    "Set\0223\n\016fixed_features\030\005 \001(\0132\033.google.pro"
-    "tobuf.FeatureSetJ\004\010\001\020\002J\004\010\002\020\003R\010features\"\343"
-    "\001\n\016SourceCodeInfo\022:\n\010location\030\001 \003(\0132(.go"
-    "ogle.protobuf.SourceCodeInfo.Location\032\206\001"
-    "\n\010Location\022\020\n\004path\030\001 \003(\005B\002\020\001\022\020\n\004span\030\002 \003"
-    "(\005B\002\020\001\022\030\n\020leading_comments\030\003 \001(\t\022\031\n\021trai"
-    "ling_comments\030\004 \001(\t\022!\n\031leading_detached_"
-    "comments\030\006 \003(\t*\014\010\200\354\312\377\001\020\201\354\312\377\001\"\234\002\n\021Generat"
-    "edCodeInfo\022A\n\nannotation\030\001 \003(\0132-.google."
-    "protobuf.GeneratedCodeInfo.Annotation\032\303\001"
-    "\n\nAnnotation\022\020\n\004path\030\001 \003(\005B\002\020\001\022\023\n\013source"
-    "_file\030\002 \001(\t\022\r\n\005begin\030\003 \001(\005\022\013\n\003end\030\004 \001(\005\022"
-    "H\n\010semantic\030\005 \001(\01626.google.protobuf.Gene"
-    "ratedCodeInfo.Annotation.Semantic\"(\n\010Sem"
-    "antic\022\010\n\004NONE\020\000\022\007\n\003SET\020\001\022\t\n\005ALIAS\020\002*\247\002\n\007"
-    "Edition\022\023\n\017EDITION_UNKNOWN\020\000\022\023\n\016EDITION_"
-    "LEGACY\020\204\007\022\023\n\016EDITION_PROTO2\020\346\007\022\023\n\016EDITIO"
-    "N_PROTO3\020\347\007\022\021\n\014EDITION_2023\020\350\007\022\021\n\014EDITIO"
-    "N_2024\020\351\007\022\027\n\023EDITION_1_TEST_ONLY\020\001\022\027\n\023ED"
-    "ITION_2_TEST_ONLY\020\002\022\035\n\027EDITION_99997_TES"
-    "T_ONLY\020\235\215\006\022\035\n\027EDITION_99998_TEST_ONLY\020\236\215"
-    "\006\022\035\n\027EDITION_99999_TEST_ONLY\020\237\215\006\022\023\n\013EDIT"
-    "ION_MAX\020\377\377\377\377\007*U\n\020SymbolVisibility\022\024\n\020VIS"
-    "IBILITY_UNSET\020\000\022\024\n\020VISIBILITY_LOCAL\020\001\022\025\n"
-    "\021VISIBILITY_EXPORT\020\002B~\n\023com.google.proto"
-    "bufB\020DescriptorProtosH\001Z-google.golang.o"
-    "rg/protobuf/types/descriptorpb\370\001\001\242\002\003GPB\252"
-    "\002\032Google.Protobuf.Reflection"
+    "ninterpretedOption*\t\010\350\007\020\200\200\200\200\002J\004\010\005\020\006\"\220\002\n\020"
+    "EnumValueOptions\022\031\n\ndeprecated\030\001 \001(\010:\005fa"
+    "lse\022-\n\010features\030\002 \001(\0132\033.google.protobuf."
+    "FeatureSet\022\033\n\014debug_redact\030\003 \001(\010:\005false\022"
+    "E\n\017feature_support\030\004 \001(\0132,.google.protob"
+    "uf.FieldOptions.FeatureSupport\022C\n\024uninte"
+    "rpreted_option\030\347\007 \003(\0132$.google.protobuf."
+    "UninterpretedOption*\t\010\350\007\020\200\200\200\200\002\"\252\001\n\016Servi"
+    "ceOptions\022-\n\010features\030\" \001(\0132\033.google.pro"
+    "tobuf.FeatureSet\022\031\n\ndeprecated\030! \001(\010:\005fa"
+    "lse\022C\n\024uninterpreted_option\030\347\007 \003(\0132$.goo"
+    "gle.protobuf.UninterpretedOption*\t\010\350\007\020\200\200"
+    "\200\200\002\"\334\002\n\rMethodOptions\022\031\n\ndeprecated\030! \001("
+    "\010:\005false\022_\n\021idempotency_level\030\" \001(\0162/.go"
+    "ogle.protobuf.MethodOptions.IdempotencyL"
+    "evel:\023IDEMPOTENCY_UNKNOWN\022-\n\010features\030# "
+    "\001(\0132\033.google.protobuf.FeatureSet\022C\n\024unin"
+    "terpreted_option\030\347\007 \003(\0132$.google.protobu"
+    "f.UninterpretedOption\"P\n\020IdempotencyLeve"
+    "l\022\027\n\023IDEMPOTENCY_UNKNOWN\020\000\022\023\n\017NO_SIDE_EF"
+    "FECTS\020\001\022\016\n\nIDEMPOTENT\020\002*\t\010\350\007\020\200\200\200\200\002\"\236\002\n\023U"
+    "ninterpretedOption\022;\n\004name\030\002 \003(\0132-.googl"
+    "e.protobuf.UninterpretedOption.NamePart\022"
+    "\030\n\020identifier_value\030\003 \001(\t\022\032\n\022positive_in"
+    "t_value\030\004 \001(\004\022\032\n\022negative_int_value\030\005 \001("
+    "\003\022\024\n\014double_value\030\006 \001(\001\022\024\n\014string_value\030"
+    "\007 \001(\014\022\027\n\017aggregate_value\030\010 \001(\t\0323\n\010NamePa"
+    "rt\022\021\n\tname_part\030\001 \002(\t\022\024\n\014is_extension\030\002 "
+    "\002(\010\"\203\016\n\nFeatureSet\022\202\001\n\016field_presence\030\001 "
+    "\001(\0162).google.protobuf.FeatureSet.FieldPr"
+    "esenceB\?\210\001\001\230\001\004\230\001\001\242\001\r\022\010EXPLICIT\030\204\007\242\001\r\022\010IM"
+    "PLICIT\030\347\007\242\001\r\022\010EXPLICIT\030\350\007\262\001\003\010\350\007\022b\n\tenum_"
+    "type\030\002 \001(\0162$.google.protobuf.FeatureSet."
+    "EnumTypeB)\210\001\001\230\001\006\230\001\001\242\001\013\022\006CLOSED\030\204\007\242\001\t\022\004OP"
+    "EN\030\347\007\262\001\003\010\350\007\022\201\001\n\027repeated_field_encoding\030"
+    "\003 \001(\01621.google.protobuf.FeatureSet.Repea"
+    "tedFieldEncodingB-\210\001\001\230\001\004\230\001\001\242\001\r\022\010EXPANDED"
+    "\030\204\007\242\001\013\022\006PACKED\030\347\007\262\001\003\010\350\007\022n\n\017utf8_validati"
+    "on\030\004 \001(\0162*.google.protobuf.FeatureSet.Ut"
+    "f8ValidationB)\210\001\001\230\001\004\230\001\001\242\001\t\022\004NONE\030\204\007\242\001\013\022\006"
+    "VERIFY\030\347\007\262\001\003\010\350\007\022m\n\020message_encoding\030\005 \001("
+    "\0162+.google.protobuf.FeatureSet.MessageEn"
+    "codingB&\210\001\001\230\001\004\230\001\001\242\001\024\022\017LENGTH_PREFIXED\030\204\007"
+    "\262\001\003\010\350\007\022v\n\013json_format\030\006 \001(\0162&.google.pro"
+    "tobuf.FeatureSet.JsonFormatB9\210\001\001\230\001\003\230\001\006\230\001"
+    "\001\242\001\027\022\022LEGACY_BEST_EFFORT\030\204\007\242\001\n\022\005ALLOW\030\347\007"
+    "\262\001\003\010\350\007\022\227\001\n\024enforce_naming_style\030\007 \001(\0162.."
+    "google.protobuf.FeatureSet.EnforceNaming"
+    "StyleBI\210\001\002\230\001\001\230\001\002\230\001\003\230\001\004\230\001\005\230\001\006\230\001\007\230\001\010\230\001\t\242\001\021"
+    "\022\014STYLE_LEGACY\030\204\007\242\001\016\022\tSTYLE2024\030\351\007\262\001\003\010\351\007"
+    "\022\240\001\n\031default_symbol_visibility\030\010 \001(\0162E.g"
+    "oogle.protobuf.FeatureSet.VisibilityFeat"
+    "ure.DefaultSymbolVisibilityB6\210\001\002\230\001\001\242\001\017\022\n"
+    "EXPORT_ALL\030\204\007\242\001\025\022\020EXPORT_TOP_LEVEL\030\351\007\262\001\003"
+    "\010\351\007\032\241\001\n\021VisibilityFeature\"\201\001\n\027DefaultSym"
+    "bolVisibility\022%\n!DEFAULT_SYMBOL_VISIBILI"
+    "TY_UNKNOWN\020\000\022\016\n\nEXPORT_ALL\020\001\022\024\n\020EXPORT_T"
+    "OP_LEVEL\020\002\022\r\n\tLOCAL_ALL\020\003\022\n\n\006STRICT\020\004J\010\010"
+    "\001\020\200\200\200\200\002\"\\\n\rFieldPresence\022\032\n\026FIELD_PRESEN"
+    "CE_UNKNOWN\020\000\022\014\n\010EXPLICIT\020\001\022\014\n\010IMPLICIT\020\002"
+    "\022\023\n\017LEGACY_REQUIRED\020\003\"7\n\010EnumType\022\025\n\021ENU"
+    "M_TYPE_UNKNOWN\020\000\022\010\n\004OPEN\020\001\022\n\n\006CLOSED\020\002\"V"
+    "\n\025RepeatedFieldEncoding\022#\n\037REPEATED_FIEL"
+    "D_ENCODING_UNKNOWN\020\000\022\n\n\006PACKED\020\001\022\014\n\010EXPA"
+    "NDED\020\002\"I\n\016Utf8Validation\022\033\n\027UTF8_VALIDAT"
+    "ION_UNKNOWN\020\000\022\n\n\006VERIFY\020\002\022\010\n\004NONE\020\003\"\004\010\001\020"
+    "\001\"S\n\017MessageEncoding\022\034\n\030MESSAGE_ENCODING"
+    "_UNKNOWN\020\000\022\023\n\017LENGTH_PREFIXED\020\001\022\r\n\tDELIM"
+    "ITED\020\002\"H\n\nJsonFormat\022\027\n\023JSON_FORMAT_UNKN"
+    "OWN\020\000\022\t\n\005ALLOW\020\001\022\026\n\022LEGACY_BEST_EFFORT\020\002"
+    "\"W\n\022EnforceNamingStyle\022 \n\034ENFORCE_NAMING"
+    "_STYLE_UNKNOWN\020\000\022\r\n\tSTYLE2024\020\001\022\020\n\014STYLE"
+    "_LEGACY\020\002*\006\010\350\007\020\213N*\006\010\213N\020\220N*\006\010\220N\020\221NJ\006\010\347\007\020\350"
+    "\007\"\230\003\n\022FeatureSetDefaults\022N\n\010defaults\030\001 \003"
+    "(\0132<.google.protobuf.FeatureSetDefaults."
+    "FeatureSetEditionDefault\0221\n\017minimum_edit"
+    "ion\030\004 \001(\0162\030.google.protobuf.Edition\0221\n\017m"
+    "aximum_edition\030\005 \001(\0162\030.google.protobuf.E"
+    "dition\032\313\001\n\030FeatureSetEditionDefault\022)\n\007e"
+    "dition\030\003 \001(\0162\030.google.protobuf.Edition\0229"
+    "\n\024overridable_features\030\004 \001(\0132\033.google.pr"
+    "otobuf.FeatureSet\0223\n\016fixed_features\030\005 \001("
+    "\0132\033.google.protobuf.FeatureSetJ\004\010\001\020\002J\004\010\002"
+    "\020\003R\010features\"\343\001\n\016SourceCodeInfo\022:\n\010locat"
+    "ion\030\001 \003(\0132(.google.protobuf.SourceCodeIn"
+    "fo.Location\032\206\001\n\010Location\022\020\n\004path\030\001 \003(\005B\002"
+    "\020\001\022\020\n\004span\030\002 \003(\005B\002\020\001\022\030\n\020leading_comments"
+    "\030\003 \001(\t\022\031\n\021trailing_comments\030\004 \001(\t\022!\n\031lea"
+    "ding_detached_comments\030\006 \003(\t*\014\010\200\354\312\377\001\020\201\354\312"
+    "\377\001\"\234\002\n\021GeneratedCodeInfo\022A\n\nannotation\030\001"
+    " \003(\0132-.google.protobuf.GeneratedCodeInfo"
+    ".Annotation\032\303\001\n\nAnnotation\022\020\n\004path\030\001 \003(\005"
+    "B\002\020\001\022\023\n\013source_file\030\002 \001(\t\022\r\n\005begin\030\003 \001(\005"
+    "\022\013\n\003end\030\004 \001(\005\022H\n\010semantic\030\005 \001(\01626.google"
+    ".protobuf.GeneratedCodeInfo.Annotation.S"
+    "emantic\"(\n\010Semantic\022\010\n\004NONE\020\000\022\007\n\003SET\020\001\022\t"
+    "\n\005ALIAS\020\002*\247\002\n\007Edition\022\023\n\017EDITION_UNKNOWN"
+    "\020\000\022\023\n\016EDITION_LEGACY\020\204\007\022\023\n\016EDITION_PROTO"
+    "2\020\346\007\022\023\n\016EDITION_PROTO3\020\347\007\022\021\n\014EDITION_202"
+    "3\020\350\007\022\021\n\014EDITION_2024\020\351\007\022\027\n\023EDITION_1_TES"
+    "T_ONLY\020\001\022\027\n\023EDITION_2_TEST_ONLY\020\002\022\035\n\027EDI"
+    "TION_99997_TEST_ONLY\020\235\215\006\022\035\n\027EDITION_9999"
+    "8_TEST_ONLY\020\236\215\006\022\035\n\027EDITION_99999_TEST_ON"
+    "LY\020\237\215\006\022\023\n\013EDITION_MAX\020\377\377\377\377\007*U\n\020SymbolVis"
+    "ibility\022\024\n\020VISIBILITY_UNSET\020\000\022\024\n\020VISIBIL"
+    "ITY_LOCAL\020\001\022\025\n\021VISIBILITY_EXPORT\020\002B~\n\023co"
+    "m.google.protobufB\020DescriptorProtosH\001Z-g"
+    "oogle.golang.org/protobuf/types/descript"
+    "orpb\370\001\001\242\002\003GPB\252\002\032Google.Protobuf.Reflecti"
+    "on"
 };
 static ::absl::once_flag descriptor_table_google_2fprotobuf_2fdescriptor_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_google_2fprotobuf_2fdescriptor_2eproto = {
     false,
     false,
-    10908,
+    10922,
     descriptor_table_protodef_google_2fprotobuf_2fdescriptor_2eproto,
     "google/protobuf/descriptor.proto",
     &descriptor_table_google_2fprotobuf_2fdescriptor_2eproto_once,
@@ -2404,7 +2405,7 @@ FileDescriptorSet::_table_ = {
     65535, 65535
   }}, {{
     // repeated .google.protobuf.FileDescriptorProto file = 1;
-    {PROTOBUF_FIELD_OFFSET(FileDescriptorSet, _impl_.file_), 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+    {PROTOBUF_FIELD_OFFSET(FileDescriptorSet, _impl_.file_), -1, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
   {{
       {::_pbi::TcParser::GetTable<::google::protobuf::FileDescriptorProto>()},
@@ -2494,8 +2495,10 @@ PROTOBUF_NOINLINE void FileDescriptorSet::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void FileDescriptorSet::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<FileDescriptorSet*>(&to_msg);
+void FileDescriptorSet::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<FileDescriptorSet*>(&to_msg);
   auto& from = static_cast<const FileDescriptorSet&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -2503,12 +2506,14 @@ void FileDescriptorSet::MergeImpl(::google::protobuf::MessageLite& to_msg, const
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.FileDescriptorSet)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_file()->MergeFrom(
       from._internal_file());
-  _this->_impl_._extensions_.MergeFrom(&default_instance(), from._impl_._extensions_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_._extensions_.MergeFrom(&default_instance(),
+                                from._impl_._extensions_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void FileDescriptorSet::CopyFrom(const FileDescriptorSet& from) {
@@ -3143,8 +3148,10 @@ PROTOBUF_NOINLINE void FileDescriptorProto::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void FileDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<FileDescriptorProto*>(&to_msg);
+void FileDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<FileDescriptorProto*>(&to_msg);
   auto& from = static_cast<const FileDescriptorProto&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -3153,7 +3160,7 @@ void FileDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, con
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.FileDescriptorProto)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_dependency()->MergeFrom(from._internal_dependency());
   _this->_internal_mutable_message_type()->MergeFrom(
@@ -3199,7 +3206,8 @@ void FileDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, con
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void FileDescriptorProto::CopyFrom(const FileDescriptorProto& from) {
@@ -3533,8 +3541,10 @@ PROTOBUF_NOINLINE void DescriptorProto_ExtensionRange::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void DescriptorProto_ExtensionRange::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<DescriptorProto_ExtensionRange*>(&to_msg);
+void DescriptorProto_ExtensionRange::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<DescriptorProto_ExtensionRange*>(&to_msg);
   auto& from = static_cast<const DescriptorProto_ExtensionRange&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -3543,7 +3553,7 @@ void DescriptorProto_ExtensionRange::MergeImpl(::google::protobuf::MessageLite& 
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.DescriptorProto.ExtensionRange)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x00000007U)) {
@@ -3563,7 +3573,8 @@ void DescriptorProto_ExtensionRange::MergeImpl(::google::protobuf::MessageLite& 
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void DescriptorProto_ExtensionRange::CopyFrom(const DescriptorProto_ExtensionRange& from) {
@@ -3825,8 +3836,10 @@ PROTOBUF_NOINLINE void DescriptorProto_ReservedRange::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void DescriptorProto_ReservedRange::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<DescriptorProto_ReservedRange*>(&to_msg);
+void DescriptorProto_ReservedRange::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<DescriptorProto_ReservedRange*>(&to_msg);
   auto& from = static_cast<const DescriptorProto_ReservedRange&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -3834,7 +3847,7 @@ void DescriptorProto_ReservedRange::MergeImpl(::google::protobuf::MessageLite& t
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.DescriptorProto.ReservedRange)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
@@ -3846,7 +3859,8 @@ void DescriptorProto_ReservedRange::MergeImpl(::google::protobuf::MessageLite& t
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void DescriptorProto_ReservedRange::CopyFrom(const DescriptorProto_ReservedRange& from) {
@@ -4412,8 +4426,10 @@ PROTOBUF_NOINLINE void DescriptorProto::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void DescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<DescriptorProto*>(&to_msg);
+void DescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<DescriptorProto*>(&to_msg);
   auto& from = static_cast<const DescriptorProto&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -4422,7 +4438,7 @@ void DescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, const :
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.DescriptorProto)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_field()->MergeFrom(
       from._internal_field());
@@ -4457,7 +4473,8 @@ void DescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, const :
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void DescriptorProto::CopyFrom(const DescriptorProto& from) {
@@ -4826,8 +4843,10 @@ PROTOBUF_NOINLINE void ExtensionRangeOptions_Declaration::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void ExtensionRangeOptions_Declaration::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<ExtensionRangeOptions_Declaration*>(&to_msg);
+void ExtensionRangeOptions_Declaration::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<ExtensionRangeOptions_Declaration*>(&to_msg);
   auto& from = static_cast<const ExtensionRangeOptions_Declaration&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -4835,7 +4854,7 @@ void ExtensionRangeOptions_Declaration::MergeImpl(::google::protobuf::MessageLit
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.ExtensionRangeOptions.Declaration)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x0000001fU)) {
@@ -4856,7 +4875,8 @@ void ExtensionRangeOptions_Declaration::MergeImpl(::google::protobuf::MessageLit
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void ExtensionRangeOptions_Declaration::CopyFrom(const ExtensionRangeOptions_Declaration& from) {
@@ -5222,8 +5242,10 @@ PROTOBUF_NOINLINE void ExtensionRangeOptions::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void ExtensionRangeOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<ExtensionRangeOptions*>(&to_msg);
+void ExtensionRangeOptions::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<ExtensionRangeOptions*>(&to_msg);
   auto& from = static_cast<const ExtensionRangeOptions&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -5232,7 +5254,7 @@ void ExtensionRangeOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, c
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.ExtensionRangeOptions)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_declaration()->MergeFrom(
       from._internal_declaration());
@@ -5253,8 +5275,10 @@ void ExtensionRangeOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, c
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_impl_._extensions_.MergeFrom(&default_instance(), from._impl_._extensions_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_._extensions_.MergeFrom(&default_instance(),
+                                from._impl_._extensions_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void ExtensionRangeOptions::CopyFrom(const ExtensionRangeOptions& from) {
@@ -5761,8 +5785,10 @@ PROTOBUF_NOINLINE void FieldDescriptorProto::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void FieldDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<FieldDescriptorProto*>(&to_msg);
+void FieldDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<FieldDescriptorProto*>(&to_msg);
   auto& from = static_cast<const FieldDescriptorProto&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -5771,7 +5797,7 @@ void FieldDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, co
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.FieldDescriptorProto)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x000000ffU)) {
@@ -5817,7 +5843,8 @@ void FieldDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, co
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void FieldDescriptorProto::CopyFrom(const FieldDescriptorProto& from) {
@@ -6111,8 +6138,10 @@ PROTOBUF_NOINLINE void OneofDescriptorProto::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void OneofDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<OneofDescriptorProto*>(&to_msg);
+void OneofDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<OneofDescriptorProto*>(&to_msg);
   auto& from = static_cast<const OneofDescriptorProto&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -6121,7 +6150,7 @@ void OneofDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, co
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.OneofDescriptorProto)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
@@ -6138,7 +6167,8 @@ void OneofDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, co
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void OneofDescriptorProto::CopyFrom(const OneofDescriptorProto& from) {
@@ -6398,8 +6428,10 @@ PROTOBUF_NOINLINE void EnumDescriptorProto_EnumReservedRange::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void EnumDescriptorProto_EnumReservedRange::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<EnumDescriptorProto_EnumReservedRange*>(&to_msg);
+void EnumDescriptorProto_EnumReservedRange::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<EnumDescriptorProto_EnumReservedRange*>(&to_msg);
   auto& from = static_cast<const EnumDescriptorProto_EnumReservedRange&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -6407,7 +6439,7 @@ void EnumDescriptorProto_EnumReservedRange::MergeImpl(::google::protobuf::Messag
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.EnumDescriptorProto.EnumReservedRange)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
@@ -6419,7 +6451,8 @@ void EnumDescriptorProto_EnumReservedRange::MergeImpl(::google::protobuf::Messag
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void EnumDescriptorProto_EnumReservedRange::CopyFrom(const EnumDescriptorProto_EnumReservedRange& from) {
@@ -6827,8 +6860,10 @@ PROTOBUF_NOINLINE void EnumDescriptorProto::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void EnumDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<EnumDescriptorProto*>(&to_msg);
+void EnumDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<EnumDescriptorProto*>(&to_msg);
   auto& from = static_cast<const EnumDescriptorProto&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -6837,7 +6872,7 @@ void EnumDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, con
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.EnumDescriptorProto)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_value()->MergeFrom(
       from._internal_value());
@@ -6862,7 +6897,8 @@ void EnumDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, con
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void EnumDescriptorProto::CopyFrom(const EnumDescriptorProto& from) {
@@ -7182,8 +7218,10 @@ PROTOBUF_NOINLINE void EnumValueDescriptorProto::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void EnumValueDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<EnumValueDescriptorProto*>(&to_msg);
+void EnumValueDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<EnumValueDescriptorProto*>(&to_msg);
   auto& from = static_cast<const EnumValueDescriptorProto&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -7192,7 +7230,7 @@ void EnumValueDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.EnumValueDescriptorProto)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x00000007U)) {
@@ -7212,7 +7250,8 @@ void EnumValueDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void EnumValueDescriptorProto::CopyFrom(const EnumValueDescriptorProto& from) {
@@ -7544,8 +7583,10 @@ PROTOBUF_NOINLINE void ServiceDescriptorProto::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void ServiceDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<ServiceDescriptorProto*>(&to_msg);
+void ServiceDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<ServiceDescriptorProto*>(&to_msg);
   auto& from = static_cast<const ServiceDescriptorProto&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -7554,7 +7595,7 @@ void ServiceDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, 
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.ServiceDescriptorProto)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_method()->MergeFrom(
       from._internal_method());
@@ -7573,7 +7614,8 @@ void ServiceDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, 
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void ServiceDescriptorProto::CopyFrom(const ServiceDescriptorProto& from) {
@@ -7953,8 +7995,10 @@ PROTOBUF_NOINLINE void MethodDescriptorProto::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void MethodDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<MethodDescriptorProto*>(&to_msg);
+void MethodDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<MethodDescriptorProto*>(&to_msg);
   auto& from = static_cast<const MethodDescriptorProto&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -7963,7 +8007,7 @@ void MethodDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, c
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.MethodDescriptorProto)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x0000003fU)) {
@@ -7992,7 +8036,8 @@ void MethodDescriptorProto::MergeImpl(::google::protobuf::MessageLite& to_msg, c
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void MethodDescriptorProto::CopyFrom(const MethodDescriptorProto& from) {
@@ -8716,8 +8761,10 @@ PROTOBUF_NOINLINE void FileOptions::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void FileOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<FileOptions*>(&to_msg);
+void FileOptions::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<FileOptions*>(&to_msg);
   auto& from = static_cast<const FileOptions&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -8726,7 +8773,7 @@ void FileOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::goo
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.FileOptions)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_uninterpreted_option()->MergeFrom(
       from._internal_uninterpreted_option());
@@ -8803,8 +8850,10 @@ void FileOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::goo
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_impl_._extensions_.MergeFrom(&default_instance(), from._impl_._extensions_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_._extensions_.MergeFrom(&default_instance(),
+                                from._impl_._extensions_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void FileOptions::CopyFrom(const FileOptions& from) {
@@ -9210,8 +9259,10 @@ PROTOBUF_NOINLINE void MessageOptions::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void MessageOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<MessageOptions*>(&to_msg);
+void MessageOptions::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<MessageOptions*>(&to_msg);
   auto& from = static_cast<const MessageOptions&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -9220,7 +9271,7 @@ void MessageOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.MessageOptions)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_uninterpreted_option()->MergeFrom(
       from._internal_uninterpreted_option());
@@ -9251,8 +9302,10 @@ void MessageOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_impl_._extensions_.MergeFrom(&default_instance(), from._impl_._extensions_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_._extensions_.MergeFrom(&default_instance(),
+                                from._impl_._extensions_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void MessageOptions::CopyFrom(const MessageOptions& from) {
@@ -9537,8 +9590,10 @@ PROTOBUF_NOINLINE void FieldOptions_EditionDefault::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void FieldOptions_EditionDefault::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<FieldOptions_EditionDefault*>(&to_msg);
+void FieldOptions_EditionDefault::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<FieldOptions_EditionDefault*>(&to_msg);
   auto& from = static_cast<const FieldOptions_EditionDefault&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -9546,7 +9601,7 @@ void FieldOptions_EditionDefault::MergeImpl(::google::protobuf::MessageLite& to_
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.FieldOptions.EditionDefault)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
@@ -9558,7 +9613,8 @@ void FieldOptions_EditionDefault::MergeImpl(::google::protobuf::MessageLite& to_
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void FieldOptions_EditionDefault::CopyFrom(const FieldOptions_EditionDefault& from) {
@@ -9877,8 +9933,10 @@ PROTOBUF_NOINLINE void FieldOptions_FeatureSupport::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void FieldOptions_FeatureSupport::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<FieldOptions_FeatureSupport*>(&to_msg);
+void FieldOptions_FeatureSupport::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<FieldOptions_FeatureSupport*>(&to_msg);
   auto& from = static_cast<const FieldOptions_FeatureSupport&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -9886,7 +9944,7 @@ void FieldOptions_FeatureSupport::MergeImpl(::google::protobuf::MessageLite& to_
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.FieldOptions.FeatureSupport)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x0000000fU)) {
@@ -9904,7 +9962,8 @@ void FieldOptions_FeatureSupport::MergeImpl(::google::protobuf::MessageLite& to_
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void FieldOptions_FeatureSupport::CopyFrom(const FieldOptions_FeatureSupport& from) {
@@ -10445,8 +10504,10 @@ PROTOBUF_NOINLINE void FieldOptions::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void FieldOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<FieldOptions*>(&to_msg);
+void FieldOptions::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<FieldOptions*>(&to_msg);
   auto& from = static_cast<const FieldOptions&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -10455,7 +10516,7 @@ void FieldOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::go
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.FieldOptions)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_targets()->MergeFrom(from._internal_targets());
   _this->_internal_mutable_edition_defaults()->MergeFrom(
@@ -10511,8 +10572,10 @@ void FieldOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::go
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_impl_._extensions_.MergeFrom(&default_instance(), from._impl_._extensions_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_._extensions_.MergeFrom(&default_instance(),
+                                from._impl_._extensions_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void FieldOptions::CopyFrom(const FieldOptions& from) {
@@ -10835,8 +10898,10 @@ PROTOBUF_NOINLINE void OneofOptions::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void OneofOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<OneofOptions*>(&to_msg);
+void OneofOptions::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<OneofOptions*>(&to_msg);
   auto& from = static_cast<const OneofOptions&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -10845,7 +10910,7 @@ void OneofOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::go
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.OneofOptions)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_uninterpreted_option()->MergeFrom(
       from._internal_uninterpreted_option());
@@ -10859,8 +10924,10 @@ void OneofOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::go
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_impl_._extensions_.MergeFrom(&default_instance(), from._impl_._extensions_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_._extensions_.MergeFrom(&default_instance(),
+                                from._impl_._extensions_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void OneofOptions::CopyFrom(const OneofOptions& from) {
@@ -11227,8 +11294,10 @@ PROTOBUF_NOINLINE void EnumOptions::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void EnumOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<EnumOptions*>(&to_msg);
+void EnumOptions::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<EnumOptions*>(&to_msg);
   auto& from = static_cast<const EnumOptions&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -11237,7 +11306,7 @@ void EnumOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::goo
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.EnumOptions)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_uninterpreted_option()->MergeFrom(
       from._internal_uninterpreted_option());
@@ -11262,8 +11331,10 @@ void EnumOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::goo
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_impl_._extensions_.MergeFrom(&default_instance(), from._impl_._extensions_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_._extensions_.MergeFrom(&default_instance(),
+                                from._impl_._extensions_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void EnumOptions::CopyFrom(const EnumOptions& from) {
@@ -11653,8 +11724,10 @@ PROTOBUF_NOINLINE void EnumValueOptions::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void EnumValueOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<EnumValueOptions*>(&to_msg);
+void EnumValueOptions::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<EnumValueOptions*>(&to_msg);
   auto& from = static_cast<const EnumValueOptions&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -11663,7 +11736,7 @@ void EnumValueOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const 
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.EnumValueOptions)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_uninterpreted_option()->MergeFrom(
       from._internal_uninterpreted_option());
@@ -11693,8 +11766,10 @@ void EnumValueOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const 
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_impl_._extensions_.MergeFrom(&default_instance(), from._impl_._extensions_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_._extensions_.MergeFrom(&default_instance(),
+                                from._impl_._extensions_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void EnumValueOptions::CopyFrom(const EnumValueOptions& from) {
@@ -12036,8 +12111,10 @@ PROTOBUF_NOINLINE void ServiceOptions::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void ServiceOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<ServiceOptions*>(&to_msg);
+void ServiceOptions::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<ServiceOptions*>(&to_msg);
   auto& from = static_cast<const ServiceOptions&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -12046,7 +12123,7 @@ void ServiceOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.ServiceOptions)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_uninterpreted_option()->MergeFrom(
       from._internal_uninterpreted_option());
@@ -12065,8 +12142,10 @@ void ServiceOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_impl_._extensions_.MergeFrom(&default_instance(), from._impl_._extensions_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_._extensions_.MergeFrom(&default_instance(),
+                                from._impl_._extensions_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void ServiceOptions::CopyFrom(const ServiceOptions& from) {
@@ -12439,8 +12518,10 @@ PROTOBUF_NOINLINE void MethodOptions::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void MethodOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<MethodOptions*>(&to_msg);
+void MethodOptions::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<MethodOptions*>(&to_msg);
   auto& from = static_cast<const MethodOptions&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -12449,7 +12530,7 @@ void MethodOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::g
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.MethodOptions)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_uninterpreted_option()->MergeFrom(
       from._internal_uninterpreted_option());
@@ -12471,8 +12552,10 @@ void MethodOptions::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::g
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_impl_._extensions_.MergeFrom(&default_instance(), from._impl_._extensions_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_._extensions_.MergeFrom(&default_instance(),
+                                from._impl_._extensions_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void MethodOptions::CopyFrom(const MethodOptions& from) {
@@ -12754,8 +12837,10 @@ PROTOBUF_NOINLINE void UninterpretedOption_NamePart::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void UninterpretedOption_NamePart::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<UninterpretedOption_NamePart*>(&to_msg);
+void UninterpretedOption_NamePart::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<UninterpretedOption_NamePart*>(&to_msg);
   auto& from = static_cast<const UninterpretedOption_NamePart&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -12763,7 +12848,7 @@ void UninterpretedOption_NamePart::MergeImpl(::google::protobuf::MessageLite& to
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.UninterpretedOption.NamePart)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
@@ -12775,7 +12860,8 @@ void UninterpretedOption_NamePart::MergeImpl(::google::protobuf::MessageLite& to
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void UninterpretedOption_NamePart::CopyFrom(const UninterpretedOption_NamePart& from) {
@@ -13186,8 +13272,10 @@ PROTOBUF_NOINLINE void UninterpretedOption::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void UninterpretedOption::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<UninterpretedOption*>(&to_msg);
+void UninterpretedOption::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<UninterpretedOption*>(&to_msg);
   auto& from = static_cast<const UninterpretedOption&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -13195,7 +13283,7 @@ void UninterpretedOption::MergeImpl(::google::protobuf::MessageLite& to_msg, con
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.UninterpretedOption)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_name()->MergeFrom(
       from._internal_name());
@@ -13221,7 +13309,8 @@ void UninterpretedOption::MergeImpl(::google::protobuf::MessageLite& to_msg, con
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void UninterpretedOption::CopyFrom(const UninterpretedOption& from) {
@@ -13745,8 +13834,10 @@ PROTOBUF_NOINLINE void FeatureSet::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void FeatureSet::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<FeatureSet*>(&to_msg);
+void FeatureSet::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<FeatureSet*>(&to_msg);
   auto& from = static_cast<const FeatureSet&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -13754,7 +13845,7 @@ void FeatureSet::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::goog
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.FeatureSet)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x000000ffU)) {
@@ -13784,8 +13875,10 @@ void FeatureSet::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::goog
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_impl_._extensions_.MergeFrom(&default_instance(), from._impl_._extensions_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_._extensions_.MergeFrom(&default_instance(),
+                                from._impl_._extensions_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void FeatureSet::CopyFrom(const FeatureSet& from) {
@@ -14098,8 +14191,10 @@ PROTOBUF_NOINLINE void FeatureSetDefaults_FeatureSetEditionDefault::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void FeatureSetDefaults_FeatureSetEditionDefault::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<FeatureSetDefaults_FeatureSetEditionDefault*>(&to_msg);
+void FeatureSetDefaults_FeatureSetEditionDefault::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<FeatureSetDefaults_FeatureSetEditionDefault*>(&to_msg);
   auto& from = static_cast<const FeatureSetDefaults_FeatureSetEditionDefault&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -14108,7 +14203,7 @@ void FeatureSetDefaults_FeatureSetEditionDefault::MergeImpl(::google::protobuf::
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.FeatureSetDefaults.FeatureSetEditionDefault)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x00000007U)) {
@@ -14133,7 +14228,8 @@ void FeatureSetDefaults_FeatureSetEditionDefault::MergeImpl(::google::protobuf::
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void FeatureSetDefaults_FeatureSetEditionDefault::CopyFrom(const FeatureSetDefaults_FeatureSetEditionDefault& from) {
@@ -14458,8 +14554,10 @@ PROTOBUF_NOINLINE void FeatureSetDefaults::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void FeatureSetDefaults::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<FeatureSetDefaults*>(&to_msg);
+void FeatureSetDefaults::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<FeatureSetDefaults*>(&to_msg);
   auto& from = static_cast<const FeatureSetDefaults&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -14467,7 +14565,7 @@ void FeatureSetDefaults::MergeImpl(::google::protobuf::MessageLite& to_msg, cons
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.FeatureSetDefaults)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_defaults()->MergeFrom(
       from._internal_defaults());
@@ -14481,7 +14579,8 @@ void FeatureSetDefaults::MergeImpl(::google::protobuf::MessageLite& to_msg, cons
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void FeatureSetDefaults::CopyFrom(const FeatureSetDefaults& from) {
@@ -14867,8 +14966,10 @@ PROTOBUF_NOINLINE void SourceCodeInfo_Location::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void SourceCodeInfo_Location::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<SourceCodeInfo_Location*>(&to_msg);
+void SourceCodeInfo_Location::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<SourceCodeInfo_Location*>(&to_msg);
   auto& from = static_cast<const SourceCodeInfo_Location&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -14876,7 +14977,7 @@ void SourceCodeInfo_Location::MergeImpl(::google::protobuf::MessageLite& to_msg,
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.SourceCodeInfo.Location)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_path()->MergeFrom(from._internal_path());
   _this->_internal_mutable_span()->MergeFrom(from._internal_span());
@@ -14891,7 +14992,8 @@ void SourceCodeInfo_Location::MergeImpl(::google::protobuf::MessageLite& to_msg,
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void SourceCodeInfo_Location::CopyFrom(const SourceCodeInfo_Location& from) {
@@ -15065,7 +15167,7 @@ SourceCodeInfo::_table_ = {
     65535, 65535
   }}, {{
     // repeated .google.protobuf.SourceCodeInfo.Location location = 1;
-    {PROTOBUF_FIELD_OFFSET(SourceCodeInfo, _impl_.location_), 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+    {PROTOBUF_FIELD_OFFSET(SourceCodeInfo, _impl_.location_), -1, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
   {{
       {::_pbi::TcParser::GetTable<::google::protobuf::SourceCodeInfo_Location>()},
@@ -15155,8 +15257,10 @@ PROTOBUF_NOINLINE void SourceCodeInfo::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void SourceCodeInfo::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<SourceCodeInfo*>(&to_msg);
+void SourceCodeInfo::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<SourceCodeInfo*>(&to_msg);
   auto& from = static_cast<const SourceCodeInfo&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -15164,12 +15268,14 @@ void SourceCodeInfo::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.SourceCodeInfo)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_location()->MergeFrom(
       from._internal_location());
-  _this->_impl_._extensions_.MergeFrom(&default_instance(), from._impl_._extensions_);
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_._extensions_.MergeFrom(&default_instance(),
+                                from._impl_._extensions_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void SourceCodeInfo::CopyFrom(const SourceCodeInfo& from) {
@@ -15534,8 +15640,10 @@ PROTOBUF_NOINLINE void GeneratedCodeInfo_Annotation::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void GeneratedCodeInfo_Annotation::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<GeneratedCodeInfo_Annotation*>(&to_msg);
+void GeneratedCodeInfo_Annotation::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<GeneratedCodeInfo_Annotation*>(&to_msg);
   auto& from = static_cast<const GeneratedCodeInfo_Annotation&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -15543,7 +15651,7 @@ void GeneratedCodeInfo_Annotation::MergeImpl(::google::protobuf::MessageLite& to
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.GeneratedCodeInfo.Annotation)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_path()->MergeFrom(from._internal_path());
   cached_has_bits = from._impl_._has_bits_[0];
@@ -15562,7 +15670,8 @@ void GeneratedCodeInfo_Annotation::MergeImpl(::google::protobuf::MessageLite& to
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void GeneratedCodeInfo_Annotation::CopyFrom(const GeneratedCodeInfo_Annotation& from) {
@@ -15733,7 +15842,7 @@ GeneratedCodeInfo::_table_ = {
     65535, 65535
   }}, {{
     // repeated .google.protobuf.GeneratedCodeInfo.Annotation annotation = 1;
-    {PROTOBUF_FIELD_OFFSET(GeneratedCodeInfo, _impl_.annotation_), 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+    {PROTOBUF_FIELD_OFFSET(GeneratedCodeInfo, _impl_.annotation_), -1, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
   {{
       {::_pbi::TcParser::GetTable<::google::protobuf::GeneratedCodeInfo_Annotation>()},
@@ -15818,8 +15927,10 @@ PROTOBUF_NOINLINE void GeneratedCodeInfo::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void GeneratedCodeInfo::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<GeneratedCodeInfo*>(&to_msg);
+void GeneratedCodeInfo::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<GeneratedCodeInfo*>(&to_msg);
   auto& from = static_cast<const GeneratedCodeInfo&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -15827,11 +15938,12 @@ void GeneratedCodeInfo::MergeImpl(::google::protobuf::MessageLite& to_msg, const
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.GeneratedCodeInfo)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_annotation()->MergeFrom(
       from._internal_annotation());
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void GeneratedCodeInfo::CopyFrom(const GeneratedCodeInfo& from) {

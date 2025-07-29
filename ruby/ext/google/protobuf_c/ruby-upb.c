@@ -442,11 +442,7 @@ Error, UINTPTR_MAX is undefined
 #if defined(__cplusplus)
 #if defined(__clang__) || UPB_GNUC_MIN(6, 0)
 // https://gcc.gnu.org/gcc-6/changes.html
-#if __cplusplus >= 201402L
 #define UPB_DEPRECATED [[deprecated]]
-#else
-#define UPB_DEPRECATED __attribute__((deprecated))
-#endif
 #else
 #define UPB_DEPRECATED
 #endif
@@ -16998,3 +16994,6 @@ const char* UPB_PRIVATE(_upb_WireReader_SkipGroup)(
 #undef UPB_HAS_BUILTIN
 #undef UPB_HAS_EXTENSION
 #undef UPB_HAS_FEATURE
+#undef UPB_XSAN_MEMBER
+#undef UPB_XSAN
+#undef UPB_XSAN_STRUCT_SIZE

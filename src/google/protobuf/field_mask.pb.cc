@@ -241,7 +241,7 @@ FieldMask::_table_ = {
     65535, 65535
   }}, {{
     // repeated string paths = 1;
-    {PROTOBUF_FIELD_OFFSET(FieldMask, _impl_.paths_), 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kUtf8String | ::_fl::kRepSString)},
+    {PROTOBUF_FIELD_OFFSET(FieldMask, _impl_.paths_), -1, 0, (0 | ::_fl::kFcRepeated | ::_fl::kUtf8String | ::_fl::kRepSString)},
   }},
   // no aux_entries
   {{
@@ -326,8 +326,10 @@ PROTOBUF_NOINLINE void FieldMask::Clear() {
                                              &this_._impl_._cached_size_);
 }
 
-void FieldMask::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<FieldMask*>(&to_msg);
+void FieldMask::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<FieldMask*>(&to_msg);
   auto& from = static_cast<const FieldMask&>(from_msg);
   if constexpr (::_pbi::DebugHardenVerifyHasBitConsistency()) {
     from.VerifyHasBitConsistency();
@@ -335,10 +337,11 @@ void FieldMask::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::googl
   // @@protoc_insertion_point(class_specific_merge_from_start:google.protobuf.FieldMask)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  (void)cached_has_bits;
 
   _this->_internal_mutable_paths()->MergeFrom(from._internal_paths());
-  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
 }
 
 void FieldMask::CopyFrom(const FieldMask& from) {
