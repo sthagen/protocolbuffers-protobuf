@@ -157,6 +157,10 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 // Owner: ckennelly@, mkruskal@
 #define PROTOBUF_FUTURE_ADD_NODISCARD [[nodiscard]]
 
+// Removes the ability to copy messages into themselves.
+// Owner: cknittel@, mkruskal@
+#define PROTOBUF_FUTURE_NO_RECURSIVE_MESSAGE_COPY 1
+
 #else
 
 #define PROTOBUF_FUTURE_ADD_NODISCARD
@@ -586,7 +590,8 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 #error PROTOBUF_DESCRIPTOR_WEAK_MESSAGES_ALLOWED was previously defined
 #endif
 #if defined(__GNUC__) && defined(__clang__) && !defined(__APPLE__) && \
-    !defined(_MSC_VER) && !defined(_WIN32)
+    !defined(_MSC_VER) && !defined(_WIN32) && !defined(__wasm__) &&   \
+    !defined(__EMSCRIPTEN__)
 #define PROTOBUF_DESCRIPTOR_WEAK_MESSAGES_ALLOWED
 #endif
 

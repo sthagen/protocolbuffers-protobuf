@@ -96,6 +96,9 @@ namespace internal {
 class InternalMetadata;
 class FindExtensionTest;
 
+// Forward-declared from message.h.
+PROTOBUF_EXPORT bool IsDescendant(const Message& root, const Message& message);
+
 namespace v2 {
 class TableDrivenMessage;
 }  // namespace v2
@@ -619,6 +622,8 @@ class PROTOBUF_EXPORT ExtensionSet {
   friend class google::protobuf::internal::v2::TableDrivenMessage;
 
   friend void internal::InitializeLazyExtensionSet();
+  friend PROTOBUF_EXPORT bool internal::IsDescendant(const Message& root,
+                                                     const Message& message);
   friend class google::protobuf::internal::FindExtensionTest;
 
   // The repeated field type for T.
@@ -675,6 +680,7 @@ class PROTOBUF_EXPORT ExtensionSet {
     virtual MessageLite* UnsafeArenaReleaseMessage(const MessageLite& prototype,
                                                    Arena* arena) = 0;
 
+    virtual bool HasUnparsed() const = 0;
     virtual bool IsInitialized(const MessageLite* prototype,
                                Arena* arena) const = 0;
     virtual bool IsEagerSerializeSafe(const MessageLite* prototype,
@@ -713,7 +719,7 @@ class PROTOBUF_EXPORT ExtensionSet {
     auto* f = maybe_create_lazy_extension_.load(std::memory_order_relaxed);
     return f != nullptr ? f(arena) : nullptr;
   }
-  static std::atomic<LazyMessageExtension* (*)(Arena* arena)>
+  static std::atomic<LazyMessageExtension* (*)(Arena * arena)>
       maybe_create_lazy_extension_;
 
   // We can't directly use std::atomic for Extension::cached_size because
@@ -1099,10 +1105,10 @@ class PROTOBUF_EXPORT ExtensionSet {
 
     ABSL_DCHECK(extension->type > 0 &&
                 extension->type <= WireFormatLite::MAX_FIELD_TYPE);
-    auto real_type = static_cast<WireFormatLite::FieldType>(extension->type);
+    auto schema_type = static_cast<WireFormatLite::FieldType>(extension->type);
 
     WireFormatLite::WireType expected_wire_type =
-        WireFormatLite::WireTypeForFieldType(real_type);
+        WireFormatLite::WireTypeForFieldType(schema_type);
 
     // Check if this is a packed field.
     *was_packed_on_wire = false;
@@ -1123,6 +1129,10 @@ class PROTOBUF_EXPORT ExtensionSet {
 
   // Returns true if extension is present and lazy.
   bool HasLazy(int number) const;
+
+  // Returns true if the lazy extension has unparsed data. Requires
+  // HasLazy(number) to be true.
+  bool LazyHasUnparsed(int number) const;
 
   // Gets the extension with the given number, creating it if it does not
   // already exist.  Returns true if the extension did not already exist.
