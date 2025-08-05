@@ -1981,8 +1981,6 @@ void BinaryAndJsonConformanceSuiteImpl<MessageType>::RunJsonTests() {
                    "{\"optionalString\":\"Hello, World!\"}",
                    "optional_string: 'Hello, World!'");
 
-  // NOTE: The spec for JSON support is still being sorted out, these may not
-  // all be correct.
   RunJsonTestsForFieldNameConvention();
   RunJsonTestsForNonRepeatedTypes();
   RunJsonTestsForRepeatedTypes();
@@ -2902,6 +2900,14 @@ void BinaryAndJsonConformanceSuiteImpl<
   ExpectParseFailureForJson(
       "RepeatedFieldWrongElementTypeExpectingMessagesGotString", REQUIRED,
       R"({"repeatedNestedMessage": [{"a": 1}, "2"]})");
+
+  // A singular field where a repeated field was expected is not allowed, even
+  // if it is the right type.
+  ExpectParseFailureForJson("SingleValueForRepeatedFieldInt32", REQUIRED,
+                            R"({"repeatedInt32": 1})");
+  ExpectParseFailureForJson("SingleValueForRepeatedFieldMessage", REQUIRED,
+                            R"({"repeatedNestedMessage": {"a": 1}})");
+
   // Trailing comma in the repeated field is not allowed.
   ExpectParseFailureForJson("RepeatedFieldTrailingComma", RECOMMENDED,
                             R"({"repeatedInt32": [1, 2, 3, 4,]})");
@@ -3128,6 +3134,18 @@ void BinaryAndJsonConformanceSuiteImpl<
       "DurationProtoInputTooLarge", REQUIRED,
       "optional_duration: {seconds: 315576000001 nanos: 0}");
 
+  ExpectSerializeFailureForJson("DurationProtoNanosWrongSign", REQUIRED,
+                                "optional_duration: {seconds: 1 nanos: -1}");
+  ExpectSerializeFailureForJson("DurationProtoNanosWrongSignNegativeSecs",
+                                REQUIRED,
+                                "optional_duration: {seconds: -1 nanos: 1}");
+  ExpectSerializeFailureForJson(
+      "DurationProtoNanosTooSmall", REQUIRED,
+      "optional_duration: {seconds: -1 nanos: -1000000000}");
+  ExpectSerializeFailureForJson(
+      "DurationProtoNanosTooLarge", REQUIRED,
+      "optional_duration: {seconds: 1 nanos: 1000000000}");
+
   RunValidJsonTestWithValidator(
       "DurationHasZeroFractionalDigit", RECOMMENDED,
       R"({"optionalDuration": "1.000000000s"})", [](const Json::Value& value) {
@@ -3220,6 +3238,12 @@ void BinaryAndJsonConformanceSuiteImpl<
                                 "optional_timestamp: {seconds: -62135596801}");
   ExpectSerializeFailureForJson("TimestampProtoInputTooLarge", REQUIRED,
                                 "optional_timestamp: {seconds: 253402300800}");
+  ExpectSerializeFailureForJson(
+      "TimestampProtoNegativeNanos", REQUIRED,
+      "optional_timestamp: {seconds: 5000 nanos: -1}");
+  ExpectSerializeFailureForJson(
+      "TimestampProtoNanoTooLarge", REQUIRED,
+      "optional_timestamp: {seconds: 5000 nanos: 1000000000}");
   RunValidJsonTestWithValidator(
       "TimestampZeroNormalized", RECOMMENDED,
       R"({"optionalTimestamp": "1969-12-31T16:00:00-08:00"})",
