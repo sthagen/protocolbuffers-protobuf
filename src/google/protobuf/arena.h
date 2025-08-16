@@ -37,6 +37,7 @@ using type_info = ::type_info;
 #include "google/protobuf/serial_arena.h"
 #include "google/protobuf/thread_safe_arena.h"
 
+
 // Must be included last.
 #include "google/protobuf/port_def.inc"
 
@@ -263,7 +264,7 @@ class PROTOBUF_EXPORT PROTOBUF_ALIGNAS(8)
   template <typename T>
   PROTOBUF_NDEBUG_INLINE static T* PROTOBUF_NONNULL
   CreateArray(Arena* PROTOBUF_NULLABLE arena, size_t num_elements) {
-    static_assert(std::is_trivial<T>::value,
+    static_assert(std::is_trivially_default_constructible<T>::value,
                   "CreateArray requires a trivially constructible type");
     static_assert(std::is_trivially_destructible<T>::value,
                   "CreateArray requires a trivially destructible type");
@@ -339,7 +340,6 @@ class PROTOBUF_EXPORT PROTOBUF_ALIGNAS(8)
       void (*PROTOBUF_NONNULL destruct)(void* PROTOBUF_NONNULL)) {
     impl_.AddCleanup(object, destruct);
   }
-
 
   template <typename T>
   class InternalHelper {
@@ -440,6 +440,7 @@ class PROTOBUF_EXPORT PROTOBUF_ALIGNAS(8)
     friend class Arena;
     friend class TestUtil::ReflectionTester;
   };
+
 
   // Provides access to protected GetArena to generated messages.
   // For internal use only.
