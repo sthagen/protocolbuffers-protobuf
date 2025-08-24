@@ -9830,7 +9830,7 @@ static upb_MiniTable* upb_MtDecoder_DoBuildMiniTableWithBuf(
 #ifdef UPB_TRACING_ENABLED
   // MiniTables built from MiniDescriptors will not be able to vend the message
   // name unless it is explicitly set with upb_MiniTable_SetFullName().
-  decoder->table->UPB_PRIVATE(full_name) = 0;
+  decoder->table.UPB_PRIVATE(full_name) = 0;
 #endif
 
   // Strip off and verify the version tag.
@@ -15828,10 +15828,9 @@ static void upb_Decoder_AddKnownMessageSetItem(
   upb_Message* submsg = _upb_Decoder_NewSubMessage2(
       d, ext->ext->UPB_PRIVATE(sub).UPB_PRIVATE(submsg),
       &ext->ext->UPB_PRIVATE(field), &ext->data.tagged_msg_val);
-  upb_DecodeStatus status =
-      upb_Decode(upb_EpsCopyInputStream_GetInputPtr(&d->input, data), size,
-                 submsg, upb_MiniTableExtension_GetSubMessage(item_mt),
-                 d->extreg, d->options, &d->arena);
+  upb_DecodeStatus status = upb_Decode(
+      data, size, submsg, upb_MiniTableExtension_GetSubMessage(item_mt),
+      d->extreg, d->options, &d->arena);
   if (status != kUpb_DecodeStatus_Ok) _upb_Decoder_ErrorJmp(d, status);
 }
 
@@ -15905,7 +15904,7 @@ static const char* upb_Decoder_DecodeMessageSetItem(
       case kMessageTag: {
         uint32_t size;
         ptr = upb_Decoder_DecodeSize(d, ptr, &size);
-        const char* data = ptr;
+        const char* data = upb_EpsCopyInputStream_GetInputPtr(&d->input, ptr);
         ptr += size;
         if (state_mask & kUpb_HavePayload) break;  // Ignore dup.
         state_mask |= kUpb_HavePayload;
