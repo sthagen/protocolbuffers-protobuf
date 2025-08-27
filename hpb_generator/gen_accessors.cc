@@ -23,7 +23,9 @@
 #include "upb_generator/c/names.h"
 #include "upb_generator/minitable/names.h"
 
-namespace google::protobuf::hpb_generator {
+namespace google {
+namespace protobuf {
+namespace hpb_generator {
 
 namespace protobuf = ::proto2;
 
@@ -283,7 +285,12 @@ void WriteAccessorsInSource(const protobuf::Descriptor* desc, Context& ctx) {
                     (upb_Message*)($3_mutable_$5(msg_, $6)), $6);
               }
               void $0::set_alias_$2($1 target) {
-                ABSL_CHECK(upb_Arena_IsFused(arena_, hpb::interop::upb::GetArena(target)));
+#ifndef NDEBUG
+                ABSL_CHECK(upb_Arena_IsFused(
+                               arena_, hpb::interop::upb::GetArena(target)) ||
+                           upb_Arena_HasRef(
+                               arena_, hpb::interop::upb::GetArena(target)));
+#endif
                 upb_Message_SetBaseFieldMessage(
                     UPB_UPCAST(msg_),
                     upb_MiniTable_GetFieldByIndex($7::minitable(), $8),
@@ -673,5 +680,6 @@ std::string ResolveFieldName(const protobuf::FieldDescriptor* field,
   return ResolveKeywordConflict(field_name);
 }
 
+}  // namespace hpb_generator
 }  // namespace protobuf
-}  // namespace google::hpb_generator
+}  // namespace google

@@ -10,9 +10,9 @@
 use crate::__internal::{Enum, MatcherEq, Private, SealedInternal};
 use crate::{
     AsMut, AsView, Clear, ClearAndParse, CopyFrom, IntoProxied, Map, MapIter, MapMut, MapView,
-    MergeFrom, Message, Mut, MutProxied, OwnedMessageInterop, ParseError, ProtoBytes, ProtoStr,
-    ProtoString, Proxied, ProxiedInMapValue, ProxiedInRepeated, Repeated, RepeatedMut,
-    RepeatedView, TakeFrom, View,
+    MergeFrom, Message, MessageMutInterop, Mut, MutProxied, OwnedMessageInterop, ParseError,
+    ProtoBytes, ProtoStr, ProtoString, Proxied, ProxiedInMapValue, ProxiedInRepeated, Repeated,
+    RepeatedMut, RepeatedView, Serialize, SerializeError, TakeFrom, View,
 };
 use core::fmt::Debug;
 use paste::paste;
@@ -1368,6 +1368,28 @@ where
     }
 }
 
+impl<'a, T> MessageMutInterop<'a> for T
+where
+    Self: AsMut + CppGetRawMessageMut + From<MessageMutInner<'a, <Self as AsMut>::MutProxied>>,
+    <Self as AsMut>::MutProxied: Message,
+{
+    unsafe fn __unstable_wrap_raw_message_mut(msg: &'a mut *mut std::ffi::c_void) -> Self {
+        let raw = RawMessage::new(*msg as *mut _).unwrap();
+        let inner = unsafe { MessageMutInner::wrap_raw(raw) };
+        inner.into()
+    }
+    unsafe fn __unstable_wrap_raw_message_mut_unchecked_lifetime(
+        msg: *mut std::ffi::c_void,
+    ) -> Self {
+        let raw = RawMessage::new(msg as *mut _).unwrap();
+        let inner = unsafe { MessageMutInner::wrap_raw(raw) };
+        inner.into()
+    }
+    fn __unstable_as_raw_message_mut(&mut self) -> *mut std::ffi::c_void {
+        self.get_raw_message_mut(Private).as_ptr() as *mut _
+    }
+}
+
 impl<T> MatcherEq for T
 where
     Self: AsView + Debug,
@@ -1405,6 +1427,20 @@ impl<T: CppGetRawMessageMut> ClearAndParse for T {
         }
         .then_some(())
         .ok_or(ParseError)
+    }
+}
+
+impl<T: CppGetRawMessage> Serialize for T {
+    fn serialize(&self) -> Result<Vec<u8>, SerializeError> {
+        let mut serialized_data = SerializedData::new();
+        let success = unsafe {
+            proto2_rust_Message_serialize(self.get_raw_message(Private), &mut serialized_data)
+        };
+        if success {
+            Ok(serialized_data.into_vec())
+        } else {
+            Err(SerializeError)
+        }
     }
 }
 
