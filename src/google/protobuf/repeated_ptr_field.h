@@ -168,9 +168,11 @@ class PROTOBUF_EXPORT RepeatedPtrFieldBase {
 
   ~RepeatedPtrFieldBase() {
 #ifndef NDEBUG
-    // Try to trigger segfault / asan failure in non-opt builds if arena_
-    // lifetime has ended before the destructor.
-    if (arena_) (void)arena_->SpaceAllocated();
+    // Try to trigger segfault / asan failure in non-opt builds if the arena
+    // lifetime has ended before the destructor. Note that `GetArena()` is
+    // not free, but this is debug-only.
+    const Arena* arena = GetArena();
+    if (arena != nullptr) (void)arena->SpaceAllocated();
 #endif
   }
 
@@ -228,7 +230,7 @@ class PROTOBUF_EXPORT RepeatedPtrFieldBase {
 
     // TODO: arena check is redundant once all `RepeatedPtrField`s
     // with non-null arena are owned by the arena.
-    if (ABSL_PREDICT_FALSE(arena_ != nullptr)) return;
+    if (ABSL_PREDICT_FALSE(GetArena() != nullptr)) return;
 
     using H = CommonHandler<TypeHandler>;
     int n = allocated_size();
@@ -481,7 +483,7 @@ class PROTOBUF_EXPORT RepeatedPtrFieldBase {
       // this case because otherwise a loop calling AddAllocated() followed by
       // Clear() would leak memory.
       using H = CommonHandler<TypeHandler>;
-      Delete<H>(element_at(current_size_), arena_);
+      Delete<H>(element_at(current_size_), GetArena());
     } else if (current_size_ < allocated_size()) {
       // We have some cleared objects.  We don't care about their order, so we
       // can just move the first one to the end to make space.
@@ -553,23 +555,11 @@ class PROTOBUF_EXPORT RepeatedPtrFieldBase {
     UnsafeArenaAddAllocated<H>(value);
   }
 
+  // TODO - Outline this function so a future change can use a
+  // type in its implementation that requires `RepeatedPtrFieldBase` to be fully
+  // defined.
   template <typename TypeHandler>
-  PROTOBUF_NOINLINE void SwapFallback(RepeatedPtrFieldBase* other) {
-    ABSL_DCHECK(!internal::CanUseInternalSwap(GetArena(), other->GetArena()));
-
-    // Copy semantics in this case. We try to improve efficiency by placing the
-    // temporary on |other|'s arena so that messages are copied twice rather
-    // than three times.
-    RepeatedPtrFieldBase temp(other->GetArena());
-    if (!this->empty()) {
-      temp.MergeFrom<typename TypeHandler::Type>(*this);
-    }
-    this->CopyFrom<TypeHandler>(*other);
-    other->InternalSwap(&temp);
-    if (temp.NeedsDestroy()) {
-      temp.Destroy<TypeHandler>();
-    }
-  }
+  PROTOBUF_NOINLINE void SwapFallback(RepeatedPtrFieldBase* other);
 
   // Gets the Arena on which this RepeatedPtrField stores its elements.
   inline Arena* GetArena() const { return arena_; }
@@ -585,6 +575,8 @@ class PROTOBUF_EXPORT RepeatedPtrFieldBase {
 
   using InternalArenaConstructable_ = void;
   using DestructorSkippable_ = void;
+
+  friend google::protobuf::Arena;
 
   template <typename T>
   friend class Arena::InternalHelper;
@@ -835,6 +827,25 @@ inline void* RepeatedPtrFieldBase::AddInternal(
   return result;
 }
 
+template <typename TypeHandler>
+PROTOBUF_NOINLINE void RepeatedPtrFieldBase::SwapFallback(
+    RepeatedPtrFieldBase* other) {
+  ABSL_DCHECK(!internal::CanUseInternalSwap(GetArena(), other->GetArena()));
+
+  // Copy semantics in this case. We try to improve efficiency by placing the
+  // temporary on |other|'s arena so that messages are copied twice rather
+  // than three times.
+  RepeatedPtrFieldBase temp(other->GetArena());
+  if (!this->empty()) {
+    temp.MergeFrom<typename TypeHandler::Type>(*this);
+  }
+  this->CopyFrom<TypeHandler>(*other);
+  other->InternalSwap(&temp);
+  if (temp.NeedsDestroy()) {
+    temp.Destroy<TypeHandler>();
+  }
+}
+
 PROTOBUF_EXPORT void InternalOutOfLineDeleteMessageLite(MessageLite* message);
 
 // Encapsulates the minimally required subset of T's properties in a
@@ -952,6 +963,49 @@ class GenericTypeHandler<std::string> {
   static constexpr bool has_default_instance() { return true; }
 };
 
+
+template <typename T>
+struct IsRepeatedPtrFieldType {
+  static constexpr bool value = false;
+};
+
+template <>
+struct IsRepeatedPtrFieldType<RepeatedPtrFieldBase> {
+  static constexpr bool value = true;
+};
+
+template <typename Element>
+struct IsRepeatedPtrFieldType<RepeatedPtrField<Element>> {
+  static constexpr bool value = true;
+};
+
+// This class maps RepeatedPtrField(Base)? types to the types that we will use
+// to represent them when allocated on an arena. This is necessary because
+// `RepeatedPtrField`s do not own an arena pointer, but can be allocated
+// directly on an arena. In this case, we will use a wrapper class that holds
+// both the arena pointer and the repeated field, and points the repeated field
+// to the arena pointer.
+//
+// Additionally, split repeated pointer fields will use this representation when
+// allocated, regardless of whether they are on an arena or not.
+template <typename T>
+struct RepeatedPtrFieldArenaRep {};
+
+template <>
+struct RepeatedPtrFieldArenaRep<RepeatedPtrFieldBase> {
+  // TODO - With removed arena pointers, we will need a class that
+  // holds both the arena pointer and the repeated field, and points the
+  // repeated to the arena pointer.
+  using Type = RepeatedPtrFieldBase;
+};
+
+template <typename Element>
+struct RepeatedPtrFieldArenaRep<RepeatedPtrField<Element>> {
+  // TODO - With removed arena pointers, we will need a class that
+  // holds both the arena pointer and the repeated field, and points the
+  // repeated to the arena pointer.
+  using Type = RepeatedPtrField<Element>;
+};
 
 }  // namespace internal
 
