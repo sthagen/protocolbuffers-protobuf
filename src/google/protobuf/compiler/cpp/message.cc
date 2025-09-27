@@ -72,6 +72,11 @@ using ::google::protobuf::internal::cpp::HasbitMode;
 using Semantic = ::google::protobuf::io::AnnotationCollector::Semantic;
 using Sub = ::google::protobuf::io::Printer::Sub;
 
+template <typename T>
+inline std::string PrintUnsignedLiteral(T value) {
+  return absl::StrCat(value, "u");
+}
+
 // Create an expression that evaluates to
 //  "for all i, (_has_bits_[i] & masks[i]) == masks[i]"
 // masks is allowed to be shorter than _has_bits_, but at least one element of
@@ -4017,11 +4022,6 @@ MessageGenerator::NewOpRequirements MessageGenerator::GetNewOp(
       // MapField contains an internal vtable pointer we need to copy.
       op.needs_memcpy = true;
       print_arena_offset();
-      // Non-lite maps currently have more than one arena pointer in them. Print
-      // both.
-      if (HasDescriptorMethods(descriptor_->file(), options_)) {
-        print_arena_offset("Alt");
-      }
     } else if (field->is_repeated()) {
       op.needs_arena_seeding = true;
       print_arena_offset();
@@ -4672,6 +4672,9 @@ void MessageGenerator::GenerateCopyFrom(io::Printer* p) {
 }
 
 void MessageGenerator::GenerateVerify(io::Printer* p) {
+}
+
+void MessageGenerator::GenerateVerifyV2(io::Printer* p) {
 }
 
 void MessageGenerator::GenerateSerializeOneofFields(
