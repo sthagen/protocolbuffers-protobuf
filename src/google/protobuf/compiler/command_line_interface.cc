@@ -1600,8 +1600,8 @@ PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name) {
     return nullptr;
   }
 
-  std::unique_ptr<SimpleDescriptorDatabase> database{
-      new SimpleDescriptorDatabase()};
+  std::unique_ptr<SimpleDescriptorDatabase> database =
+      std::make_unique<SimpleDescriptorDatabase>();
 
   for (int j = 0; j < file_descriptor_set.file_size(); j++) {
     FileDescriptorProto previously_added_file_descriptor_proto;
@@ -1661,11 +1661,11 @@ bool CommandLineInterface::SetupFeatureResolution(DescriptorPool& pool) {
                         << ProtocMinimumEdition() << ".";
         return false;
       }
-      if (output.generator->GetMaximumEdition() != ProtocMaximumEdition()) {
+      if (output.generator->GetMaximumEdition() > ProtocMaximumEdition()) {
         ABSL_LOG(ERROR) << "Built-in generator " << output.name
                         << " specifies a maximum edition "
                         << output.generator->GetMaximumEdition()
-                        << " which is not the protoc maximum "
+                        << " which is later than the protoc maximum "
                         << ProtocMaximumEdition() << ".";
         return false;
       }
