@@ -248,9 +248,10 @@ class PROTOBUF_EXPORT DescriptorPoolExtensionFinder {
 // off to the ExtensionSet for parsing.  Etc.
 class PROTOBUF_EXPORT ExtensionSet {
  public:
-  constexpr ExtensionSet() : ExtensionSet(nullptr) {}
+  constexpr ExtensionSet() = default;
   ExtensionSet(const ExtensionSet& rhs) = delete;
 
+#ifndef PROTOBUF_INTERNAL_REMOVE_ARENA_PTRS_EXTENSION_SET
   // Arena enabled constructors: for internal use only.
   ExtensionSet(internal::InternalVisibility, Arena* arena)
       : ExtensionSet(arena) {}
@@ -259,6 +260,7 @@ class PROTOBUF_EXPORT ExtensionSet {
   // to `InternalVisibility` overloaded constructor(s).
   explicit constexpr ExtensionSet(Arena* arena);
   ExtensionSet(ArenaInitialized, Arena* arena) : ExtensionSet(arena) {}
+#endif  // !PROTOBUF_INTERNAL_REMOVE_ARENA_PTRS_EXTENSION_SET
 
   ExtensionSet& operator=(const ExtensionSet&) = delete;
   ~ExtensionSet();
@@ -370,9 +372,10 @@ class PROTOBUF_EXPORT ExtensionSet {
     }
   }
 
-  const MessageLite& GetMessage(int number,
+  const MessageLite& GetMessage(Arena* arena, int number,
                                 const MessageLite& default_value) const;
-  const MessageLite& GetMessage(int number, const Descriptor* message_type,
+  const MessageLite& GetMessage(Arena* arena, int number,
+                                const Descriptor* message_type,
                                 MessageFactory* factory) const;
 
   // |descriptor| may be nullptr so long as it is known that the descriptor for
@@ -405,7 +408,9 @@ class PROTOBUF_EXPORT ExtensionSet {
                                          const FieldDescriptor* descriptor,
                                          MessageFactory* factory);
 #undef desc
+#ifndef PROTOBUF_INTERNAL_REMOVE_ARENA_PTRS_EXTENSION_SET
   Arena* GetArena() const { return arena_; }
+#endif
 
   // repeated fields -------------------------------------------------
 
@@ -442,7 +447,7 @@ class PROTOBUF_EXPORT ExtensionSet {
   template <typename T>
   auto& Add(Arena* arena, int number, FieldType type,
             const FieldDescriptor* descriptor) {
-    ABSL_DCHECK_EQ(arena, GetArena());
+    DebugAssertArenaMatches(arena);
     static_assert(std::is_class_v<T>);
     Extension& ext = FindOrCreate(arena, number, type, true, false, descriptor,
                                   &CreateImpl<RepFor<T>>);
@@ -452,7 +457,7 @@ class PROTOBUF_EXPORT ExtensionSet {
   template <typename T>
   void Add(Arena* arena, int number, FieldType type, bool packed, T value,
            const FieldDescriptor* descriptor) {
-    ABSL_DCHECK_EQ(arena, GetArena());
+    DebugAssertArenaMatches(arena);
     static_assert(std::is_arithmetic_v<T>,
                   "Only arithmetic types take `packed`");
     Extension& ext = FindOrCreate(arena, number, type, true, packed, descriptor,
@@ -614,9 +619,11 @@ class PROTOBUF_EXPORT ExtensionSet {
   // as .dll.
   int SpaceUsedExcludingSelf() const;
 
+#ifndef PROTOBUF_INTERNAL_REMOVE_ARENA_PTRS_EXTENSION_SET
   static constexpr size_t InternalGetArenaOffset(internal::InternalVisibility) {
     return PROTOBUF_FIELD_OFFSET(ExtensionSet, arena_);
   }
+#endif
 
  private:
   template <typename Type>
@@ -1270,24 +1277,48 @@ class PROTOBUF_EXPORT ExtensionSet {
                                    uint16_t powerof2_flat_capacity);
   static void DeleteFlatMap(const KeyValue* flat, uint16_t flat_capacity);
 
-  Arena* arena_;
+  void DebugAssertArenaMatches(Arena* arena) const {
+#ifdef PROTOBUF_INTERNAL_REMOVE_ARENA_PTRS_EXTENSION_SET
+    // If we don't have an arena ptr, then we can't DCHECK that the arena is
+    // correct.
+    (void)arena;
+#else
+    ABSL_DCHECK_EQ(arena, GetArena());
+#endif
+  }
+
+  void DebugAssertSameArena(const ExtensionSet& other) const {
+#ifdef PROTOBUF_INTERNAL_REMOVE_ARENA_PTRS_EXTENSION_SET
+    // If we don't have an arena ptr, then we can't DCHECK that the arenas
+    // match.
+    (void)other;
+#else
+    ABSL_DCHECK_EQ(GetArena(), other.GetArena());
+#endif
+  }
+
+#ifndef PROTOBUF_INTERNAL_REMOVE_ARENA_PTRS_EXTENSION_SET
+  Arena* arena_ = nullptr;
+#endif
 
   // Manual memory-management:
   // map_.flat is an allocated array of flat_capacity_ elements.
   // [map_.flat, map_.flat + flat_size_) is the currently-in-use prefix.
-  uint16_t flat_capacity_;
-  uint16_t flat_size_;  // negative int16_t(flat_size_) indicates is_large()
+  uint16_t flat_capacity_ = 0;
+  uint16_t flat_size_ = 0;  // negative int16_t(flat_size_) indicates is_large()
   union AllocatedData {
     KeyValue* flat;
 
     // If flat_capacity_ > kMaximumFlatCapacity, switch to LargeMap,
     // which guarantees O(n lg n) CPU but larger constant factors.
     LargeMap* large;
-  } map_;
+  } map_ = {nullptr};
 };
 
+#ifndef PROTOBUF_INTERNAL_REMOVE_ARENA_PTRS_EXTENSION_SET
 constexpr ExtensionSet::ExtensionSet(Arena* arena)
     : arena_(arena), flat_capacity_(0), flat_size_(0), map_{nullptr} {}
+#endif
 
 // ===================================================================
 // Glue for generated extension accessors
@@ -1481,13 +1512,15 @@ class PROTOBUF_EXPORT StringTypeTraits {
   typedef StringTypeTraits Singular;
   static constexpr bool kLifetimeBound = true;
 
-  static inline const std::string& Get(int number, const ExtensionSet& set,
+  static inline const std::string& Get(Arena* arena, int number,
+                                       const ExtensionSet& set,
                                        ConstType default_value) {
     return set.Get<std::string>(number, default_value);
   }
   static inline const std::string* GetPtr(int number, const ExtensionSet& set,
                                           ConstType default_value) {
-    return &Get(number, set, default_value);
+    // Note that we can pass `nullptr` arena since the arena argument is unused.
+    return &Get(/*arena=*/nullptr, number, set, default_value);
   }
   static inline void Set(Arena* arena, int number, FieldType field_type,
                          const std::string& value, ExtensionSet* set) {
@@ -1673,9 +1706,10 @@ class MessageTypeTraits {
   typedef MessageTypeTraits<Type> Singular;
   static constexpr bool kLifetimeBound = true;
 
-  static inline ConstType Get(int number, const ExtensionSet& set,
+  static inline ConstType Get(Arena* arena, int number, const ExtensionSet& set,
                               ConstType default_value) {
-    return static_cast<const Type&>(set.GetMessage(number, default_value));
+    return static_cast<const Type&>(
+        set.GetMessage(arena, number, default_value));
   }
   static inline std::nullptr_t GetPtr(int /* number */,
                                       const ExtensionSet& /* set */,

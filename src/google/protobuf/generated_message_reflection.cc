@@ -806,7 +806,7 @@ void SwapFieldHelper::SwapRepeatedMessageField(const Reflection* r,
     if (unsafe_shallow_swap) {
       lhs_map->InternalSwap(rhs_map);
     } else {
-      lhs_map->Swap(rhs_map);
+      lhs_map->Swap(lhs->GetArena(), rhs_map, rhs->GetArena());
     }
   } else {
     auto* lhs_rm = r->MutableRaw<RepeatedPtrFieldBase>(lhs, field);
@@ -2548,7 +2548,7 @@ const Message& Reflection::GetMessage(const Message& message,
 
   if (field->is_extension()) {
     return static_cast<const Message&>(GetExtensionSet(message).GetMessage(
-        field->number(), field->message_type(), factory));
+        message.GetArena(), field->number(), field->message_type(), factory));
   } else {
     if (schema_.InRealOneof(field) && !HasOneofField(message, field)) {
       return *GetDefaultMessageInstance(field);
@@ -2998,7 +2998,8 @@ bool Reflection::DeleteMapValue(Message* message, const FieldDescriptor* field,
                                 const MapKey& key) const {
   USAGE_CHECK(IsMapFieldInApi(field), DeleteMapValue,
               "Field is not a map field.");
-  return MutableRaw<MapFieldBase>(message, field)->DeleteMapValue(key);
+  return MutableRaw<MapFieldBase>(message, field)
+      ->DeleteMapValue(message->GetArena(), key);
 }
 
 MapIterator Reflection::MapBegin(Message* message,
