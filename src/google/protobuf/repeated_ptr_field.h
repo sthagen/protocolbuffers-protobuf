@@ -113,7 +113,7 @@ PROTOBUF_EXPORT void LogIndexOutOfBounds(int index, int size);
 // TODO: Remove preserve_all and add no_return once experiment is
 // complete.
 PROTOBUF_PRESERVE_ALL PROTOBUF_EXPORT void LogIndexOutOfBoundsAndAbort(
-    int index, int size);
+    int64_t index, int64_t size);
 PROTOBUF_EXPORT inline void RuntimeAssertInBounds(int index, int size) {
   if constexpr (GetBoundsCheckMode() == BoundsCheckMode::kAbort) {
     if (ABSL_PREDICT_FALSE(index < 0 || index >= size)) {
@@ -125,6 +125,17 @@ PROTOBUF_EXPORT inline void RuntimeAssertInBounds(int index, int size) {
   }
   ABSL_DCHECK_GE(index, 0);
   ABSL_DCHECK_LT(index, size);
+}
+
+PROTOBUF_EXPORT inline void RuntimeAssertInBoundsLE(int64_t value,
+                                                    int64_t limit) {
+  if constexpr (GetBoundsCheckMode() == BoundsCheckMode::kAbort) {
+    if (ABSL_PREDICT_FALSE(value > limit)) {
+      LogIndexOutOfBoundsAndAbort(value, limit);
+    }
+  }
+
+  ABSL_DCHECK_LE(value, limit);
 }
 
 // Defined further below.
@@ -1138,12 +1149,6 @@ class ABSL_ATTRIBUTE_WARN_UNUSED RepeatedPtrField final
   RepeatedPtrField(internal::InternalVisibility, Arena* arena,
                    RepeatedPtrField&& rhs)
       : RepeatedPtrField(arena, std::move(rhs)) {}
-
-#ifndef PROTOBUF_FUTURE_REMOVE_REPEATED_PTR_FIELD_ARENA_CONSTRUCTOR
-  // TODO: make constructor private
-  [[deprecated("Use Arena::Create<RepeatedPtrField<...>>(Arena*) instead")]]
-  explicit RepeatedPtrField(Arena* arena);
-#endif
 #endif  // !PROTOBUF_INTERNAL_REMOVE_ARENA_PTRS_REPEATED_PTR_FIELD
 
   template <typename Iter,
@@ -1493,9 +1498,7 @@ class ABSL_ATTRIBUTE_WARN_UNUSED RepeatedPtrField final
   RepeatedPtrField(Arena* arena, const RepeatedPtrField& rhs);
   RepeatedPtrField(Arena* arena, RepeatedPtrField&& rhs);
 
-#ifdef PROTOBUF_FUTURE_REMOVE_REPEATED_PTR_FIELD_ARENA_CONSTRUCTOR
   explicit RepeatedPtrField(Arena* arena);
-#endif
 #endif  // !PROTOBUF_INTERNAL_REMOVE_ARENA_PTRS_REPEATED_PTR_FIELD
 
 
