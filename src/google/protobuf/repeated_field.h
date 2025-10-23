@@ -37,7 +37,6 @@
 #include "absl/base/no_destructor.h"
 #include "absl/base/optimization.h"
 #include "absl/log/absl_check.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/cord.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/field_with_arena.h"
@@ -118,8 +117,12 @@ class alignas(8) HeapRep {
 
   uint32_t capacity() const { return capacity_; }
 
-  const void* elements() const { return this + 1; }
-  void* elements() { return this + 1; }
+  const void* elements() const { return elements_; }
+  void* elements() { return elements_; }
+
+  // Returns the size of the HeapRep in bytes. Do not use `sizeof(HeapRep)`,
+  // since that includes the dummy `elements_` member.
+  static constexpr size_t SizeOf() { return offsetof(HeapRep, elements_); }
 
  private:
   union {
@@ -132,6 +135,11 @@ class alignas(8) HeapRep {
     // power-of-two sized allocations, which enables Arena optimizations.
     char padding_[kMinSize];
   };
+
+  // This is the start of the elements storage. We would use a flexible array
+  // member here, but that's not available in all compilers. We will not
+  // initialize this member, and `kHeapRepHeaderSize` ignores this field.
+  uint8_t elements_[1];
 };
 #else
 template <size_t kMinSize>
@@ -383,11 +391,11 @@ class ABSL_ATTRIBUTE_WARN_UNUSED PROTOBUF_DECLSPEC_EMPTY_BASES
                 "We do not support reference value types.");
   static constexpr PROTOBUF_ALWAYS_INLINE void StaticValidityCheck() {
     static_assert(
-        absl::disjunction<internal::is_supported_integral_type<Element>,
-                          internal::is_supported_floating_point_type<Element>,
-                          std::is_same<absl::Cord, Element>,
-                          std::is_same<UnknownField, Element>,
-                          is_proto_enum<Element>>::value,
+        std::disjunction<internal::is_supported_integral_type<Element>,
+                         internal::is_supported_floating_point_type<Element>,
+                         std::is_same<absl::Cord, Element>,
+                         std::is_same<UnknownField, Element>,
+                         is_proto_enum<Element>>::value,
         "We only support non-string scalars in RepeatedField.");
   }
 
@@ -652,7 +660,7 @@ class ABSL_ATTRIBUTE_WARN_UNUSED PROTOBUF_DECLSPEC_EMPTY_BASES
       internal::SooCapacityElements<Element>();
 
   static constexpr int kInitialSize = 0;
-  static PROTOBUF_CONSTEXPR const size_t kHeapRepHeaderSize = sizeof(HeapRep);
+  static PROTOBUF_CONSTEXPR const size_t kHeapRepHeaderSize = HeapRep::SizeOf();
 
 #ifdef PROTOBUF_INTERNAL_REMOVE_ARENA_PTRS_REPEATED_FIELD
   explicit constexpr RepeatedField(internal::InternalMetadataOffset offset);
