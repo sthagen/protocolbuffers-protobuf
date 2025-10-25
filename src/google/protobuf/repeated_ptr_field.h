@@ -132,7 +132,7 @@ PROTOBUF_EXPORT inline void RuntimeAssertInBoundsLE(int64_t value,
                                                     int64_t limit) {
   if constexpr (GetBoundsCheckMode() == BoundsCheckMode::kAbort) {
     if (ABSL_PREDICT_FALSE(value > limit)) {
-      LogIndexOutOfBoundsAndAbort(value, limit);
+      PROTOBUF_NO_MERGE LogIndexOutOfBoundsAndAbort(value, limit);
     }
   }
 
@@ -351,6 +351,14 @@ class PROTOBUF_EXPORT RepeatedPtrFieldBase {
       ClearNonEmpty<H>();
     }
   }
+
+  template <typename T, typename CopyElementFn, typename CreateAndMergeFn>
+  void MergeFromInternal(const RepeatedPtrFieldBase& from, Arena* arena,
+                         CopyElementFn&& copy_fn,
+                         CreateAndMergeFn&& create_and_merge_fn);
+  template <typename T, typename CopyElementFn>
+  void MergeFromInternal(const RepeatedPtrFieldBase& from, Arena* arena,
+                         CopyElementFn&& copy_fn);
 
   // Appends all message values from `from` to this instance.
   template <typename T>
