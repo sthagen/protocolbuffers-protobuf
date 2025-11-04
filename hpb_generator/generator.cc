@@ -57,6 +57,7 @@ void WriteForwardDecls(const google::protobuf::FileDescriptor* file, Context& ct
 void WriteHeader(const google::protobuf::FileDescriptor* file, Context& ctx) {
   if (ctx.options().backend == Backend::CPP) {
     EmitFileWarning(file, ctx);
+
     ctx.Emit({{"filename", ToPreproc(file->name())}},
              R"cc(
 #ifndef $filename$_HPB_PROTO_H_

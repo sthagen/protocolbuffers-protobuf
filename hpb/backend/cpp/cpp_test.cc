@@ -20,12 +20,12 @@ using ::hpb_unittest::protos::TestModel_Category_IMAGES;
 // Tests in this file are run against both backends {upb, cpp} to ensure
 // api conformance, compatibility, and correctness.
 
-TEST(MultiBackend, CanCreateMessage) {
+TEST(CppBackend, CanCreateMessage) {
   hpb::Arena arena;
   hpb::Ptr<TestModel> test_model_ptr = hpb::CreateMessage<TestModel>(arena);
   (void)test_model_ptr;
 }
 
-TEST(MultiBackend, MessageEnums) { EXPECT_EQ(5, TestModel_Category_IMAGES); }
+TEST(CppBackend, MessageEnums) { EXPECT_EQ(5, TestModel_Category_IMAGES); }
 }  // namespace
 }  // namespace hpb::testing
