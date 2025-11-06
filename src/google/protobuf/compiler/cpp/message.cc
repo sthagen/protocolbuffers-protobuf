@@ -835,7 +835,8 @@ void MessageGenerator::GenerateFieldAccessorDeclarations(io::Printer* p) {
                 p->Emit({Sub("name_size", absl::StrCat(name, "_size"))
                              .AnnotatedAs(field)},
                         R"cc(
-                          $deprecated_attr $int $name_size$() $const_impl$;
+                          [[nodiscard]] $deprecated_attr $int $name_size$()
+                              $const_impl$;
                         )cc");
 
                 p->Emit({Sub("_internal_name_size",
@@ -854,7 +855,8 @@ void MessageGenerator::GenerateFieldAccessorDeclarations(io::Printer* p) {
                 p->Emit({Sub("has_name", absl::StrCat("has_", name))
                              .AnnotatedAs(field)},
                         R"cc(
-                          $deprecated_attr $bool $has_name$() $const_impl$;
+                          [[nodiscard]] $deprecated_attr $bool $has_name$()
+                              $const_impl$;
                         )cc");
               }},
              {"internal_hazzer",
@@ -1374,7 +1376,7 @@ class AccessorVerifier {
 
 template <bool kIsV2>
 void MessageGenerator::EmitCheckAndUpdateByteSizeForField(
-    const FieldDescriptor* field, io::Printer* p) const {
+    const FieldDescriptor* field, io::Printer* p, bool try_batch) const {
   absl::AnyInvocable<void()> emit_body = [&] {
     const auto& gen = field_generators_.get(field);
     if constexpr (!kIsV2) {
@@ -1443,7 +1445,8 @@ void MessageGenerator::EmitUpdateByteSizeForField(
         [&] { MaybeEmitUpdateCachedHasbits(field, p, cached_has_word_index); }},
        {"check_and_update_byte_size_for_field",
         [&]() {
-          EmitCheckAndUpdateByteSizeForField</*kIsV2=*/false>(field, p);
+          EmitCheckAndUpdateByteSizeForField</*kIsV2=*/false>(
+              field, p, /*try_batch=*/false);
         }}},
       R"cc(
         $comment$;
@@ -2223,7 +2226,7 @@ void MessageGenerator::GenerateClassDefinition(io::Printer* p) {
           // Generate oneof function declarations
           for (auto oneof : OneOfRange(descriptor_)) {
             p->Emit({{"oneof_name", oneof->name()}}, R"cc(
-              inline bool has_$oneof_name$() const;
+              [[nodiscard]] inline bool has_$oneof_name$() const;
               inline void clear_has_$oneof_name$();
             )cc");
           }
@@ -5627,7 +5630,8 @@ void MessageGenerator::GenerateByteSizeV2(io::Printer* p) {
 }
 
 void MessageGenerator::EmitCheckAndSerializeField(const FieldDescriptor* field,
-                                                  io::Printer* p) const {
+                                                  io::Printer* p,
+                                                  bool try_batch) const {
   absl::AnyInvocable<void()> emit_body = [&] {
   };
   if (!HasHasbit(field, options_)) {
