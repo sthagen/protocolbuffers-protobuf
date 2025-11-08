@@ -15552,7 +15552,8 @@ const char* _upb_Decoder_DecodeFixedPacked(upb_Decoder* d, const char* ptr,
   // Note: if/when the decoder supports multi-buffer input, we will need to
   // handle buffer seams here.
   if (upb_IsLittleEndian()) {
-    ptr = upb_EpsCopyInputStream_Copy(&d->input, ptr, mem, val->size);
+    ptr = UPB_PRIVATE(upb_EpsCopyInputStream_Copy)(&d->input, ptr, mem,
+                                                   val->size);
   } else {
     int delta = upb_EpsCopyInputStream_PushLimit(&d->input, ptr, val->size);
     char* dst = mem;
@@ -17459,19 +17460,21 @@ UPB_NORETURN void* _upb_Decoder_ErrorJmp(upb_Decoder* d,
 UPB_NOINLINE
 const char* _upb_Decoder_IsDoneFallback(upb_EpsCopyInputStream* e,
                                         const char* ptr, int overrun) {
-  return _upb_EpsCopyInputStream_IsDoneFallbackInline(
+  return UPB_PRIVATE(upb_EpsCopyInputStream_IsDoneFallbackInline)(
       e, ptr, overrun, _upb_Decoder_BufferFlipCallback);
 }
 
+
+// Must be last.
 
 static const char* _upb_EpsCopyInputStream_NoOpCallback(
     upb_EpsCopyInputStream* e, const char* old_end, const char* new_start) {
   return new_start;
 }
 
-const char* _upb_EpsCopyInputStream_IsDoneFallbackNoCallback(
+const char* UPB_PRIVATE(upb_EpsCopyInputStream_IsDoneFallbackNoCallback)(
     upb_EpsCopyInputStream* e, const char* ptr, int overrun) {
-  return _upb_EpsCopyInputStream_IsDoneFallbackInline(
+  return UPB_PRIVATE(upb_EpsCopyInputStream_IsDoneFallbackInline)(
       e, ptr, overrun, _upb_EpsCopyInputStream_NoOpCallback);
 }
 
