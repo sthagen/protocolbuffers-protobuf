@@ -927,6 +927,7 @@ enum Edition : int {
   EDITION_PROTO3 = 999,
   EDITION_2023 = 1000,
   EDITION_2024 = 1001,
+  EDITION_UNSTABLE = 9999,
   EDITION_1_TEST_ONLY = 1,
   EDITION_2_TEST_ONLY = 2,
   EDITION_99997_TEST_ONLY = 99997,
@@ -7013,7 +7014,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   ::google::protobuf::FeatureSet* PROTOBUF_NONNULL _internal_mutable_features();
 
   public:
-  // optional bool java_multiple_files = 10 [default = false];
+  // optional bool java_multiple_files = 10 [default = false, feature_support = {
   [[nodiscard]] bool has_java_multiple_files()
       const;
   void clear_java_multiple_files() ;
@@ -17402,7 +17403,7 @@ inline void FileOptions::set_allocated_java_outer_classname(::std::string* PROTO
   // @@protoc_insertion_point(field_set_allocated:google.protobuf.FileOptions.java_outer_classname)
 }
 
-// optional bool java_multiple_files = 10 [default = false];
+// optional bool java_multiple_files = 10 [default = false, feature_support = {
 inline bool FileOptions::has_java_multiple_files() const {
   bool value = CheckHasBit(_impl_._has_bits_[0], 0x00000800U);
   return value;
