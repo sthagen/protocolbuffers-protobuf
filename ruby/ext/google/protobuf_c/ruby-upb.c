@@ -7909,14 +7909,14 @@ static void upb_CombineUnknownFields(upb_UnknownField_Context* ctx,
         break;
       case kUpb_WireType_Delimited: {
         int size;
+        upb_StringView sv;
         ptr = upb_WireReader_ReadSize(ptr, &size, &ctx->stream);
         UPB_ASSERT(ptr);
-        const char* s_ptr = ptr;
-        ptr = upb_EpsCopyInputStream_ReadStringAliased(&ctx->stream, &s_ptr,
-                                                       size);
+        ptr = upb_EpsCopyInputStream_ReadStringAlwaysAlias(&ctx->stream, ptr,
+                                                           size, &sv);
         UPB_ASSERT(ptr);
-        field->data.delimited.data = s_ptr;
-        field->data.delimited.size = size;
+        field->data.delimited.data = sv.data;
+        field->data.delimited.size = sv.size;
         break;
       }
       case kUpb_WireType_StartGroup:
@@ -7983,7 +7983,7 @@ static upb_UnknownFields* upb_UnknownFields_Build(upb_UnknownField_Context* ctx,
   uintptr_t iter = kUpb_Message_UnknownBegin;
   upb_StringView view;
   while (upb_Message_NextUnknown(msg, &view, &iter)) {
-    upb_EpsCopyInputStream_Init(&ctx->stream, &view.data, view.size, true);
+    upb_EpsCopyInputStream_Init(&ctx->stream, &view.data, view.size);
     upb_CombineUnknownFields(ctx, &builder, &view.data);
     UPB_ASSERT(upb_EpsCopyInputStream_IsDone(&ctx->stream, &view.data) &&
                !upb_EpsCopyInputStream_IsError(&ctx->stream));
@@ -15738,13 +15738,11 @@ static upb_Message* _upb_Decoder_NewSubMessage(upb_Decoder* d,
   return _upb_Decoder_NewSubMessage2(d, subl, field, target);
 }
 
-static const char* _upb_Decoder_ReadString(upb_Decoder* d, const char* ptr,
-                                           int size, upb_StringView* str) {
-  const char* str_ptr = ptr;
-  ptr = upb_EpsCopyInputStream_ReadString(&d->input, &str_ptr, size, &d->arena);
-  if (!ptr) _upb_Decoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
-  str->data = str_ptr;
-  str->size = size;
+static const char* _upb_Decoder_ReadString2(upb_Decoder* d, const char* ptr,
+                                            int size, upb_StringView* str) {
+  if (!_upb_Decoder_ReadString(d, &ptr, size, str)) {
+    _upb_Decoder_ErrorJmp(d, kUpb_DecodeStatus_OutOfMemory);
+  }
   return ptr;
 }
 
@@ -15967,7 +15965,7 @@ static const char* _upb_Decoder_DecodeToArray(upb_Decoder* d, const char* ptr,
       upb_StringView* str = (upb_StringView*)upb_Array_MutableDataPtr(arr) +
                             arr->UPB_PRIVATE(size);
       arr->UPB_PRIVATE(size)++;
-      return _upb_Decoder_ReadString(d, ptr, val->size, str);
+      return _upb_Decoder_ReadString2(d, ptr, val->size, str);
     }
     case kUpb_DecodeOp_SubMessage: {
       /* Append submessage / group. */
@@ -16142,7 +16140,7 @@ static const char* _upb_Decoder_DecodeToSubMessage(
       _upb_Decoder_VerifyUtf8(d, ptr, val->size);
       /* Fallthrough. */
     case kUpb_DecodeOp_Bytes:
-      return _upb_Decoder_ReadString(d, ptr, val->size, mem);
+      return _upb_Decoder_ReadString2(d, ptr, val->size, mem);
     case kUpb_DecodeOp_Scalar8Byte:
       memcpy(mem, val, 8);
       break;
@@ -16617,7 +16615,7 @@ static const char* _upb_Decoder_DecodeUnknownField(upb_Decoder* d,
   }
 
   upb_AddUnknownMode mode = kUpb_AddUnknown_Copy;
-  if (d->input.aliasing) {
+  if (d->options & kUpb_DecodeOption_AliasString) {
     if (sv.data != d->input.buffer_start) {
       // If the data is not from the beginning of the input buffer, then we can
       // safely attempt to coalesce this region with the previous one.

@@ -12,7 +12,6 @@
 #include <string.h>
 
 #include "upb/base/string_view.h"
-#include "upb/mem/arena.h"
 #include "upb/wire/internal/eps_copy_input_stream.h"
 
 // Must be last.
@@ -28,8 +27,7 @@ typedef struct upb_EpsCopyInputStream upb_EpsCopyInputStream;
 // [*ptr, size].  Updates `*ptr` as necessary to guarantee that at least
 // kUpb_EpsCopyInputStream_SlopBytes are available to read.
 UPB_INLINE void upb_EpsCopyInputStream_Init(upb_EpsCopyInputStream* e,
-                                            const char** ptr, size_t size,
-                                            bool enable_aliasing);
+                                            const char** ptr, size_t size);
 
 // Returns true if the stream is in the error state. A stream enters the error
 // state when the user reads past a limit (caught in IsDone()) or the
@@ -58,24 +56,6 @@ UPB_INLINE bool upb_EpsCopyInputStream_IsDone(upb_EpsCopyInputStream* e,
 UPB_INLINE bool upb_EpsCopyInputStream_CheckSize(
     const upb_EpsCopyInputStream* e, const char* ptr, int size);
 
-// Returns true if the given delimited field size is valid (it does not extend
-// beyond any previously-pushed limited) *and* all of the data for this field is
-// available to be read in the current buffer.
-//
-// If the size is negative, this function will always return false. This
-// property can be useful in some cases.
-UPB_INLINE bool upb_EpsCopyInputStream_CheckDataSizeAvailable(
-    upb_EpsCopyInputStream* e, const char* ptr, int size);
-
-// Returns a pointer into an input buffer that corresponds to the parsing
-// pointer `ptr`.  The returned pointer may be the same as `ptr`, but also may
-// be different if we are currently parsing out of the patch buffer.
-//
-// REQUIRES: Aliasing must be available for the given pointer. If the input is a
-// flat buffer and aliasing is enabled, then aliasing will always be available.
-UPB_INLINE const char* upb_EpsCopyInputStream_GetAliasedPtr(
-    upb_EpsCopyInputStream* e, const char* ptr);
-
 // Marks the start of a capture operation.  Only one capture operation may be
 // active at a time.  The capture operation will be finalized by a call to
 // upb_EpsCopyInputStream_EndCapture().  The captured string will be returned in
@@ -95,39 +75,14 @@ UPB_INLINE bool upb_EpsCopyInputStream_EndCapture(upb_EpsCopyInputStream* e,
 UPB_INLINE const char* upb_EpsCopyInputStream_Skip(upb_EpsCopyInputStream* e,
                                                    const char* ptr, int size);
 
-// Reads string data from the input, aliasing into the input buffer instead of
-// copying. The parsing pointer is passed in `*ptr`, and will be updated if
-// necessary to point to the actual input buffer. Returns the new parsing
-// pointer, which will be advanced past the string data.
-//
-// REQUIRES: Aliasing must be available for this data region (test with
-// upb_EpsCopyInputStream_AliasingAvailable().
-UPB_INLINE const char* upb_EpsCopyInputStream_ReadStringAliased(
-    upb_EpsCopyInputStream* e, const char** ptr, size_t size);
-
-// Reads string data from the stream and advances the pointer accordingly.
-// If aliasing was enabled when the stream was initialized, then the returned
-// pointer will point into the input buffer if possible, otherwise new data
-// will be allocated from arena and copied into. We may be forced to copy even
-// if aliasing was enabled if the input data spans input buffers.
-//
-// Returns NULL if memory allocation failed, or we reached a premature EOF.
-UPB_INLINE const char* upb_EpsCopyInputStream_ReadString(
-    upb_EpsCopyInputStream* e, const char** ptr, size_t size, upb_Arena* arena);
-
-// Reads a string from the stream and advances the pointer accordingly.
-//
-// Unlike upb_EpsCopyInputStream_ReadString(), this function will always alias
-// the input buffer, regardless of whether aliasing was enabled when the stream
-// was initialized. This is useful for cases where the string will only be used
-// for the duration of the current function, so there is no risk of the
-// underlying data being freed in the meantime.
+// Reads a string from the stream and advances the pointer accordingly.  The
+// returned string view will always alias the input buffer.
 //
 // Returns NULL if size extends beyond the end of the stream.
 //
 // NOTE: If/when EpsCopyInputStream supports multiple input buffers, this will
-// need to fall back to copying if the input data spans multiple buffers, which
-// will also require an additional arena parameter.
+// need to be capable of signaling that only part of the string is available
+// in the current buffer.
 UPB_INLINE const char* upb_EpsCopyInputStream_ReadStringAlwaysAlias(
     upb_EpsCopyInputStream* e, const char* ptr, size_t size,
     upb_StringView* sv);
@@ -159,6 +114,16 @@ UPB_FORCEINLINE bool upb_EpsCopyInputStream_TryParseDelimitedFast(
 
 #ifdef __cplusplus
 } /* extern "C" */
+#endif
+
+#ifdef __cplusplus
+// Temporary overloads for functions whose signature has recently changed.
+UPB_DEPRECATE_AND_INLINE()
+UPB_INLINE void upb_EpsCopyInputStream_Init(upb_EpsCopyInputStream* e,
+                                            const char** ptr, size_t size,
+                                            bool enable_aliasing) {
+  upb_EpsCopyInputStream_Init(e, ptr, size);
+}
 #endif
 
 #include "upb/port/undef.inc"
