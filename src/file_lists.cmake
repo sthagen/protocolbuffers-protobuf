@@ -838,6 +838,7 @@ set(libupb_hdrs
   ${protobuf_SOURCE_DIR}/upb/wire/encode.h
   ${protobuf_SOURCE_DIR}/upb/wire/eps_copy_input_stream.h
   ${protobuf_SOURCE_DIR}/upb/wire/internal/decoder.h
+  ${protobuf_SOURCE_DIR}/upb/wire/internal/eps_copy_input_stream.h
   ${protobuf_SOURCE_DIR}/upb/wire/internal/reader.h
   ${protobuf_SOURCE_DIR}/upb/wire/reader.h
   ${protobuf_SOURCE_DIR}/upb/wire/types.h
@@ -1321,6 +1322,7 @@ set(protobuf_test_protos_files
   ${protobuf_SOURCE_DIR}/src/google/protobuf/map_unittest.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_arena.proto
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_custom_features.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_custom_options.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_delimited.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/unittest_delimited_import.proto
