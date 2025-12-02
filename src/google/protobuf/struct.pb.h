@@ -11,6 +11,7 @@
 #include <type_traits>
 #include <utility>
 
+// clang-format off
 #include "google/protobuf/runtime_version.h"
 #if PROTOBUF_VERSION != 6034000
 #error "Protobuf C++ gencode is built with an incompatible version of"
@@ -278,8 +279,9 @@ class PROTOBUF_EXPORT ListValue final : public ::google::protobuf::Message
 
   public:
   void clear_values() ;
-  ::google::protobuf::Value* PROTOBUF_NONNULL mutable_values(int index);
-  ::google::protobuf::RepeatedPtrField<::google::protobuf::Value>* PROTOBUF_NONNULL mutable_values();
+  [[nodiscard]] ::google::protobuf::Value* PROTOBUF_NONNULL mutable_values(int index);
+  [[nodiscard]] ::google::protobuf::RepeatedPtrField<::google::protobuf::Value>* PROTOBUF_NONNULL
+  mutable_values();
 
   private:
   const ::google::protobuf::RepeatedPtrField<::google::protobuf::Value>& _internal_values() const;
@@ -480,7 +482,7 @@ class PROTOBUF_EXPORT Struct final : public ::google::protobuf::Message
   public:
   void clear_fields() ;
   [[nodiscard]] const ::google::protobuf::Map<::std::string, ::google::protobuf::Value>& fields() const;
-  ::google::protobuf::Map<::std::string, ::google::protobuf::Value>* PROTOBUF_NONNULL mutable_fields();
+  [[nodiscard]] ::google::protobuf::Map<::std::string, ::google::protobuf::Value>* PROTOBUF_NONNULL mutable_fields();
 
   private:
   const ::google::protobuf::Map<::std::string, ::google::protobuf::Value>& _internal_fields() const;
@@ -1361,5 +1363,6 @@ inline const EnumDescriptor* PROTOBUF_NONNULL GetEnumDescriptor<::google::protob
 // @@protoc_insertion_point(global_scope)
 
 #include "google/protobuf/port_undef.inc"
+// clang-format on
 
 #endif  // google_2fprotobuf_2fstruct_2eproto_2epb_2eh

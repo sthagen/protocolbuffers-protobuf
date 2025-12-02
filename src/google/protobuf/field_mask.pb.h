@@ -11,6 +11,7 @@
 #include <type_traits>
 #include <utility>
 
+// clang-format off
 #include "google/protobuf/runtime_version.h"
 #if PROTOBUF_VERSION != 6034000
 #error "Protobuf C++ gencode is built with an incompatible version of"
@@ -230,7 +231,8 @@ class PROTOBUF_EXPORT FieldMask final : public ::google::protobuf::Message
   void add_paths(Arg_&& value, Args_... args);
   [[nodiscard]] const ::google::protobuf::RepeatedPtrField<::std::string>&
   paths() const;
-  ::google::protobuf::RepeatedPtrField<::std::string>* PROTOBUF_NONNULL mutable_paths();
+  [[nodiscard]] ::google::protobuf::RepeatedPtrField<::std::string>* PROTOBUF_NONNULL
+  mutable_paths();
 
   private:
   const ::google::protobuf::RepeatedPtrField<::std::string>& _internal_paths() const;
@@ -374,5 +376,6 @@ FieldMask::_internal_mutable_paths() {
 // @@protoc_insertion_point(global_scope)
 
 #include "google/protobuf/port_undef.inc"
+// clang-format on
 
 #endif  // google_2fprotobuf_2ffield_5fmask_2eproto_2epb_2eh
