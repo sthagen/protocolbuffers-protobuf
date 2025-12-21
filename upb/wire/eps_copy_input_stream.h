@@ -10,8 +10,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 
+#include "upb/base/error_handler.h"
 #include "upb/base/string_view.h"
 #include "upb/wire/internal/eps_copy_input_stream.h"
 
@@ -29,6 +29,24 @@ typedef struct upb_EpsCopyInputStream upb_EpsCopyInputStream;
 // kUpb_EpsCopyInputStream_SlopBytes are available to read.
 UPB_INLINE void upb_EpsCopyInputStream_Init(upb_EpsCopyInputStream* e,
                                             const char** ptr, size_t size);
+
+// Like the previous function, but registers an error handler that will be
+// called for any errors encountered.
+UPB_INLINE void upb_EpsCopyInputStream_InitWithErrorHandler(
+    upb_EpsCopyInputStream* e, const char** ptr, size_t size,
+    upb_ErrorHandler* err);
+
+// Returns true if the stream has an error handler.
+//
+// This function is marked const, which indicates to the compiler that the
+// return value is solely a function of the pointer value.  This is not
+// entirely true if the stream is reinitialized with
+// upb_EpsCopyInputStream_Init*(), so users must not call this function in
+// any context where the stream may be reinitialized between calls to this
+// function, and the presence of an error handler changes when reinitialized.
+UPB_ATTR_CONST
+UPB_INLINE bool upb_EpsCopyInputStream_HasErrorHandler(
+    const upb_EpsCopyInputStream* e);
 
 // Returns true if the stream is in the error state. A stream enters the error
 // state when the user reads past a limit (caught in IsDone()) or the
@@ -71,20 +89,40 @@ UPB_INLINE bool upb_EpsCopyInputStream_EndCapture(upb_EpsCopyInputStream* e,
                                                   const char* ptr,
                                                   upb_StringView* sv);
 
-// Skips `size` bytes of data from the input and returns a pointer past the end.
-// Returns NULL on end of stream or error.
-UPB_INLINE const char* upb_EpsCopyInputStream_Skip(upb_EpsCopyInputStream* e,
-                                                   const char* ptr, int size);
-
 // Reads a string from the stream and advances the pointer accordingly.  The
 // returned string view will always alias the input buffer.
 //
-// Returns NULL if size extends beyond the end of the stream.
+// Returns NULL if size extends beyond the end of the current input buffer.
+// Currently, we only support a single input buffer, so this function will only
+// fail if `size` overflows the end of the stream.
 //
-// NOTE: If/when EpsCopyInputStream supports multiple input buffers, this will
-// need to be capable of signaling that only part of the string is available
-// in the current buffer.
+// If/when we support multiple input buffers, there may be cases where this
+// function returns failure, even if the requested region is valid, because the
+// requested region spans multiple buffers. In this case, the caller must
+// attempt to read the string using other string reading functions before
+// signaling an error.
 UPB_INLINE const char* upb_EpsCopyInputStream_ReadStringAlwaysAlias(
+    upb_EpsCopyInputStream* e, const char* ptr, size_t size,
+    upb_StringView* sv);
+
+// Reads a string from the stream and advances the pointer accordingly.  The
+// returned string view is ephemeral, only valid until the next call to
+// upb_EpsCopyInputStream. It may point to the patch buffer.
+//
+// Returns NULL if size extends beyond the end of the current buffer (which may
+// be the patch buffer).
+//
+// IMPORTANT NOTE: If `size` extends beyond the end of the stream, the returned
+// data may contain garbage bytes from the patch buffer. For efficiency, this
+// function does not check that `size` is within the current limit or even the
+// end of the stream.
+//
+// The bytes are guaranteed to be safe to read ephemerally, but they may contain
+// garbage data that does not correspond to anything in the input. This error
+// will be detected later, when calling upb_EpsCopyInputStream_IsDone() (because
+// we will not end at the proper limit), but it may result in nonsense bytes
+// ending up in the output.
+UPB_INLINE const char* upb_EpsCopyInputStream_ReadStringEphemeral(
     upb_EpsCopyInputStream* e, const char* ptr, size_t size,
     upb_StringView* sv);
 
@@ -115,7 +153,7 @@ UPB_INLINE void upb_EpsCopyInputStream_PopLimit(upb_EpsCopyInputStream* e,
 // pushing and popping of limits is handled automatically and with lower cost
 // than the normal PushLimit()/PopLimit() sequence.
 UPB_FORCEINLINE bool upb_EpsCopyInputStream_TryParseDelimitedFast(
-    upb_EpsCopyInputStream* e, const char** ptr, int len,
+    upb_EpsCopyInputStream* e, const char** ptr, size_t size,
     upb_EpsCopyInputStream_ParseDelimitedFunc* func, void* ctx);
 
 #ifdef __cplusplus

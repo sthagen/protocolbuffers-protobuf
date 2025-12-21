@@ -719,6 +719,7 @@ set(libupb_srcs
 # @//pkg:upb
 set(libupb_hdrs
   ${protobuf_SOURCE_DIR}/upb/base/descriptor_constants.h
+  ${protobuf_SOURCE_DIR}/upb/base/error_handler.h
   ${protobuf_SOURCE_DIR}/upb/base/internal/endian.h
   ${protobuf_SOURCE_DIR}/upb/base/internal/log2.h
   ${protobuf_SOURCE_DIR}/upb/base/status.h
@@ -1454,6 +1455,7 @@ set(util_test_files
 
 # @//src/google/protobuf/util:test_proto_srcs
 set(util_test_protos_files
+  ${protobuf_SOURCE_DIR}/src/google/protobuf/util/field_mask_util_test.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/util/json_format.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/util/json_format_proto3.proto
   ${protobuf_SOURCE_DIR}/src/google/protobuf/util/message_differencer_unittest.proto

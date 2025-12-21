@@ -529,6 +529,118 @@ TEST_F(ParseMessageTest, FieldJsonName) {
       "}\n");
 }
 
+TEST_F(ParseMessageTest, Varint32Unstable) {
+  ExpectParsesTo(
+      R"(edition = "UNSTABLE";
+message NewVarintTypes {
+  varint32 value = 1;
+})",
+      R"(message_type {
+  name: "NewVarintTypes"
+  field {
+    name: "value"
+    number: 1
+    label: LABEL_OPTIONAL
+    type: TYPE_INT32
+  }
+}
+syntax: "editions"
+edition: EDITION_UNSTABLE)");
+}
+
+TEST_F(ParseMessageTest, Varint32StableFails) {
+  ExpectHasValidationErrors(
+      R"(edition = "2024";
+message NewVarintTypes {
+  varint32 value = 1;
+})",
+      "2:2: \"varint32\" is not defined.\n");
+}
+
+TEST_F(ParseMessageTest, Varint64Unstable) {
+  ExpectParsesTo(
+      R"(edition = "UNSTABLE";
+message NewVarintTypes {
+  varint64 int64_field = 1;
+})",
+      R"(message_type {
+  name: "NewVarintTypes"
+  field {
+    name: "int64_field"
+    number: 1
+    label: LABEL_OPTIONAL
+    type: TYPE_INT64
+  }
+}
+syntax: "editions"
+edition: EDITION_UNSTABLE)");
+}
+
+TEST_F(ParseMessageTest, Varint64StableFails) {
+  ExpectHasValidationErrors(
+      R"(edition = "2024";
+message NewVarintTypes {
+  varint64 int64_field = 1;
+})",
+      "2:2: \"varint64\" is not defined.\n");
+}
+
+TEST_F(ParseMessageTest, Zigzag32Unstable) {
+  ExpectParsesTo(
+      R"(edition = "UNSTABLE";
+message NewVarintTypes {
+  zigzag32 sint32_field = 1;
+})",
+      R"(message_type {
+  name: "NewVarintTypes"
+  field {
+    name: "sint32_field"
+    number: 1
+    label: LABEL_OPTIONAL
+    type: TYPE_SINT32
+  }
+}
+syntax: "editions"
+edition: EDITION_UNSTABLE)");
+}
+
+TEST_F(ParseMessageTest, Zigzag32StableFails) {
+  ExpectHasValidationErrors(
+      R"(edition = "2024";
+message NewVarintTypes {
+  zigzag32 sint32_field = 1;
+})",
+      "2:2: \"zigzag32\" is not defined.\n");
+}
+
+TEST_F(ParseMessageTest, Zigzag64Unstable) {
+  ExpectParsesTo(
+      R"(edition = "UNSTABLE";
+message NewVarintTypes {
+  zigzag64 sint64_field = 1;
+})",
+      R"(message_type {
+  name: "NewVarintTypes"
+  field {
+    name: "sint64_field"
+    number: 1
+    label: LABEL_OPTIONAL
+    type: TYPE_SINT64
+  }
+}
+syntax: "editions"
+edition: EDITION_UNSTABLE)");
+}
+
+TEST_F(ParseMessageTest, Zigzag64StableFails) {
+  ExpectHasValidationErrors(
+      R"(edition = "2024";
+message NewVarintTypes {
+  zigzag64 sint64_field = 1;
+})",
+      "2:2: \"zigzag64\" is not defined.\n");
+}
+
 TEST_F(ParseMessageTest, FieldOptions) {
   ExpectParsesTo(
       "message TestMessage {\n"
@@ -1198,8 +1310,8 @@ TEST_F(ParseMessageTest, CanHandleErrorOnFirstToken) {
   ExpectHasEarlyExitErrors(
       "/",
       "0:0: Expected top-level statement (e.g. \"message\").\n"
-      "0:0: File must begin with a syntax statement, e.g. 'syntax = "
-      "\"proto2\";'.\n");
+      "0:0: File must begin with an edition or syntax statement, "
+      "e.g. 'edition = \"2023\";'.\n");
 }
 
 // ===================================================================
@@ -1562,9 +1674,10 @@ typedef ParserTest ParseErrorTest;
 
 TEST_F(ParseErrorTest, MissingSyntaxIdentifier) {
   require_syntax_identifier_ = true;
-  ExpectHasEarlyExitErrors("message TestMessage {}",
-                           "0:0: File must begin with a syntax statement, e.g. "
-                           "'syntax = \"proto2\";'.\n");
+  ExpectHasEarlyExitErrors(
+      "message TestMessage {}",
+      "0:0: File must begin with an edition or syntax statement, e.g. "
+      "'edition = \"2023\";'.\n");
   EXPECT_EQ("", parser_->GetSyntaxIdentifier());
 }
 

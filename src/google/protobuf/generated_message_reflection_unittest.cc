@@ -1432,7 +1432,9 @@ TEST(GeneratedMessageReflectionTest, ArenaReleaseOneofMessageTest) {
 
 TEST(GeneratedMessageReflectionTest, UsageErrors) {
   unittest::TestAllTypes message;
+#ifndef NDEBUG
   unittest::ForeignMessage foreign;
+#endif
   const Reflection* reflection = message.GetReflection();
   const Descriptor* descriptor = message.GetDescriptor();
 
@@ -1960,7 +1962,7 @@ TEST(GeneratedMessageReflection, IsEmptyWithUnknownFields) {
   // Parse incompatible bytes.
   proto2_unittest::TestAllExtensions other_msg;
   other_msg.SetExtension(proto2_unittest::optional_double_extension, 3.14);
-  msg.ParseFromString(other_msg.SerializeAsString());
+  ABSL_CHECK(msg.ParseFromString(other_msg.SerializeAsString()));
 
   reflection->ListFields(msg, &fields);
   EXPECT_THAT(fields, IsEmpty());
