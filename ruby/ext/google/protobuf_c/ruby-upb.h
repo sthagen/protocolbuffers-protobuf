@@ -1,5 +1,3 @@
-// Ruby is still using proto3 enum semantics for proto2
-#define UPB_DISABLE_CLOSED_ENUM_CHECKING
 /* Amalgamated source file */
 
 /*
@@ -497,14 +495,6 @@ Error, UINTPTR_MAX is undefined
 #endif
 
 #undef UPB_FASTTABLE_SUPPORTED
-
-/* Disable proto2 arena behavior (TEMPORARY) **********************************/
-
-#ifdef UPB_DISABLE_CLOSED_ENUM_CHECKING
-#define UPB_TREAT_CLOSED_ENUMS_LIKE_OPEN 1
-#else
-#define UPB_TREAT_CLOSED_ENUMS_LIKE_OPEN 0
-#endif
 
 #if defined(__cplusplus)
 #if defined(__clang__) || UPB_GNUC_MIN(6, 0)
@@ -14097,12 +14087,6 @@ UPB_INLINE void google_protobuf_GeneratedCodeInfo_Annotation_set_semantic(google
 
 #endif  // GOOGLE_UPB_UPB_REFLECTION_DESCRIPTOR_BOOTSTRAP_H__
 
-typedef enum {
-  kUpb_Syntax_Proto2 = 2,
-  kUpb_Syntax_Proto3 = 3,
-  kUpb_Syntax_Editions = 99
-} upb_Syntax;
-
 // Forward declarations for circular references.
 typedef struct upb_DefPool upb_DefPool;
 typedef struct upb_EnumDef upb_EnumDef;
@@ -14243,6 +14227,20 @@ UPB_API const upb_ExtensionRegistry* upb_DefPool_ExtensionRegistry(
 const upb_FieldDef** upb_DefPool_GetAllExtensions(const upb_DefPool* s,
                                                   const upb_MessageDef* m,
                                                   size_t* count);
+
+// If called, closed enums will be treated as open enums. This is non-standard
+// behavior and will cause conformance tests to fail, but it is more useful
+// behavior overall and can be used in situations where where the
+// non-conformance is acceptable.
+//
+// This function may only be called immediately after upb_DefPool_New().
+// It is an error to call it on an existing def pool or after defs have
+// already been added to the pool.
+//
+// Note: we still require that implicit presence fields have zero as their
+// default value.
+UPB_API void upb_DefPool_DisableClosedEnumChecking(upb_DefPool* s);
+bool upb_DefPool_ClosedEnumCheckingDisabled(const upb_DefPool* s);
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -14465,8 +14463,6 @@ int upb_FileDef_PublicDependencyCount(const upb_FileDef* f);
 const upb_ServiceDef* upb_FileDef_Service(const upb_FileDef* f, int i);
 int upb_FileDef_ServiceCount(const upb_FileDef* f);
 
-UPB_API upb_Syntax upb_FileDef_Syntax(const upb_FileDef* f);
-
 const upb_EnumDef* upb_FileDef_TopLevelEnum(const upb_FileDef* f, int i);
 int upb_FileDef_TopLevelEnumCount(const upb_FileDef* f);
 
@@ -14627,7 +14623,6 @@ const upb_MessageReservedRange* upb_MessageDef_ReservedRange(
     const upb_MessageDef* m, int i);
 int upb_MessageDef_ReservedRangeCount(const upb_MessageDef* m);
 
-UPB_API upb_Syntax upb_MessageDef_Syntax(const upb_MessageDef* m);
 UPB_API upb_WellKnown upb_MessageDef_WellKnownType(const upb_MessageDef* m);
 UPB_API UPB_DESC(SymbolVisibility)
     upb_MessageDef_Visibility(const upb_MessageDef* m);
@@ -17042,6 +17037,13 @@ UPB_INLINE void _upb_DefBuilder_CheckIdentFull(upb_DefBuilder* ctx,
   if (!good) _upb_DefBuilder_CheckIdentSlow(ctx, name, true);
 }
 
+UPB_INLINE bool _upb_DefBuilder_IsLegacyEdition(google_protobuf_Edition edition) {
+  // Should only be called for a real edition, not a placeholder like
+  // EDITION_LEGACY.
+  UPB_ASSERT(edition >= google_protobuf_EDITION_PROTO2);
+  return edition <= google_protobuf_EDITION_PROTO3;
+}
+
 // Returns true if the returned feature set is new and must be populated.
 bool _upb_DefBuilder_GetOrCreateFeatureSet(upb_DefBuilder* ctx,
                                            const UPB_DESC(FeatureSet*) parent,
@@ -17082,6 +17084,7 @@ const upb_MiniTableExtension* _upb_FileDef_ExtensionMiniTable(
     const upb_FileDef* f, int i);
 const int32_t* _upb_FileDef_PublicDependencyIndexes(const upb_FileDef* f);
 const int32_t* _upb_FileDef_WeakDependencyIndexes(const upb_FileDef* f);
+bool _upb_FileDef_ClosedEnumCheckingDisabled(const upb_FileDef* f);
 
 // upb_FileDef_Package() returns "" if f->package is NULL, this does not.
 const char* _upb_FileDef_RawPackage(const upb_FileDef* f);
@@ -17839,7 +17842,6 @@ UPB_PRIVATE(upb_WireWriter_VarintUnusedSizeFromLeadingZeros64)(uint64_t clz) {
 #undef UPB_MSAN
 #undef UPB_MALLOC_ALIGN
 #undef UPB_TSAN
-#undef UPB_TREAT_CLOSED_ENUMS_LIKE_OPEN
 #undef UPB_DEPRECATED
 #undef UPB_GNUC_MIN
 #undef UPB_DESCRIPTOR_UPB_H_FILENAME
