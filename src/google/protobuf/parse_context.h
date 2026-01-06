@@ -178,7 +178,7 @@ class PROTOBUF_EXPORT EpsCopyInputStream {
     // end up with an invalid limit and it can lead to integer overflows.
     limit_ = limit_ + std::move(delta).token();
     if (ABSL_PREDICT_FALSE(!EndedAtLimit())) return false;
-    // TODO We could remove this line and hoist the code to
+    // TODO(gerbens) We could remove this line and hoist the code to
     // DoneFallback. Study the perf/bin-size effects.
     limit_end_ = buffer_end_ + (std::min)(0, limit_);
     return true;
@@ -399,7 +399,7 @@ class PROTOBUF_EXPORT EpsCopyInputStream {
     return res;
   }
 
-  // TODO Can V1 enjoy a code deduplication benefit by using this?
+  // TODO(b/432303376) Can V1 enjoy a code deduplication benefit by using this?
   const char* InitFrom(const BoundedZCIS& bounded_zcis) {
     return InitFrom(bounded_zcis.zcis, bounded_zcis.limit);
   }
@@ -509,7 +509,7 @@ class PROTOBUF_EXPORT EpsCopyInputStream {
       }
       ptr += chunk_size;
       size -= chunk_size;
-      // TODO Next calls NextBuffer which generates buffers with
+      // TODO(gerbens) Next calls NextBuffer which generates buffers with
       // overlap and thus incurs cost of copying the slop regions. This is not
       // necessary for reading strings. We should just call Next buffers.
       if (limit_ <= kSlopBytes) return nullptr;
@@ -1436,29 +1436,34 @@ const char* EpsCopyInputStream::ReadPackedVarintArrayWithField(
   // field, than parsing, so count the number of ints first and preallocate.
   // Assume that varint are valid and just count the number of bytes with
   // continuation bit not set. In a valid varint there is only 1 such byte.
-  if (end - ptr >= 16 && out.Capacity() - out.size() < end - ptr) {
-    int old_size = out.size();
-    int count = out.Capacity() - out.size();
-    // We are not guaranteed to have enough space for worst possible case,
-    // do an actual count and reserve.
-    if (count < end - ptr) {
-      count = CountVarintsAssumingLargeArray(ptr, end);
+  if (end - ptr >= 16) {
+    int count = CountVarintsAssumingLargeArray(ptr, end);
+    if (count == end - ptr) {
+      // We have exactly one element per byte, so avoid the costly varint
+      // parsing.
+      out.ReserveWithArena(arena, out.size() + count);
+      T* x = out.AddNAlreadyReserved(count);
+      for (; ptr != end; ++ptr) {
+        *x = conv(static_cast<uint8_t>(*ptr));
+        ++x;
+      }
+    } else {
       // We can overread, so if the last byte has a continuation bit set,
       // we need to account for that.
       if (end[-1] & 0x80) count++;
+      int old_size = out.size();
       out.ReserveWithArena(arena, old_size + count);
+      T* x = out.AddNAlreadyReserved(count);
+      ptr = ReadPackedVarintArray(ptr, end, [&](uint64_t varint) {
+        *x = conv(varint);
+        ++x;
+      });
+      int new_size = x - out.data();
+      ABSL_DCHECK_LE(new_size, old_size + count);
+      // We may have overreserved if the the data are truncated or malformed,
+      // so set the actual size to avoid exposing uninitialized memory.
+      out.Truncate(new_size);
     }
-    T* x = out.AddNAlreadyReserved(count);
-    ptr = ReadPackedVarintArray(ptr, end, [&](uint64_t varint) {
-      *x = conv(varint);
-      x++;
-    });
-    int new_size = x - out.data();
-    ABSL_DCHECK_LE(new_size, old_size + count);
-    // We may have overreserved if there was enough capacity.
-    // Or encountered malformed data, so set the actual size to
-    // avoid exposing uninitialized memory.
-    out.Truncate(new_size);
     return ptr;
   } else {
     return ReadPackedVarintArray(ptr, end, [&](uint64_t varint) {
