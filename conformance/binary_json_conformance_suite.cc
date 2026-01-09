@@ -16,7 +16,6 @@
 #include <string>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
@@ -381,16 +380,13 @@ void BinaryAndJsonConformanceSuite::RunUnstableTests() {
   SetTypeUrl(GetTypeUrl(TestAllTypesEditionUnstable::GetDescriptor()));
 
   RunValidProtobufTest<TestAllTypesEditionUnstable>(
-      absl::StrCat("ValidInt32"), REQUIRED,
-      field(1, WireFormatLite::WIRETYPE_VARINT, varint(99)),
-      R"pb(optional_int32: 99)pb");
+      absl::StrCat("ValidBytes"), REQUIRED, len(13, "foo"),
+      R"pb(optional_bytes: "foo")pb");
 
   RunValidProtobufTest<TestAllTypesEditionUnstable>(
-      absl::StrCat("ValidMap.Integer"), REQUIRED,
-      len(8,
-          absl::StrCat(field(1, WireFormatLite::WIRETYPE_VARINT, varint(99)),
-                       field(2, WireFormatLite::WIRETYPE_VARINT, varint(87)))),
-      R"pb(map_int32_int32 { key: 99 value: 87 })pb");
+      absl::StrCat("ValidMap.Bytes"), REQUIRED,
+      len(15, absl::StrCat(len(1, "foo"), len(2, "barbaz"))),
+      R"pb(map_string_bytes { key: "foo" value: "barbaz" })pb");
 }
 
 void BinaryAndJsonConformanceSuite::RunMessageSetTests() {
@@ -2434,6 +2430,12 @@ void BinaryAndJsonConformanceSuiteImpl<
   // Parser reject non-numeric string values.
   ExpectParseFailureForJson("Int32FieldStringValuePartiallyNumeric", REQUIRED,
                             R"({"optionalInt32": "12abc"})");
+  ExpectParseFailureForJson("Int32FieldStringValuePartiallyNumericSpace",
+                            REQUIRED, R"({"optionalInt32": "12 34"})");
+  ExpectParseFailureForJson("Int32FieldStringValuePartiallyNumericComma",
+                            REQUIRED, R"({"optionalInt32": "12,34"})");
+  ExpectParseFailureForJson("Int32FieldStringValuePartiallyNumericUnicode",
+                            REQUIRED, R"({"optionalInt32": "12谷歌34"})");
   ExpectParseFailureForJson("Int32FieldStringValueNonNumeric", REQUIRED,
                             R"({"optionalInt32": "abc"})");
 
@@ -2589,6 +2591,12 @@ void BinaryAndJsonConformanceSuiteImpl<
                             R"({"optionalFloat": "12abc"})");
   ExpectParseFailureForJson("FloatFieldStringValueNonNumeric", REQUIRED,
                             R"({"optionalFloat": "abc"})");
+  ExpectParseFailureForJson("FloatFieldStringValuePartiallyNumericSpace",
+                            REQUIRED, R"({"optionalFloat": "12 34"})");
+  ExpectParseFailureForJson("FloatFieldStringValuePartiallyNumericComma",
+                            REQUIRED, R"({"optionalFloat": "12,34"})");
+  ExpectParseFailureForJson("FloatFieldStringValuePartiallyNumericUnicode",
+                            REQUIRED, R"({"optionalFloat": "12谷歌34"})");
 
   // Double fields.
   RunValidJsonTest("DoubleFieldMinPositiveValue", REQUIRED,
@@ -3672,6 +3680,22 @@ void BinaryAndJsonConformanceSuiteImpl<MessageType>::RunJsonTestsForAny() {
         "optionalAny": null
       })",
                    R"(
+      )");
+
+  // google.protobuf.Empty packed into an Any, implementations must accept it
+  // without the "value" field set. This also confirms that what they round trip
+  // does not have `"value":{}` set on it, since the test harness uses the C++
+  // JSON parser which will reject it.
+  RunValidJsonTest("AnyEmpty", REQUIRED,
+                   R"({
+        "optionalAny": {
+          "@type": "type.googleapis.com/google.protobuf.Empty"
+        }
+      })",
+                   R"(
+        optional_any: {
+          [type.googleapis.com/google.protobuf.Empty] {}
+        }
       )");
 }
 

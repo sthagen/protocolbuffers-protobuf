@@ -658,13 +658,11 @@ std::vector<Sub> ClassVars(const Descriptor* desc, Options opts) {
 MessageGenerator::MessageGenerator(
     const Descriptor* descriptor,
     const absl::flat_hash_map<absl::string_view, std::string>&,
-    int index_in_file_messages, const Options& options,
-    MessageSCCAnalyzer* scc_analyzer)
+    int index_in_file_messages, const Options& options)
     : descriptor_(descriptor),
       index_in_file_messages_(index_in_file_messages),
       options_(options),
-      field_generators_(descriptor),
-      scc_analyzer_(scc_analyzer) {
+      field_generators_(descriptor) {
 
   if (!message_layout_helper_) {
     message_layout_helper_ = std::make_unique<PaddingOptimizer>(descriptor);
@@ -675,8 +673,8 @@ MessageGenerator::MessageGenerator(
   num_weak_fields_ = CollectFieldsExcludingWeakAndOneof(descriptor_, options_,
                                                         optimized_order_);
   const size_t initial_size = optimized_order_.size();
-  optimized_order_ = message_layout_helper_->OptimizeLayout(
-      optimized_order_, options_, scc_analyzer_);
+  optimized_order_ =
+      message_layout_helper_->OptimizeLayout(optimized_order_, options_);
   ABSL_CHECK_EQ(initial_size, optimized_order_.size());
   // Verify that all split fields are placed at the end in the optimized order.
   ABSL_CHECK(std::is_sorted(
@@ -695,7 +693,7 @@ MessageGenerator::MessageGenerator(
       has_bit_indices_[field->index()] = max_has_bit_index_++;
     }
   }
-  field_generators_.Build(options_, scc_analyzer_, has_bit_indices_);
+  field_generators_.Build(options_, has_bit_indices_);
 
   for (int i = 0; i < descriptor->field_count(); ++i) {
     if (descriptor->field(i)->is_required()) {
@@ -704,8 +702,8 @@ MessageGenerator::MessageGenerator(
   }
 
   parse_function_generator_ = std::make_unique<ParseFunctionGenerator>(
-      descriptor_, max_has_bit_index_, has_bit_indices_, options_,
-      scc_analyzer_, variables_, index_in_file_messages_);
+      descriptor_, max_has_bit_index_, has_bit_indices_, options_, variables_,
+      index_in_file_messages_);
 }
 
 bool MessageGenerator::ShouldGenerateEnclosingIf(
@@ -758,7 +756,7 @@ void MessageGenerator::AddGenerators(
   }
   for (int i = 0; i < descriptor_->extension_count(); ++i) {
     extension_generators->emplace_back(std::make_unique<ExtensionGenerator>(
-        descriptor_->extension(i), options_, scc_analyzer_));
+        descriptor_->extension(i), options_));
     extension_generators_.push_back(extension_generators->back().get());
   }
 }
@@ -1168,7 +1166,7 @@ void MessageGenerator::GenerateSingularFieldHasBits(
         {Sub{"ASSUME",
              [&] {
                if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE &&
-                   !IsLazy(field, options_, scc_analyzer_)) {
+                   !IsLazy(field, options_)) {
                  // We maintain the invariant that for a submessage x, has_x()
                  // returning true implies that x_ is not null. By giving this
                  // information to the compiler, we allow it to eliminate
@@ -1555,7 +1553,7 @@ void MessageGenerator::GenerateMapEntryClassDefinition(io::Printer* p) {
                               $pbi$::WireFormatLite::$val_wire_type$>;
           $classname$();
           template <typename = void>
-          explicit PROTOBUF_CONSTEXPR $classname$($pbi$::ConstantInitialized);
+          explicit constexpr $classname$($pbi$::ConstantInitialized);
           explicit $classname$($pb$::Arena* $nullable$ arena);
           static constexpr const void* $nonnull$ internal_default_instance() {
             return &_$classname$_default_instance_;
@@ -2236,7 +2234,7 @@ void MessageGenerator::GenerateClassDefinition(io::Printer* p) {
           //~ Templatize constexpr constructor as a workaround for a bug in
           //~ gcc 12 (warning in gcc 13).
           template <typename = void>
-          explicit PROTOBUF_CONSTEXPR $classname$($pbi$::ConstantInitialized);
+          explicit constexpr $classname$($pbi$::ConstantInitialized);
 
           inline $classname$(const $classname$& from) : $classname$(nullptr, from) {}
           inline $classname$($classname$&& from) noexcept
@@ -2728,7 +2726,7 @@ size_t MessageGenerator::GenerateOffsets(io::Printer* p) {
     if (ShouldSplit(field, options_)) {
       format(" | ::_pbi::kSplitFieldOffsetMask");
     }
-    if (IsEagerlyVerifiedLazy(field, options_, scc_analyzer_)) {
+    if (IsEagerlyVerifiedLazy(field, options_)) {
       format(" | ::_pbi::kLazyMask");
     } else if (IsStringInlined(field, options_)) {
       format(" | ::_pbi::kInlinedMask");
@@ -3131,7 +3129,6 @@ void MessageGenerator::GenerateConstexprConstructor(io::Printer* p) {
 
   auto v = p->WithVars(ClassVars(descriptor_, options_));
   auto t = p->WithVars(MakeTrackerCalls(descriptor_, options_));
-  auto c = p->WithVars({{"constexpr", "PROTOBUF_CONSTEXPR"}});
   Formatter format(p);
 
   if (IsMapEntryMessage(descriptor_) || !HasImplData(descriptor_, options_)) {
@@ -3147,7 +3144,7 @@ void MessageGenerator::GenerateConstexprConstructor(io::Printer* p) {
               //~ Templatize constexpr constructor as a workaround for a bug in
               //~ gcc 12 (warning in gcc 13).
               template <typename>
-              $constexpr$ $classname$::$classname$(::_pbi::ConstantInitialized)
+              constexpr $classname$::$classname$(::_pbi::ConstantInitialized)
 #if defined(PROTOBUF_CUSTOM_VTABLE)
                   : $base$($classname$_class_data_.base()){}
 #else   // PROTOBUF_CUSTOM_VTABLE
@@ -3175,7 +3172,7 @@ void MessageGenerator::GenerateConstexprConstructor(io::Printer* p) {
   p->Emit(
       R"cc(
         template <typename>
-        $constexpr$ $classname$::$classname$(::_pbi::ConstantInitialized)
+        constexpr $classname$::$classname$(::_pbi::ConstantInitialized)
 #if defined(PROTOBUF_CUSTOM_VTABLE)
             : $superclass$($classname$_class_data_.base()),
 #else   // PROTOBUF_CUSTOM_VTABLE
@@ -3843,7 +3840,7 @@ void MessageGenerator::GenerateSwap(io::Printer* p) {
     const RunMap runs =
         FindRuns(optimized_order_, [this](const FieldDescriptor* field) {
           return !ShouldSplit(field, options_) &&
-                 HasTrivialSwap(field, options_, scc_analyzer_);
+                 HasTrivialSwap(field, options_);
         });
 
     for (size_t i = 0; i < optimized_order_.size(); ++i) {
@@ -5587,7 +5584,7 @@ void MessageGenerator::GenerateIsInitialized(io::Printer* p) {
     for (const auto* field : FieldRange(oneof)) {
       if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE &&
           !ShouldIgnoreRequiredFieldCheck(field, options_) &&
-          scc_analyzer_->HasRequiredFields(field->message_type())) {
+          options_.scc_analyzer->HasRequiredFields(field->message_type())) {
         return true;
       }
     }
