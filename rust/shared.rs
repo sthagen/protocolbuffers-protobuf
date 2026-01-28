@@ -14,7 +14,9 @@ use std::fmt;
 // This problem is referred to as "perfect derive".
 // https://smallcultfollowing.com/babysteps/blog/2022/04/12/implied-bounds-and-perfect-derive/
 
+#[doc(inline)]
 pub use crate::__internal::runtime::message_eq;
+
 #[cfg(all(cpp_kernel, not(lite_runtime)))]
 pub use crate::codegen_traits::interop::MessageDescriptorInterop;
 pub use crate::codegen_traits::{
@@ -27,7 +29,7 @@ pub use crate::codegen_traits::{
 pub use crate::cord::{ProtoBytesCow, ProtoStringCow};
 pub use crate::map::{Map, MapIter, MapKey, MapMut, MapValue, MapView};
 
-// TODO: Remove this alias once we have confirmed theres no incoming references.
+// TODO: Remove this alias once we have confirmed there are no incoming references.
 pub use MapValue as ProxiedInMapValue;
 
 pub use crate::optional::Optional;
@@ -35,9 +37,13 @@ pub use crate::proxied::{
     AsMut, AsView, IntoMut, IntoProxied, IntoView, Mut, MutProxied, Proxied, View,
 };
 pub use crate::r#enum::{Enum, UnknownEnumValue};
-pub use crate::repeated::{ProxiedInRepeated, Repeated, RepeatedIter, RepeatedMut, RepeatedView};
+pub use crate::repeated::{Repeated, RepeatedIter, RepeatedMut, RepeatedView};
+pub use crate::singular::Singular;
 pub use crate::string::{ProtoBytes, ProtoStr, ProtoString, Utf8Error};
 pub use protobuf_macros::proto_proc as proto;
+
+// TODO: Remove this alias once we have confirmed there are no incoming references.
+pub use Singular as ProxiedInRepeated;
 
 pub mod prelude;
 
@@ -57,6 +63,7 @@ pub mod prelude;
 /// convention. As application code should never use this module, anything
 /// changes under `__internal` is not considered a semver breaking change.
 #[path = "internal.rs"]
+#[doc(hidden)]
 pub mod __internal;
 
 mod codegen_traits;
@@ -68,6 +75,7 @@ mod optional;
 mod primitive;
 mod proxied;
 mod repeated;
+mod singular;
 mod string;
 
 #[cfg(not(bzl))]
