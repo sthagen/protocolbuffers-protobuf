@@ -2188,6 +2188,7 @@ void MessageGenerator::GenerateClassDefinition(io::Printer* p) {
         }},
        {"decl_impl", [&] { GenerateImplDefinition(p); }},
        {"classdata_type", ClassDataType(descriptor_, options_)},
+       {"msg_globals", MsgGlobalsInstanceName(descriptor_, options_)},
        {"split_friend",
         [&] {
           if (!ShouldSplit(descriptor_, options_)) return;
@@ -2251,7 +2252,8 @@ void MessageGenerator::GenerateClassDefinition(io::Printer* p) {
           $descriptor_accessor$;
           $get_descriptor$;
           $nodiscard $static const $classname$& default_instance() {
-            return *reinterpret_cast<const $classname$*>(&_$classname$_globals_);
+            return *$pbi$::MessageGlobalsBase::default_instance<$classname$>(
+                &$msg_globals$);
           }
           $decl_oneof$;
           static constexpr int kIndexInFileMessages = $index_in_file_messages$;
@@ -4123,14 +4125,13 @@ void MessageGenerator::GenerateClassData(io::Printer* p) {
   } else {
     p->Emit(
         {
-            {"type_size", descriptor_->full_name().size() + 1},
             {"is_initialized", is_initialized},
             {"custom_vtable_methods", custom_vtable_methods},
             {"v2_data", emit_v2_data},
         },
         R"cc(
           constexpr auto $classname$::InternalGenerateClassData_() {
-            return $pbi$::ClassDataLite<$type_size$>{
+            return $pbi$::ClassDataLite{
                 {
                     $default_instance$,
                     &_table_.header,
@@ -4151,7 +4152,7 @@ void MessageGenerator::GenerateClassData(io::Printer* p) {
 
           PROTOBUF_CONSTINIT
           PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-          const $pbi$::ClassDataLite<$type_size$> $classname$_class_data_ =
+          const $pbi$::ClassDataLite $classname$_class_data_ =
               $classname$::InternalGenerateClassData_();
 
           //~ This function needs to be marked as weak to avoid significantly
