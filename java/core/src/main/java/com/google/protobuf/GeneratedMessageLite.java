@@ -66,11 +66,11 @@ public abstract class GeneratedMessageLite<
   /** For use by generated code only. Lazily initialized to reduce allocations. */
   protected UnknownFieldSetLite unknownFields = UnknownFieldSetLite.getDefaultInstance();
 
-  boolean isMutable() {
+  final boolean isMutable() {
     return (memoizedSerializedSize & MUTABLE_FLAG_MASK) != 0;
   }
 
-  void markImmutable() {
+  final void markImmutable() {
     memoizedSerializedSize &= ~MUTABLE_FLAG_MASK;
   }
 
