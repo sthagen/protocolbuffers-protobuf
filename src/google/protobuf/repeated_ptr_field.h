@@ -70,9 +70,6 @@ class RepeatedFieldProxy;
 
 namespace internal {
 
-template <typename ElementType>
-class RepeatedFieldProxyBase;
-
 class MergePartialFromCodedStreamHelper;
 class SwapFieldHelper;
 class MapFieldBase;
@@ -182,7 +179,7 @@ using ElementNewFn = void(Arena*, void*& ptr);
 //     static Arena* GetArena(Type* value);
 //
 //     static Type* New(Arena* arena, Type&& value);
-//     static void Delete(Type*, Arena* arena);
+//     static void Delete(Type*);
 //     static void Clear(Type*);
 //
 //     // Only needs to be implemented if SpaceUsedExcludingSelf() is called.
@@ -258,12 +255,43 @@ class PROTOBUF_EXPORT RepeatedPtrFieldBase {
   }
 
   template <typename TypeHandler>
-  void Add(Arena* arena, Value<TypeHandler>&& value) {
+  Value<TypeHandler>* Add(Arena* arena, Value<TypeHandler>&& value) {
     if (ClearedCount() > 0) {
-      *cast<TypeHandler>(element_at(ExchangeCurrentSize(current_size_ + 1))) =
-          std::move(value);
+      auto* result =
+          cast<TypeHandler>(element_at(ExchangeCurrentSize(current_size_ + 1)));
+      *result = std::move(value);
+      return result;
     } else {
-      AddInternal(arena, TypeHandler::GetNewWithMoveFunc(std::move(value)));
+      return cast<TypeHandler>(AddInternal(
+          arena, TypeHandler::GetNewWithMoveFunc(std::move(value))));
+    }
+  }
+
+  template <typename TypeHandler>
+  Value<TypeHandler>* Add(Arena* arena, const Value<TypeHandler>& value) {
+    if (ClearedCount() > 0) {
+      auto* result =
+          cast<TypeHandler>(element_at(ExchangeCurrentSize(current_size_ + 1)));
+      *result = value;
+      return result;
+    } else {
+      return cast<TypeHandler>(
+          AddInternal(arena, TypeHandler::GetNewWithCopyFunc(value)));
+    }
+  }
+
+  template <typename TypeHandler, typename... Args>
+  Value<TypeHandler>* Emplace(Arena* arena, Args&&... args) {
+    if (ClearedCount() > 0) {
+      auto* result =
+          cast<TypeHandler>(element_at(ExchangeCurrentSize(current_size_ + 1)));
+      // NOLINTNEXTLINE(google3-readability-redundant-string-conversions)
+      *result = Value<TypeHandler>(std::forward<Args>(args)...);
+      return result;
+    } else {
+      return cast<TypeHandler>(AddInternal(
+          arena,
+          TypeHandler::GetNewWithEmplaceFunc(std::forward<Args>(args)...)));
     }
   }
 
@@ -283,7 +311,7 @@ class PROTOBUF_EXPORT RepeatedPtrFieldBase {
       if (i + 5 < n) {
         absl::PrefetchToLocalCacheNta(elems[i + 5]);
       }
-      Delete<H>(elems[i], nullptr);
+      Delete<H>(elems[i]);
     }
     if (!using_sso()) {
       internal::SizedDelete(rep(),
@@ -556,8 +584,10 @@ class PROTOBUF_EXPORT RepeatedPtrFieldBase {
       // cleared objects awaiting reuse.  We don't want to grow the array in
       // this case because otherwise a loop calling AddAllocated() followed by
       // Clear() would leak memory.
-      using H = CommonHandler<TypeHandler>;
-      Delete<H>(element_at(current_size_), arena);
+      if (arena == nullptr) {
+        using H = CommonHandler<TypeHandler>;
+        Delete<H>(element_at(current_size_));
+      }
     } else if (current_size_ < allocated_size()) {
       // We have some cleared objects.  We don't care about their order, so we
       // can just move the first one to the end to make space.
@@ -783,9 +813,11 @@ class PROTOBUF_EXPORT RepeatedPtrFieldBase {
   static inline const Value<TypeHandler>* cast(const void* element) {
     return reinterpret_cast<const Value<TypeHandler>*>(element);
   }
+
+  // REQUIRES: arena == nullptr
   template <typename TypeHandler>
-  static inline void Delete(void* obj, Arena* arena) {
-    TypeHandler::Delete(cast<TypeHandler>(obj), arena);
+  static inline void Delete(void* obj) {
+    TypeHandler::Delete(cast<TypeHandler>(obj));
   }
 
   // Out-of-line helper routine for Clear() once the inlined check has
@@ -1033,6 +1065,18 @@ class GenericTypeHandler {
       ptr = Arena::Create<Type>(arena, std::move(from));
     };
   }
+  static constexpr auto GetNewWithCopyFunc(
+      const Type& from ABSL_ATTRIBUTE_LIFETIME_BOUND) {
+    return [&from](Arena* arena, void*& ptr) {
+      ptr = Arena::Create<Type>(arena, from);
+    };
+  }
+  template <typename... Args>
+  static constexpr auto GetNewWithEmplaceFunc(Args&&... args) {
+    return [&args...](Arena* arena, void*& ptr) {
+      ptr = Arena::Create<Type>(arena, std::forward<Args>(args)...);
+    };
+  }
   static constexpr auto GetNewFromPrototypeFunc(
       const Type* prototype ABSL_ATTRIBUTE_LIFETIME_BOUND) {
     ABSL_DCHECK(prototype != nullptr);
@@ -1052,9 +1096,8 @@ class GenericTypeHandler {
     return Arena::InternalGetArena(value);
   }
 
-  static inline void Delete(Type* value, Arena* arena) {
+  static inline void Delete(Type* value) {
     static_assert(std::is_base_of_v<MessageLite, Type>);
-    if (arena != nullptr) return;
     // Using virtual destructor to reduce generated code size that would have
     // happened otherwise due to inlined `~Type()`.
     InternalOutOfLineDeleteMessageLite(value);
@@ -1101,17 +1144,25 @@ class GenericTypeHandler<std::string> {
       ptr = Arena::Create<Type>(arena, std::move(from));
     };
   }
+  static constexpr auto GetNewWithCopyFunc(
+      const Type& from ABSL_ATTRIBUTE_LIFETIME_BOUND) {
+    return [&from](Arena* arena, void*& ptr) {
+      ptr = Arena::Create<Type>(arena, from);
+    };
+  }
+  template <typename... Args>
+  static constexpr auto GetNewWithEmplaceFunc(Args&&... args) {
+    return [&args...](Arena* arena, void*& ptr) {
+      ptr = Arena::Create<Type>(arena, std::forward<Args>(args)...);
+    };
+  }
   static constexpr auto GetNewFromPrototypeFunc(const Type* /*prototype*/) {
     return GetNewFunc();
   }
 
   static inline Arena* GetArena(Type*) { return nullptr; }
 
-  static inline void Delete(Type* value, Arena* arena) {
-    if (arena == nullptr) {
-      delete value;
-    }
-  }
+  static inline void Delete(Type* value) { delete value; }
   static inline void Clear(Type* value) { value->clear(); }
   static inline void Merge(const Type& from, Type* to) { *to = from; }
   static size_t SpaceUsedLong(const Type& value) {
@@ -1510,10 +1561,8 @@ class ABSL_ATTRIBUTE_WARN_UNUSED RepeatedPtrField final
 
   friend class internal::TcParser;
 
-  friend class RepeatedFieldProxy<Element>;
-
   template <typename ElementType>
-  friend class internal::RepeatedFieldProxyBase;
+  friend class RepeatedFieldProxy;
 
   template <typename T>
   friend struct WeakRepeatedPtrField;
@@ -1536,10 +1585,17 @@ class ABSL_ATTRIBUTE_WARN_UNUSED RepeatedPtrField final
 
   pointer AddWithArena(Arena* arena) ABSL_ATTRIBUTE_LIFETIME_BOUND;
 
-  void AddWithArena(Arena* arena, Element&& value);
+  pointer AddWithArena(Arena* arena, Element&& value);
+
+  // Private-only. Copies `value` into a newly allocated element.
+  pointer AddWithArena(Arena* arena, const Element& value);
 
   template <typename Iter>
   void AddWithArena(Arena* arena, Iter begin, Iter end);
+
+  // Private-only. Constructs an element in-place from `args`.
+  template <typename... Args>
+  pointer EmplaceWithArena(Arena* arena, Args&&... args);
 
   void AddAllocatedWithArena(Arena* arena, Element* value);
 
@@ -1727,9 +1783,23 @@ PROTOBUF_NDEBUG_INLINE void RepeatedPtrField<Element>::InternalAddWithArena(
 }
 
 template <typename Element>
-PROTOBUF_NDEBUG_INLINE void RepeatedPtrField<Element>::AddWithArena(
-    Arena* arena, Element&& value) {
-  RepeatedPtrFieldBase::Add<TypeHandler>(arena, std::move(value));
+PROTOBUF_NDEBUG_INLINE typename RepeatedPtrField<Element>::pointer
+RepeatedPtrField<Element>::AddWithArena(Arena* arena, Element&& value) {
+  return RepeatedPtrFieldBase::Add<TypeHandler>(arena, std::move(value));
+}
+
+template <typename Element>
+PROTOBUF_NDEBUG_INLINE typename RepeatedPtrField<Element>::pointer
+RepeatedPtrField<Element>::AddWithArena(Arena* arena, const Element& value) {
+  return RepeatedPtrFieldBase::Add<TypeHandler>(arena, value);
+}
+
+template <typename Element>
+template <typename... Args>
+PROTOBUF_NDEBUG_INLINE typename RepeatedPtrField<Element>::pointer
+RepeatedPtrField<Element>::EmplaceWithArena(Arena* arena, Args&&... args) {
+  return RepeatedPtrFieldBase::Emplace<TypeHandler>(
+      arena, std::forward<Args>(args)...);
 }
 
 template <typename Element>
@@ -1765,10 +1835,11 @@ inline void RepeatedPtrField<Element>::DeleteSubrange(int start, int num) {
   internal::RuntimeAssertInBoundsGE(num, 0);
   internal::RuntimeAssertInBoundsLE(static_cast<int64_t>(start) + num, size());
   void** subrange = raw_mutable_data() + start;
-  Arena* arena = GetArena();
-  for (int i = 0; i < num; ++i) {
-    using H = CommonHandler<TypeHandler>;
-    H::Delete(static_cast<Element*>(subrange[i]), arena);
+  if (GetArena() == nullptr) {
+    for (int i = 0; i < num; ++i) {
+      using H = CommonHandler<TypeHandler>;
+      H::Delete(static_cast<Element*>(subrange[i]));
+    }
   }
   UnsafeArenaExtractSubrange(start, num, nullptr);
 }
