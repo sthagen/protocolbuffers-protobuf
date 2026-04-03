@@ -57,9 +57,11 @@ namespace google {
 namespace protobuf {
 class SourceContext;
 struct SourceContextGlobalsTypeInternal;
-PROTOBUF_EXPORT extern SourceContextGlobalsTypeInternal _SourceContext_globals_;
 #ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_EXPORT extern SourceContextGlobalsTypeInternal _SourceContext_globals_;
 PROTOBUF_EXPORT extern const ::google::protobuf::internal::ClassDataFull SourceContext_class_data_;
+#else
+PROTOBUF_EXPORT extern const SourceContextGlobalsTypeInternal _SourceContext_globals_;
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 }  // namespace protobuf
 }  // namespace google
@@ -91,8 +93,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED SourceContext final
                                class_data);
 
   inline SourceContext(const SourceContext& from) : SourceContext(nullptr, from) {}
-  inline SourceContext(SourceContext&& from) noexcept
-      : SourceContext(nullptr, ::std::move(from)) {}
+  inline SourceContext(SourceContext&& from) noexcept : SourceContext(nullptr, ::std::move(from)) {}
   inline SourceContext& operator=(const SourceContext& from) {
     CopyFrom(from);
     return *this;
@@ -127,8 +128,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED SourceContext final
     return default_instance().GetMetadata().reflection;
   }
   [[nodiscard]] static const SourceContext& default_instance() {
-    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<SourceContext>(
-        &_SourceContext_globals_);
+    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<SourceContext>(&_SourceContext_globals_);
   }
   static constexpr int kIndexInFileMessages = 0;
   friend void swap(SourceContext& a, SourceContext& b) { a.Swap(&b); }

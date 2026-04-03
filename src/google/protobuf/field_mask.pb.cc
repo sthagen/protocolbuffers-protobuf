@@ -38,8 +38,7 @@ namespace google {
 namespace protobuf {
 class FieldMask::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<FieldMask>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<FieldMask>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(FieldMask, _impl_._has_bits_);
 };
@@ -109,8 +108,7 @@ inline void* PROTOBUF_NONNULL FieldMask::PlacementNew_(
   return ::new (mem) FieldMask(arena);
 }
 constexpr auto FieldMask::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(FieldMask),
-                                            alignof(FieldMask));
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(FieldMask), alignof(FieldMask));
 }
 constexpr auto FieldMask::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -174,7 +172,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(FieldMaskGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FieldMaskGlobalsTypeInternal _FieldMask_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        FieldMaskGlobalsTypeInternal _FieldMask_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* FieldMask_get_class_data() {
@@ -418,9 +420,8 @@ PROTOBUF_NOINLINE void FieldMask::Clear() {
 }
 
 void FieldMask::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<FieldMask*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<FieldMask*>(&to_msg);
   auto& from = static_cast<const FieldMask&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();

@@ -54,8 +54,7 @@ namespace google {
 namespace protobuf {
 class UInt64Value::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<UInt64Value>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<UInt64Value>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(UInt64Value, _impl_._has_bits_);
 };
@@ -118,8 +117,7 @@ inline void* PROTOBUF_NONNULL UInt64Value::PlacementNew_(
   return ::new (mem) UInt64Value(arena);
 }
 constexpr auto UInt64Value::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(UInt64Value),
-                                            alignof(UInt64Value));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(UInt64Value), alignof(UInt64Value));
 }
 constexpr auto UInt64Value::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -183,7 +181,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(UInt64ValueGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UInt64ValueGlobalsTypeInternal _UInt64Value_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        UInt64ValueGlobalsTypeInternal _UInt64Value_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* UInt64Value_get_class_data() {
@@ -197,8 +199,7 @@ const ::_pbi::ClassData* UInt64Value_get_class_data() {
 #endif  // PROTOBUF_CUSTOM_VTABLE
 class UInt32Value::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<UInt32Value>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<UInt32Value>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(UInt32Value, _impl_._has_bits_);
 };
@@ -261,8 +262,7 @@ inline void* PROTOBUF_NONNULL UInt32Value::PlacementNew_(
   return ::new (mem) UInt32Value(arena);
 }
 constexpr auto UInt32Value::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(UInt32Value),
-                                            alignof(UInt32Value));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(UInt32Value), alignof(UInt32Value));
 }
 constexpr auto UInt32Value::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -326,7 +326,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(UInt32ValueGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UInt32ValueGlobalsTypeInternal _UInt32Value_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        UInt32ValueGlobalsTypeInternal _UInt32Value_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* UInt32Value_get_class_data() {
@@ -340,8 +344,7 @@ const ::_pbi::ClassData* UInt32Value_get_class_data() {
 #endif  // PROTOBUF_CUSTOM_VTABLE
 class StringValue::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<StringValue>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<StringValue>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(StringValue, _impl_._has_bits_);
 };
@@ -409,8 +412,7 @@ inline void* PROTOBUF_NONNULL StringValue::PlacementNew_(
   return ::new (mem) StringValue(arena);
 }
 constexpr auto StringValue::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(StringValue),
-                                            alignof(StringValue));
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(StringValue), alignof(StringValue));
 }
 constexpr auto StringValue::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -474,7 +476,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(StringValueGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 StringValueGlobalsTypeInternal _StringValue_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        StringValueGlobalsTypeInternal _StringValue_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* StringValue_get_class_data() {
@@ -488,8 +494,7 @@ const ::_pbi::ClassData* StringValue_get_class_data() {
 #endif  // PROTOBUF_CUSTOM_VTABLE
 class Int64Value::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<Int64Value>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<Int64Value>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(Int64Value, _impl_._has_bits_);
 };
@@ -552,8 +557,7 @@ inline void* PROTOBUF_NONNULL Int64Value::PlacementNew_(
   return ::new (mem) Int64Value(arena);
 }
 constexpr auto Int64Value::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(Int64Value),
-                                            alignof(Int64Value));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(Int64Value), alignof(Int64Value));
 }
 constexpr auto Int64Value::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -617,7 +621,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(Int64ValueGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 Int64ValueGlobalsTypeInternal _Int64Value_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        Int64ValueGlobalsTypeInternal _Int64Value_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* Int64Value_get_class_data() {
@@ -631,8 +639,7 @@ const ::_pbi::ClassData* Int64Value_get_class_data() {
 #endif  // PROTOBUF_CUSTOM_VTABLE
 class Int32Value::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<Int32Value>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<Int32Value>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(Int32Value, _impl_._has_bits_);
 };
@@ -695,8 +702,7 @@ inline void* PROTOBUF_NONNULL Int32Value::PlacementNew_(
   return ::new (mem) Int32Value(arena);
 }
 constexpr auto Int32Value::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(Int32Value),
-                                            alignof(Int32Value));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(Int32Value), alignof(Int32Value));
 }
 constexpr auto Int32Value::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -760,7 +766,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(Int32ValueGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 Int32ValueGlobalsTypeInternal _Int32Value_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        Int32ValueGlobalsTypeInternal _Int32Value_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* Int32Value_get_class_data() {
@@ -774,8 +784,7 @@ const ::_pbi::ClassData* Int32Value_get_class_data() {
 #endif  // PROTOBUF_CUSTOM_VTABLE
 class FloatValue::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<FloatValue>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<FloatValue>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(FloatValue, _impl_._has_bits_);
 };
@@ -838,8 +847,7 @@ inline void* PROTOBUF_NONNULL FloatValue::PlacementNew_(
   return ::new (mem) FloatValue(arena);
 }
 constexpr auto FloatValue::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(FloatValue),
-                                            alignof(FloatValue));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(FloatValue), alignof(FloatValue));
 }
 constexpr auto FloatValue::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -903,7 +911,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(FloatValueGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FloatValueGlobalsTypeInternal _FloatValue_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        FloatValueGlobalsTypeInternal _FloatValue_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* FloatValue_get_class_data() {
@@ -917,8 +929,7 @@ const ::_pbi::ClassData* FloatValue_get_class_data() {
 #endif  // PROTOBUF_CUSTOM_VTABLE
 class DoubleValue::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<DoubleValue>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<DoubleValue>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(DoubleValue, _impl_._has_bits_);
 };
@@ -981,8 +992,7 @@ inline void* PROTOBUF_NONNULL DoubleValue::PlacementNew_(
   return ::new (mem) DoubleValue(arena);
 }
 constexpr auto DoubleValue::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(DoubleValue),
-                                            alignof(DoubleValue));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(DoubleValue), alignof(DoubleValue));
 }
 constexpr auto DoubleValue::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -1046,7 +1056,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(DoubleValueGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DoubleValueGlobalsTypeInternal _DoubleValue_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        DoubleValueGlobalsTypeInternal _DoubleValue_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* DoubleValue_get_class_data() {
@@ -1060,8 +1074,7 @@ const ::_pbi::ClassData* DoubleValue_get_class_data() {
 #endif  // PROTOBUF_CUSTOM_VTABLE
 class BytesValue::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<BytesValue>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<BytesValue>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(BytesValue, _impl_._has_bits_);
 };
@@ -1126,8 +1139,7 @@ inline void* PROTOBUF_NONNULL BytesValue::PlacementNew_(
   return ::new (mem) BytesValue(arena);
 }
 constexpr auto BytesValue::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(BytesValue),
-                                            alignof(BytesValue));
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(BytesValue), alignof(BytesValue));
 }
 constexpr auto BytesValue::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -1191,7 +1203,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(BytesValueGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 BytesValueGlobalsTypeInternal _BytesValue_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        BytesValueGlobalsTypeInternal _BytesValue_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* BytesValue_get_class_data() {
@@ -1205,8 +1221,7 @@ const ::_pbi::ClassData* BytesValue_get_class_data() {
 #endif  // PROTOBUF_CUSTOM_VTABLE
 class BoolValue::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<BoolValue>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<BoolValue>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(BoolValue, _impl_._has_bits_);
 };
@@ -1269,8 +1284,7 @@ inline void* PROTOBUF_NONNULL BoolValue::PlacementNew_(
   return ::new (mem) BoolValue(arena);
 }
 constexpr auto BoolValue::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(BoolValue),
-                                            alignof(BoolValue));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(BoolValue), alignof(BoolValue));
 }
 constexpr auto BoolValue::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -1334,7 +1348,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(BoolValueGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 BoolValueGlobalsTypeInternal _BoolValue_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        BoolValueGlobalsTypeInternal _BoolValue_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* BoolValue_get_class_data() {
@@ -1608,9 +1626,8 @@ PROTOBUF_NOINLINE void DoubleValue::Clear() {
 }
 
 void DoubleValue::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<DoubleValue*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<DoubleValue*>(&to_msg);
   auto& from = static_cast<const DoubleValue&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();
@@ -1797,9 +1814,8 @@ PROTOBUF_NOINLINE void FloatValue::Clear() {
 }
 
 void FloatValue::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<FloatValue*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<FloatValue*>(&to_msg);
   auto& from = static_cast<const FloatValue&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();
@@ -1987,9 +2003,8 @@ PROTOBUF_NOINLINE void Int64Value::Clear() {
 }
 
 void Int64Value::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<Int64Value*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<Int64Value*>(&to_msg);
   auto& from = static_cast<const Int64Value&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();
@@ -2177,9 +2192,8 @@ PROTOBUF_NOINLINE void UInt64Value::Clear() {
 }
 
 void UInt64Value::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<UInt64Value*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<UInt64Value*>(&to_msg);
   auto& from = static_cast<const UInt64Value&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();
@@ -2367,9 +2381,8 @@ PROTOBUF_NOINLINE void Int32Value::Clear() {
 }
 
 void Int32Value::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<Int32Value*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<Int32Value*>(&to_msg);
   auto& from = static_cast<const Int32Value&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();
@@ -2557,9 +2570,8 @@ PROTOBUF_NOINLINE void UInt32Value::Clear() {
 }
 
 void UInt32Value::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<UInt32Value*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<UInt32Value*>(&to_msg);
   auto& from = static_cast<const UInt32Value&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();
@@ -2746,9 +2758,8 @@ PROTOBUF_NOINLINE void BoolValue::Clear() {
 }
 
 void BoolValue::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<BoolValue*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<BoolValue*>(&to_msg);
   auto& from = static_cast<const BoolValue&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();
@@ -2955,9 +2966,8 @@ PROTOBUF_NOINLINE void StringValue::Clear() {
 }
 
 void StringValue::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<StringValue*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<StringValue*>(&to_msg);
   auto& from = static_cast<const StringValue&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();
@@ -3168,9 +3178,8 @@ PROTOBUF_NOINLINE void BytesValue::Clear() {
 }
 
 void BytesValue::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<BytesValue*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<BytesValue*>(&to_msg);
   auto& from = static_cast<const BytesValue&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();

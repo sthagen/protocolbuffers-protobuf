@@ -38,8 +38,7 @@ namespace google {
 namespace protobuf {
 class Timestamp::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<Timestamp>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<Timestamp>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(Timestamp, _impl_._has_bits_);
 };
@@ -109,8 +108,7 @@ inline void* PROTOBUF_NONNULL Timestamp::PlacementNew_(
   return ::new (mem) Timestamp(arena);
 }
 constexpr auto Timestamp::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(Timestamp),
-                                            alignof(Timestamp));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(Timestamp), alignof(Timestamp));
 }
 constexpr auto Timestamp::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -174,7 +172,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(TimestampGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TimestampGlobalsTypeInternal _Timestamp_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        TimestampGlobalsTypeInternal _Timestamp_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* Timestamp_get_class_data() {
@@ -416,9 +418,8 @@ PROTOBUF_NOINLINE void Timestamp::Clear() {
 }
 
 void Timestamp::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<Timestamp*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<Timestamp*>(&to_msg);
   auto& from = static_cast<const Timestamp&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();

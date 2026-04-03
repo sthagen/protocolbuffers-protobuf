@@ -64,27 +64,35 @@ enum NullValue : int;
 PROTOBUF_EXPORT extern const uint32_t NullValue_internal_data_[];
 class ListValue;
 struct ListValueGlobalsTypeInternal;
-PROTOBUF_EXPORT extern ListValueGlobalsTypeInternal _ListValue_globals_;
 #ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_EXPORT extern ListValueGlobalsTypeInternal _ListValue_globals_;
 PROTOBUF_EXPORT extern const ::google::protobuf::internal::ClassDataFull ListValue_class_data_;
+#else
+PROTOBUF_EXPORT extern const ListValueGlobalsTypeInternal _ListValue_globals_;
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 class Struct;
 struct StructGlobalsTypeInternal;
-PROTOBUF_EXPORT extern StructGlobalsTypeInternal _Struct_globals_;
 #ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_EXPORT extern StructGlobalsTypeInternal _Struct_globals_;
 PROTOBUF_EXPORT extern const ::google::protobuf::internal::ClassDataFull Struct_class_data_;
+#else
+PROTOBUF_EXPORT extern const StructGlobalsTypeInternal _Struct_globals_;
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 class Struct_FieldsEntry_DoNotUse;
 struct Struct_FieldsEntry_DoNotUseGlobalsTypeInternal;
-PROTOBUF_EXPORT extern Struct_FieldsEntry_DoNotUseGlobalsTypeInternal _Struct_FieldsEntry_DoNotUse_globals_;
 #ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_EXPORT extern Struct_FieldsEntry_DoNotUseGlobalsTypeInternal _Struct_FieldsEntry_DoNotUse_globals_;
 PROTOBUF_EXPORT extern const ::google::protobuf::internal::ClassDataFull Struct_FieldsEntry_DoNotUse_class_data_;
+#else
+PROTOBUF_EXPORT extern const Struct_FieldsEntry_DoNotUseGlobalsTypeInternal _Struct_FieldsEntry_DoNotUse_globals_;
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 class Value;
 struct ValueGlobalsTypeInternal;
-PROTOBUF_EXPORT extern ValueGlobalsTypeInternal _Value_globals_;
 #ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_EXPORT extern ValueGlobalsTypeInternal _Value_globals_;
 PROTOBUF_EXPORT extern const ::google::protobuf::internal::ClassDataFull Value_class_data_;
+#else
+PROTOBUF_EXPORT extern const ValueGlobalsTypeInternal _Value_globals_;
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 template <>
 internal::EnumTraitsT<::google::protobuf::NullValue_internal_data_>
@@ -160,8 +168,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ListValue final : p
                                class_data);
 
   inline ListValue(const ListValue& from) : ListValue(nullptr, from) {}
-  inline ListValue(ListValue&& from) noexcept
-      : ListValue(nullptr, ::std::move(from)) {}
+  inline ListValue(ListValue&& from) noexcept : ListValue(nullptr, ::std::move(from)) {}
   inline ListValue& operator=(const ListValue& from) {
     CopyFrom(from);
     return *this;
@@ -196,8 +203,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ListValue final : p
     return default_instance().GetMetadata().reflection;
   }
   [[nodiscard]] static const ListValue& default_instance() {
-    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<ListValue>(
-        &_ListValue_globals_);
+    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<ListValue>(&_ListValue_globals_);
   }
   static constexpr int kIndexInFileMessages = 3;
   friend void swap(ListValue& a, ListValue& b) { a.Swap(&b); }
@@ -374,8 +380,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Struct final : publ
                                class_data);
 
   inline Struct(const Struct& from) : Struct(nullptr, from) {}
-  inline Struct(Struct&& from) noexcept
-      : Struct(nullptr, ::std::move(from)) {}
+  inline Struct(Struct&& from) noexcept : Struct(nullptr, ::std::move(from)) {}
   inline Struct& operator=(const Struct& from) {
     CopyFrom(from);
     return *this;
@@ -410,8 +415,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Struct final : publ
     return default_instance().GetMetadata().reflection;
   }
   [[nodiscard]] static const Struct& default_instance() {
-    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<Struct>(
-        &_Struct_globals_);
+    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<Struct>(&_Struct_globals_);
   }
   static constexpr int kIndexInFileMessages = 1;
   friend void swap(Struct& a, Struct& b) { a.Swap(&b); }
@@ -632,8 +636,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Value final : publi
                                class_data);
 
   inline Value(const Value& from) : Value(nullptr, from) {}
-  inline Value(Value&& from) noexcept
-      : Value(nullptr, ::std::move(from)) {}
+  inline Value(Value&& from) noexcept : Value(nullptr, ::std::move(from)) {}
   inline Value& operator=(const Value& from) {
     CopyFrom(from);
     return *this;
@@ -668,8 +671,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Value final : publi
     return default_instance().GetMetadata().reflection;
   }
   [[nodiscard]] static const Value& default_instance() {
-    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<Value>(
-        &_Value_globals_);
+    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<Value>(&_Value_globals_);
   }
   enum KindCase {
     kNullValue = 1,

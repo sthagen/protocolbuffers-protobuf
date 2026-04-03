@@ -66,33 +66,43 @@ enum Syntax : int;
 PROTOBUF_EXPORT extern const uint32_t Syntax_internal_data_[];
 class Enum;
 struct EnumGlobalsTypeInternal;
-PROTOBUF_EXPORT extern EnumGlobalsTypeInternal _Enum_globals_;
 #ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_EXPORT extern EnumGlobalsTypeInternal _Enum_globals_;
 PROTOBUF_EXPORT extern const ::google::protobuf::internal::ClassDataFull Enum_class_data_;
+#else
+PROTOBUF_EXPORT extern const EnumGlobalsTypeInternal _Enum_globals_;
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 class EnumValue;
 struct EnumValueGlobalsTypeInternal;
-PROTOBUF_EXPORT extern EnumValueGlobalsTypeInternal _EnumValue_globals_;
 #ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_EXPORT extern EnumValueGlobalsTypeInternal _EnumValue_globals_;
 PROTOBUF_EXPORT extern const ::google::protobuf::internal::ClassDataFull EnumValue_class_data_;
+#else
+PROTOBUF_EXPORT extern const EnumValueGlobalsTypeInternal _EnumValue_globals_;
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 class Field;
 struct FieldGlobalsTypeInternal;
-PROTOBUF_EXPORT extern FieldGlobalsTypeInternal _Field_globals_;
 #ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_EXPORT extern FieldGlobalsTypeInternal _Field_globals_;
 PROTOBUF_EXPORT extern const ::google::protobuf::internal::ClassDataFull Field_class_data_;
+#else
+PROTOBUF_EXPORT extern const FieldGlobalsTypeInternal _Field_globals_;
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 class Option;
 struct OptionGlobalsTypeInternal;
-PROTOBUF_EXPORT extern OptionGlobalsTypeInternal _Option_globals_;
 #ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_EXPORT extern OptionGlobalsTypeInternal _Option_globals_;
 PROTOBUF_EXPORT extern const ::google::protobuf::internal::ClassDataFull Option_class_data_;
+#else
+PROTOBUF_EXPORT extern const OptionGlobalsTypeInternal _Option_globals_;
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 class Type;
 struct TypeGlobalsTypeInternal;
-PROTOBUF_EXPORT extern TypeGlobalsTypeInternal _Type_globals_;
 #ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_EXPORT extern TypeGlobalsTypeInternal _Type_globals_;
 PROTOBUF_EXPORT extern const ::google::protobuf::internal::ClassDataFull Type_class_data_;
+#else
+PROTOBUF_EXPORT extern const TypeGlobalsTypeInternal _Type_globals_;
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 template <>
 internal::EnumTraitsT<::google::protobuf::Field_Cardinality_internal_data_>
@@ -275,8 +285,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Option final : publ
                                class_data);
 
   inline Option(const Option& from) : Option(nullptr, from) {}
-  inline Option(Option&& from) noexcept
-      : Option(nullptr, ::std::move(from)) {}
+  inline Option(Option&& from) noexcept : Option(nullptr, ::std::move(from)) {}
   inline Option& operator=(const Option& from) {
     CopyFrom(from);
     return *this;
@@ -311,8 +320,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Option final : publ
     return default_instance().GetMetadata().reflection;
   }
   [[nodiscard]] static const Option& default_instance() {
-    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<Option>(
-        &_Option_globals_);
+    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<Option>(&_Option_globals_);
   }
   static constexpr int kIndexInFileMessages = 4;
   friend void swap(Option& a, Option& b) { a.Swap(&b); }
@@ -501,8 +509,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Field final : publi
                                class_data);
 
   inline Field(const Field& from) : Field(nullptr, from) {}
-  inline Field(Field&& from) noexcept
-      : Field(nullptr, ::std::move(from)) {}
+  inline Field(Field&& from) noexcept : Field(nullptr, ::std::move(from)) {}
   inline Field& operator=(const Field& from) {
     CopyFrom(from);
     return *this;
@@ -537,8 +544,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Field final : publi
     return default_instance().GetMetadata().reflection;
   }
   [[nodiscard]] static const Field& default_instance() {
-    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<Field>(
-        &_Field_globals_);
+    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<Field>(&_Field_globals_);
   }
   static constexpr int kIndexInFileMessages = 1;
   friend void swap(Field& a, Field& b) { a.Swap(&b); }
@@ -902,8 +908,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED EnumValue final : p
                                class_data);
 
   inline EnumValue(const EnumValue& from) : EnumValue(nullptr, from) {}
-  inline EnumValue(EnumValue&& from) noexcept
-      : EnumValue(nullptr, ::std::move(from)) {}
+  inline EnumValue(EnumValue&& from) noexcept : EnumValue(nullptr, ::std::move(from)) {}
   inline EnumValue& operator=(const EnumValue& from) {
     CopyFrom(from);
     return *this;
@@ -938,8 +943,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED EnumValue final : p
     return default_instance().GetMetadata().reflection;
   }
   [[nodiscard]] static const EnumValue& default_instance() {
-    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<EnumValue>(
-        &_EnumValue_globals_);
+    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<EnumValue>(&_EnumValue_globals_);
   }
   static constexpr int kIndexInFileMessages = 3;
   friend void swap(EnumValue& a, EnumValue& b) { a.Swap(&b); }
@@ -1145,8 +1149,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Type final : public
                                class_data);
 
   inline Type(const Type& from) : Type(nullptr, from) {}
-  inline Type(Type&& from) noexcept
-      : Type(nullptr, ::std::move(from)) {}
+  inline Type(Type&& from) noexcept : Type(nullptr, ::std::move(from)) {}
   inline Type& operator=(const Type& from) {
     CopyFrom(from);
     return *this;
@@ -1181,8 +1184,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Type final : public
     return default_instance().GetMetadata().reflection;
   }
   [[nodiscard]] static const Type& default_instance() {
-    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<Type>(
-        &_Type_globals_);
+    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<Type>(&_Type_globals_);
   }
   static constexpr int kIndexInFileMessages = 0;
   friend void swap(Type& a, Type& b) { a.Swap(&b); }
@@ -1475,8 +1477,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Enum final : public
                                class_data);
 
   inline Enum(const Enum& from) : Enum(nullptr, from) {}
-  inline Enum(Enum&& from) noexcept
-      : Enum(nullptr, ::std::move(from)) {}
+  inline Enum(Enum&& from) noexcept : Enum(nullptr, ::std::move(from)) {}
   inline Enum& operator=(const Enum& from) {
     CopyFrom(from);
     return *this;
@@ -1511,8 +1512,7 @@ class PROTOBUF_EXPORT  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Enum final : public
     return default_instance().GetMetadata().reflection;
   }
   [[nodiscard]] static const Enum& default_instance() {
-    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<Enum>(
-        &_Enum_globals_);
+    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<Enum>(&_Enum_globals_);
   }
   static constexpr int kIndexInFileMessages = 2;
   friend void swap(Enum& a, Enum& b) { a.Swap(&b); }

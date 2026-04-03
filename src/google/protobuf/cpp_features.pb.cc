@@ -37,8 +37,7 @@ PROTOBUF_CONSTINIT ::google::protobuf::internal::ReflectionData
 namespace pb {
 class CppFeatures::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<CppFeatures>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<CppFeatures>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(CppFeatures, _impl_._has_bits_);
 };
@@ -125,8 +124,7 @@ inline void* PROTOBUF_NONNULL CppFeatures::PlacementNew_(
   return ::new (mem) CppFeatures(arena);
 }
 constexpr auto CppFeatures::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(CppFeatures),
-                                            alignof(CppFeatures));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(CppFeatures), alignof(CppFeatures));
 }
 constexpr auto CppFeatures::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -190,7 +188,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(CppFeaturesGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 CppFeaturesGlobalsTypeInternal _CppFeatures_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        CppFeaturesGlobalsTypeInternal _CppFeatures_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* CppFeatures_get_class_data() {
@@ -473,9 +475,8 @@ PROTOBUF_NOINLINE void CppFeatures::Clear() {
 }
 
 void CppFeatures::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<CppFeatures*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<CppFeatures*>(&to_msg);
   auto& from = static_cast<const CppFeatures&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();

@@ -84,8 +84,7 @@ inline void* PROTOBUF_NONNULL Empty::PlacementNew_(
   return ::new (mem) Empty(arena);
 }
 constexpr auto Empty::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(Empty),
-                                            alignof(Empty));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(Empty), alignof(Empty));
 }
 constexpr auto Empty::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -149,7 +148,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(EmptyGlobalsTypeInternal, _default) ==
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EmptyGlobalsTypeInternal _Empty_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        EmptyGlobalsTypeInternal _Empty_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* Empty_get_class_data() {

@@ -85,8 +85,7 @@ inline void* PROTOBUF_NONNULL JavaFeatures_NestInFileClassFeature::PlacementNew_
   return ::new (mem) JavaFeatures_NestInFileClassFeature(arena);
 }
 constexpr auto JavaFeatures_NestInFileClassFeature::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(JavaFeatures_NestInFileClassFeature),
-                                            alignof(JavaFeatures_NestInFileClassFeature));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(JavaFeatures_NestInFileClassFeature), alignof(JavaFeatures_NestInFileClassFeature));
 }
 constexpr auto JavaFeatures_NestInFileClassFeature::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -150,7 +149,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(JavaFeatures_NestInFileClassFeatureGlobalsTy
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOC_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 JavaFeatures_NestInFileClassFeatureGlobalsTypeInternal _JavaFeatures_NestInFileClassFeature_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        JavaFeatures_NestInFileClassFeatureGlobalsTypeInternal _JavaFeatures_NestInFileClassFeature_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* JavaFeatures_NestInFileClassFeature_get_class_data() {
@@ -164,8 +167,7 @@ const ::_pbi::ClassData* JavaFeatures_NestInFileClassFeature_get_class_data() {
 #endif  // PROTOBUF_CUSTOM_VTABLE
 class JavaFeatures::_Internal {
  public:
-  using HasBits =
-      decltype(::std::declval<JavaFeatures>()._impl_._has_bits_);
+  using HasBits = decltype(::std::declval<JavaFeatures>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
       8 * PROTOBUF_FIELD_OFFSET(JavaFeatures, _impl_._has_bits_);
 };
@@ -262,8 +264,7 @@ inline void* PROTOBUF_NONNULL JavaFeatures::PlacementNew_(
   return ::new (mem) JavaFeatures(arena);
 }
 constexpr auto JavaFeatures::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(JavaFeatures),
-                                            alignof(JavaFeatures));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(JavaFeatures), alignof(JavaFeatures));
 }
 constexpr auto JavaFeatures::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -327,7 +328,11 @@ static_assert(PROTOBUF_FIELD_OFFSET(JavaFeaturesGlobalsTypeInternal, _default) =
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOC_EXPORT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 JavaFeaturesGlobalsTypeInternal _JavaFeatures_globals_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1  
+    #ifdef PROTOBUF_MESSAGE_GLOBALS
+    const
+    #endif
+        JavaFeaturesGlobalsTypeInternal _JavaFeatures_globals_;
 #if defined(PROTOBUF_CUSTOM_VTABLE)
 namespace {
 const ::_pbi::ClassData* JavaFeatures_get_class_data() {
@@ -696,9 +701,8 @@ PROTOBUF_NOINLINE void JavaFeatures::Clear() {
 }
 
 void JavaFeatures::MergeImpl(::google::protobuf::MessageLite& to_msg,
-                            const ::google::protobuf::MessageLite& from_msg) {
-   auto* const _this =
-      static_cast<JavaFeatures*>(&to_msg);
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<JavaFeatures*>(&to_msg);
   auto& from = static_cast<const JavaFeatures&>(from_msg);
   if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
     from.CheckHasBitConsistency();
