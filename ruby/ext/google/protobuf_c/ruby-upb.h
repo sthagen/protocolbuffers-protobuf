@@ -447,21 +447,8 @@ Error, UINTPTR_MAX is undefined
 #define UPB_ARM64_BTI_DEFAULT 0
 #endif
 
-/* This check is not fully robust: it does not require that we have "musttail"
- * support available. We need tail calls to avoid consuming arbitrary amounts
- * of stack space.
- *
- * GCC/Clang can mostly be trusted to generate tail calls as long as
- * optimization is enabled, but, debug builds will not generate tail calls
- * unless "musttail" is available.
- *
- * We should probably either:
- *   1. require that the compiler supports musttail.
- *   2. add some fallback code for when musttail isn't available (ie. return
- *      instead of tail calling). This is safe and portable, but this comes at
- *      a CPU cost.
- */
-#if (defined(__x86_64__) || defined(__aarch64__)) && defined(__GNUC__)
+#if (defined(__x86_64__) || defined(__aarch64__)) && \
+    UPB_HAS_ATTRIBUTE(preserve_none) && UPB_HAS_ATTRIBUTE(musttail)
 #define UPB_FASTTABLE_SUPPORTED 1
 #else
 #define UPB_FASTTABLE_SUPPORTED 0
@@ -472,7 +459,7 @@ Error, UINTPTR_MAX is undefined
  * for example for testing or benchmarking. */
 #if defined(UPB_ENABLE_FASTTABLE)
 #if !UPB_FASTTABLE_SUPPORTED
-#error fasttable is x86-64/ARM64 only and requires GCC or Clang.
+#error fasttable is x86-64/ARM64 only and requires preserve_none and musttail.
 #endif
 #define UPB_FASTTABLE 1
 /* Define UPB_TRY_ENABLE_FASTTABLE to use fasttable if possible.
@@ -17782,18 +17769,16 @@ UPB_INLINE upb_DecodeStatus upb_Decoder_Destroy(upb_Decoder* d,
 }
 
 #ifndef NDEBUG
-UPB_INLINE bool _upb_Decoder_TraceBufferFull(upb_Decoder* d) {
-  return d->trace_ptr == d->trace_end - 1;
-}
-
-UPB_INLINE bool _upb_Decoder_TraceBufferAlmostFull(upb_Decoder* d) {
-  return d->trace_ptr == d->trace_end - 2;
+UPB_INLINE bool _upb_Decoder_TraceBufferHasBytesAvailable(upb_Decoder* d,
+                                                          int n) {
+  return d->trace_ptr && d->trace_end && d->trace_end - d->trace_ptr > n;
 }
 #endif
 
 UPB_INLINE char* _upb_Decoder_TraceNext(upb_Decoder* d) {
 #ifndef NDEBUG
-  return _upb_Decoder_TraceBufferAlmostFull(d) ? NULL : d->trace_ptr + 1;
+  return _upb_Decoder_TraceBufferHasBytesAvailable(d, 2) ? d->trace_ptr + 1
+                                                         : NULL;
 #else
   return NULL;
 #endif
@@ -17814,10 +17799,17 @@ UPB_INLINE char* _upb_Decoder_TracePtr(upb_Decoder* d) {
 //   '<'  Fallback to MiniTable parser.
 //   'M'  Field successfully parsed with MiniTable.
 //   'X'  Truncated -- trace buffer is full, further events were discarded.
+//
+// Lower-case letters indicate events that are more subtle and therefore
+// difficult to assert on, but may be useful information for debugging:
+//   'r'  Refresh buffer.
 UPB_INLINE void _upb_Decoder_Trace(upb_Decoder* d, char event) {
 #ifndef NDEBUG
+#ifdef UPB_TRACE_FASTDECODER
+  fprintf(stderr, "Fasttable trace event: %c\n", event);
+#endif
   if (d->trace_ptr == NULL) return;
-  if (_upb_Decoder_TraceBufferFull(d)) {
+  if (!_upb_Decoder_TraceBufferHasBytesAvailable(d, 1)) {
     d->trace_ptr[-1] = 'X';  // Truncated.
     return;
   }
