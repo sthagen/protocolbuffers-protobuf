@@ -42,9 +42,10 @@ static const char* upb_DecodeFast_MessageData(upb_EpsCopyInputStream* st,
   return ptr;
 }
 
-static bool upb_DecodeFast_SingleMessage(upb_Decoder* d, const char** ptr,
-                                         void* dst, upb_DecodeFast_Type type,
-                                         upb_DecodeFastNext* next, void* ctx) {
+UPB_FORCEINLINE
+bool upb_DecodeFast_SingleMessage(upb_Decoder* d, const char** ptr, void* dst,
+                                  upb_DecodeFast_Type type,
+                                  upb_DecodeFastNext* next, void* ctx) {
   upb_DecodeFast_MessageContext* c = ctx;
   void** submsg_dst = dst;
 
