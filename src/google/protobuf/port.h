@@ -33,6 +33,7 @@
 #include "absl/base/config.h"
 #include "absl/base/dynamic_annotations.h"
 #include "absl/numeric/bits.h"
+#include "absl/numeric/int128.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 
@@ -831,6 +832,24 @@ class alignas(8) GlobalEmptyStringConstexpr {
     using value_type = T;
     using size_type = size_t;
     using difference_type = ptrdiff_t;
+
+    constexpr NonConstexprAllocator() = default;
+
+    // Following the minimum requirements for an allocator:
+    // https://en.cppreference.com/cpp/named_req/Allocator
+    // Conversion constructor.
+    template <typename U>
+    constexpr NonConstexprAllocator(NonConstexprAllocator<U>) {}
+
+    friend constexpr bool operator==(NonConstexprAllocator,
+                                     NonConstexprAllocator) {
+      return true;
+    }
+    friend constexpr bool operator!=(NonConstexprAllocator,
+                                     NonConstexprAllocator) {
+      return false;
+    }
+
     T* allocate(size_t);
     void deallocate(void*, size_t);
   };
@@ -890,20 +909,41 @@ PROTOBUF_EXPORT extern GlobalEmptyString fixed_address_empty_string;
 PROTOBUF_EXPORT ABSL_ATTRIBUTE_NORETURN PROTOBUF_NOINLINE void
 HandleAddOverflow(int a, int b);
 
-inline int CheckedAdd(int a, int b) {
-  int sum;
 #if ABSL_HAVE_BUILTIN(__builtin_add_overflow)
+template <typename IntType1, typename IntType2>
+inline int CheckedAdd(IntType1 a, IntType2 b) {
+  int sum;
   bool overflow = __builtin_add_overflow(a, b, &sum);
-#else
-  int64_t sum64 = static_cast<int64_t>(a) + static_cast<int64_t>(b);
-  sum = static_cast<int>(sum64);
-  bool overflow = sum64 != sum;
-#endif
   if (ABSL_PREDICT_FALSE(overflow)) {
     HandleAddOverflow(a, b);
   }
   return sum;
 }
+#else
+inline int CheckedAdd(int a, int b) {
+  int sum;
+  int64_t sum64 = static_cast<int64_t>(a) + static_cast<int64_t>(b);
+  sum = static_cast<int>(sum64);
+  bool overflow = sum64 != sum;
+  if (ABSL_PREDICT_FALSE(overflow)) {
+    HandleAddOverflow(a, b);
+  }
+  return sum;
+}
+
+template <typename ScalarType1, typename ScalarType2>
+inline int CheckedAdd(ScalarType1 a, ScalarType2 b) {
+  static_assert(std::is_integral_v<ScalarType1>);
+  static_assert(std::is_integral_v<ScalarType2>);
+  absl::int128 sum128 = absl::int128(a) + absl::int128(b);
+  int sum = static_cast<int>(sum128);
+  bool overflow = sum128 != absl::int128(sum);
+  if (ABSL_PREDICT_FALSE(overflow)) {
+    HandleAddOverflow(a, b);
+  }
+  return sum;
+}
+#endif
 
 enum class BoundsCheckMode { kNoEnforcement, kReturnDefault, kAbort };
 
