@@ -90,6 +90,7 @@
 #include "google/protobuf/parse_context.h"
 #include "google/protobuf/port.h"
 #include "google/protobuf/repeated_ptr_field.h"
+#include "google/protobuf/symbol.h"
 #include "google/protobuf/symbol_checker.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/unknown_field_set.h"
@@ -100,6 +101,9 @@
 
 namespace google {
 namespace protobuf {
+
+using ::google::protobuf::internal::Symbol;
+
 namespace {
 
 constexpr int kPackageLimit = 100;
@@ -683,350 +687,6 @@ static auto DisableTracking() {
 
 }  // namespace
 
-class Symbol {
- public:
-  enum Type {
-    NULL_SYMBOL,
-    MESSAGE,
-    FIELD,
-    ONEOF,
-    ENUM,
-    ENUM_VALUE,
-    ENUM_VALUE_OTHER_PARENT,
-    SERVICE,
-    METHOD,
-    FULL_PACKAGE,
-    SUB_PACKAGE,
-  };
-
-  Symbol() {
-    static constexpr internal::SymbolBase null_symbol{};
-    static_assert(null_symbol.symbol_type_ == NULL_SYMBOL, "");
-    // Initialize with a sentinel to make sure `ptr_` is never null.
-    ptr_ = &null_symbol;
-  }
-
-  explicit Symbol(const internal::SymbolBase* ptr) : ptr_(ptr) {}
-
-  // Every object we store derives from internal::SymbolBase, where we store the
-  // symbol type enum.
-  // Storing in the object can be done without using more space in most cases,
-  // while storing it in the Symbol type would require 8 bytes.
-#define DEFINE_MEMBERS(TYPE, TYPE_CONSTANT, FIELD)                             \
-  explicit Symbol(TYPE* value) : ptr_(value) {                                 \
-    value->symbol_type_ = TYPE_CONSTANT;                                       \
-  }                                                                            \
-  const TYPE* FIELD() const {                                                  \
-    return type() == TYPE_CONSTANT ? static_cast<const TYPE*>(ptr_) : nullptr; \
-  }
-
-  DEFINE_MEMBERS(Descriptor, MESSAGE, descriptor)
-  DEFINE_MEMBERS(FieldDescriptor, FIELD, field_descriptor)
-  DEFINE_MEMBERS(OneofDescriptor, ONEOF, oneof_descriptor)
-  DEFINE_MEMBERS(EnumDescriptor, ENUM, enum_descriptor)
-  DEFINE_MEMBERS(ServiceDescriptor, SERVICE, service_descriptor)
-  DEFINE_MEMBERS(MethodDescriptor, METHOD, method_descriptor)
-  DEFINE_MEMBERS(FileDescriptor, FULL_PACKAGE, file_descriptor)
-
-  // We use a special node for subpackage FileDescriptor.
-  // It is potentially added to the table with multiple different names, so we
-  // need a separate place to put the name.
-  struct Subpackage : internal::SymbolBase {
-    int name_size;
-    const FileDescriptor* file;
-  };
-  DEFINE_MEMBERS(Subpackage, SUB_PACKAGE, sub_package_file_descriptor)
-
-  // Enum values have two different parents.
-  // We use two different identitied for the same object to determine the two
-  // different insertions in the map.
-  static Symbol EnumValue(EnumValueDescriptor* value, int n) {
-    Symbol s;
-    internal::SymbolBase* ptr;
-    if (n == 0) {
-      ptr = static_cast<internal::SymbolBaseN<0>*>(value);
-      ptr->symbol_type_ = ENUM_VALUE;
-    } else {
-      ptr = static_cast<internal::SymbolBaseN<1>*>(value);
-      ptr->symbol_type_ = ENUM_VALUE_OTHER_PARENT;
-    }
-    s.ptr_ = ptr;
-    return s;
-  }
-
-  const EnumValueDescriptor* enum_value_descriptor() const {
-    return type() == ENUM_VALUE
-               ? static_cast<const EnumValueDescriptor*>(
-                     static_cast<const internal::SymbolBaseN<0>*>(ptr_))
-           : type() == ENUM_VALUE_OTHER_PARENT
-               ? static_cast<const EnumValueDescriptor*>(
-                     static_cast<const internal::SymbolBaseN<1>*>(ptr_))
-               : nullptr;
-  }
-
-#undef DEFINE_MEMBERS
-
-  Type type() const { return static_cast<Type>(ptr_->symbol_type_); }
-  bool IsNull() const { return type() == NULL_SYMBOL; }
-  bool IsType() const { return type() == MESSAGE || type() == ENUM; }
-  bool IsAggregate() const {
-    return IsType() || IsPackage() || type() == SERVICE;
-  }
-  bool IsPackage() const {
-    return type() == FULL_PACKAGE || type() == SUB_PACKAGE;
-  }
-
-  const FileDescriptor* GetFile() const {
-    switch (type()) {
-      case MESSAGE:
-        return descriptor()->file();
-      case FIELD:
-        return field_descriptor()->file();
-      case ONEOF:
-        return oneof_descriptor()->containing_type()->file();
-      case ENUM:
-        return enum_descriptor()->file();
-      case ENUM_VALUE:
-        return enum_value_descriptor()->type()->file();
-      case SERVICE:
-        return service_descriptor()->file();
-      case METHOD:
-        return method_descriptor()->service()->file();
-      case FULL_PACKAGE:
-        return file_descriptor();
-      case SUB_PACKAGE:
-        return sub_package_file_descriptor()->file;
-      default:
-        return nullptr;
-    }
-  }
-
-  absl::string_view full_name() const {
-    switch (type()) {
-      case MESSAGE:
-        return descriptor()->full_name();
-      case FIELD:
-        return field_descriptor()->full_name();
-      case ONEOF:
-        return oneof_descriptor()->full_name();
-      case ENUM:
-        return enum_descriptor()->full_name();
-      case ENUM_VALUE:
-        return enum_value_descriptor()->full_name();
-      case SERVICE:
-        return service_descriptor()->full_name();
-      case METHOD:
-        return method_descriptor()->full_name();
-      case FULL_PACKAGE:
-        return file_descriptor()->package();
-      case SUB_PACKAGE:
-        return sub_package_file_descriptor()->file->package().substr(
-            0, sub_package_file_descriptor()->name_size);
-      default:
-        ABSL_CHECK(false);
-    }
-    return "";
-  }
-
-  std::pair<const void*, absl::string_view> parent_name_key() const {
-    const auto or_file = [&](const void* p) { return p ? p : GetFile(); };
-    switch (type()) {
-      case MESSAGE:
-        return {or_file(descriptor()->containing_type()), descriptor()->name()};
-      case FIELD: {
-        auto* field = field_descriptor();
-        return {or_file(field->is_extension() ? field->extension_scope()
-                                              : field->containing_type()),
-                field->name()};
-      }
-      case ONEOF:
-        return {oneof_descriptor()->containing_type(),
-                oneof_descriptor()->name()};
-      case ENUM:
-        return {or_file(enum_descriptor()->containing_type()),
-                enum_descriptor()->name()};
-      case ENUM_VALUE:
-        return {or_file(enum_value_descriptor()->type()->containing_type()),
-                enum_value_descriptor()->name()};
-      case ENUM_VALUE_OTHER_PARENT:
-        return {enum_value_descriptor()->type(),
-                enum_value_descriptor()->name()};
-      case SERVICE:
-        return {GetFile(), service_descriptor()->name()};
-      case METHOD:
-        return {method_descriptor()->service(), method_descriptor()->name()};
-      default:
-        ABSL_CHECK(false);
-    }
-    return {};
-  }
-
-  const FeatureSet& features() const {
-    switch (type()) {
-      case MESSAGE:
-        return descriptor()->features();
-      case FIELD:
-        return field_descriptor()->features();
-      case ONEOF:
-        return oneof_descriptor()->features();
-      case ENUM:
-        return enum_descriptor()->features();
-      case ENUM_VALUE:
-        return enum_value_descriptor()->features();
-      case SERVICE:
-        return service_descriptor()->features();
-      case METHOD:
-        return method_descriptor()->features();
-      case FULL_PACKAGE:
-        return file_descriptor()->features();
-      case SUB_PACKAGE:
-      default:
-        internal::Unreachable();
-    }
-  }
-
-  bool is_placeholder() const {
-    switch (type()) {
-      case MESSAGE:
-        return descriptor()->is_placeholder();
-      case ENUM:
-        return enum_descriptor()->is_placeholder();
-      case FULL_PACKAGE:
-        return file_descriptor()->is_placeholder();
-      default:
-        return false;
-    }
-  }
-
-  SymbolVisibility visibility_keyword() const {
-    switch (type()) {
-      case MESSAGE:
-        return descriptor()->visibility_keyword();
-      case ENUM:
-        return enum_descriptor()->visibility_keyword();
-      default:
-        return SymbolVisibility::VISIBILITY_UNSET;
-    }
-  }
-
-  bool IsNestedDefinition() const {
-    switch (type()) {
-      case MESSAGE:
-        return descriptor()->containing_type() != nullptr;
-      case ENUM:
-        return enum_descriptor()->containing_type() != nullptr;
-      case FIELD:  // For extension fields
-        return field_descriptor()->containing_type() != nullptr;
-      default:
-        return false;
-    }
-  }
-
-  SymbolVisibility GetEffectiveVisibility() const {
-    // Only Types have visibility
-    if (!IsType()) {
-      return SymbolVisibility::VISIBILITY_UNSET;
-    }
-
-    SymbolVisibility effective_visibility = visibility_keyword();
-
-    // If our visibility is specifically set we can return that.  We'll validate
-    // whether it's reasonable or not later.
-    if (effective_visibility == SymbolVisibility::VISIBILITY_UNSET) {
-      switch (features().default_symbol_visibility()) {
-        case FeatureSet::VisibilityFeature::EXPORT_ALL:
-          return SymbolVisibility::VISIBILITY_EXPORT;
-        case FeatureSet::VisibilityFeature::EXPORT_TOP_LEVEL:
-          return IsNestedDefinition() ? SymbolVisibility::VISIBILITY_LOCAL
-                                      : SymbolVisibility::VISIBILITY_EXPORT;
-        case FeatureSet::VisibilityFeature::LOCAL_ALL:
-        case FeatureSet::VisibilityFeature::STRICT:
-          return SymbolVisibility::VISIBILITY_LOCAL;
-
-        // Unset shouldn't be possible from the compiler without there being an
-        // error (recursive import, for example), but happens in unit
-        // tests so assume it represents pre-edition 2024 defaults. In either
-        // case we want to fail open.  We have a DCHECK here to make sure it can
-        // fail in tests, but not released code.
-        case FeatureSet::VisibilityFeature::DEFAULT_SYMBOL_VISIBILITY_UNKNOWN:
-        default:
-          ABSL_DCHECK(false);
-          return SymbolVisibility::VISIBILITY_EXPORT;
-      }
-    }
-
-    return effective_visibility;
-  }
-
-  /*
-   * Calculate whether this symbol can be accessed from the given
-   * FileDescriptor*.
-   *
-   * Returns true if the symbol is in the same file OR the symbol is `export`
-   */
-  bool IsVisibleFrom(FileDescriptor* other) const {
-    if (GetFile() == nullptr || other == nullptr) {
-      return false;
-    }
-
-    // Only Types (message/enum) have visibility.
-    if (!IsType()) {
-      return true;
-    }
-
-    // If we're dealing with a placeholder then just stop now, visibility can't
-    // be determined and we have to rely on the proto-compiler previously having
-    // checked the validity.
-    if (is_placeholder()) {
-      return true;
-    }
-
-    if (GetFile() == other) {
-      return true;
-    }
-
-    SymbolVisibility effective_visibility = GetEffectiveVisibility();
-
-    return effective_visibility == SymbolVisibility::VISIBILITY_EXPORT;
-  }
-
-  std::string GetVisibilityError(FileDescriptor* other,
-                                 absl::string_view usage = "") const {
-    const absl::string_view file_path =
-        GetFile() != nullptr ? GetFile()->name() : "unknown_file";
-    const absl::string_view symbol_name = full_name();
-
-    if (!IsType()) {
-      return absl::StrCat(
-          "Attempt to get a visibility error for a non-message/enum symbol ",
-          symbol_name, "\", defined in \"", file_path);
-    }
-
-    SymbolVisibility explicit_visibility = visibility_keyword();
-
-    std::string reason =
-        explicit_visibility == SymbolVisibility::VISIBILITY_LOCAL
-            ? "It is explicitly marked 'local'"
-            : absl::StrCat(
-                  "It defaulted to local from file-level 'option "
-                  "features.default_symbol_visibility = '",
-                  FeatureSet_VisibilityFeature_DefaultSymbolVisibility_Name(
-                      features().default_symbol_visibility()),
-                  "';");
-
-    return absl::StrCat("Symbol \"", symbol_name, "\", defined in \"",
-                        file_path, "\" ", usage,
-                        " is "
-                        "not visible from \"",
-                        other->name(), "\". ", reason,
-                        " and cannot be accessed outside its own file");
-  }
-
-  const internal::SymbolBase* ptr() const { return ptr_; }
-
- private:
-  const internal::SymbolBase* ptr_;
-};
 
 const FieldDescriptor::CppType
     FieldDescriptor::kTypeToCppTypeMap[MAX_TYPE + 1] = {
@@ -1191,36 +851,6 @@ class PrefixRemover {
  private:
   std::string prefix_;
 };
-
-// A DescriptorPool contains a bunch of hash-maps to implement the
-// various Find*By*() methods.  Since hashtable lookups are O(1), it's
-// most efficient to construct a fixed set of large hash-maps used by
-// all objects in the pool rather than construct one or more small
-// hash-maps for each object.
-//
-// The keys to these hash-maps are (parent, name) or (parent, number) pairs.
-struct FullNameQuery {
-  absl::string_view query;
-  absl::string_view full_name() const { return query; }
-};
-struct SymbolByFullNameHash {
-  using is_transparent = void;
-
-  template <typename T>
-  size_t operator()(const T& s) const {
-    return absl::HashOf(s.full_name());
-  }
-};
-struct SymbolByFullNameEq {
-  using is_transparent = void;
-
-  template <typename T, typename U>
-  bool operator()(const T& a, const U& b) const {
-    return a.full_name() == b.full_name();
-  }
-};
-using SymbolsByNameSet =
-    absl::flat_hash_set<Symbol, SymbolByFullNameHash, SymbolByFullNameEq>;
 
 struct ParentNameQueryBase {
   std::pair<const void*, absl::string_view> query;
@@ -1968,7 +1598,7 @@ class DescriptorPool::Tables {
       std::unique_ptr<internal::FlatAllocator::Allocation, FlatAllocDeleter>>
       flat_allocs_;
 
-  SymbolsByNameSet symbols_by_name_;
+  internal::SymbolsByNameSet symbols_by_name_;
   DescriptorsByNameSet<FileDescriptor> files_by_name_;
   ExtensionsGroupedByDescriptorMap extensions_;
 
@@ -2087,7 +1717,7 @@ void DescriptorPool::Tables::RollbackToLastCheckpoint(
 // -------------------------------------------------------------------
 
 inline Symbol DescriptorPool::Tables::FindSymbol(absl::string_view key) const {
-  auto it = symbols_by_name_.find(FullNameQuery{key});
+  auto it = symbols_by_name_.find(internal::FullNameQuery{key});
   return it == symbols_by_name_.end() ? Symbol() : *it;
 }
 
@@ -2405,7 +2035,7 @@ const FeatureSet* DescriptorPool::Tables::InternFeatureSet(
   // little.
   auto& result = feature_set_cache_[features.SerializeAsString()];
   if (result == nullptr) {
-    result = absl::make_unique<FeatureSet>(std::move(features));
+    result = std::make_unique<FeatureSet>(std::move(features));
   }
   return result.get();
 }
@@ -5313,7 +4943,7 @@ absl::Status DescriptorPool::SetFeatureSetDefaults(FeatureSetDefaults spec) {
     prev_edition = edition_default.edition();
   }
   feature_set_defaults_spec_ =
-      absl::make_unique<FeatureSetDefaults>(std::move(spec));
+      std::make_unique<FeatureSetDefaults>(std::move(spec));
   return absl::OkStatus();
 }
 
@@ -6491,7 +6121,7 @@ const FileDescriptor* DescriptorBuilder::BuildFile(
   // Checkpoint the tables so that we can roll back if something goes wrong.
   tables_->AddCheckpoint();
 
-  auto alloc = absl::make_unique<internal::FlatAllocator>();
+  auto alloc = std::make_unique<internal::FlatAllocator>();
   PlanAllocationSize(proto, *alloc);
   alloc->FinalizePlanning(tables_);
   FileDescriptor* result = BuildFileImpl(proto, *alloc);
@@ -10175,18 +9805,38 @@ void DescriptorBuilder::OptionInterpreter::UpdateSourceCodeInfo(
   // We find locations that match keys in interpreted_paths_ and
   // 1) replace the path with the corresponding value in interpreted_paths_
   // 2) remove any subsequent sub-locations (sub-location is one whose path
-  //    has the parent path as a prefix)
+  //    has the parent path as a prefix), except for direct children (like
+  //    option name and value) which are mapped to the interpreted path.
   //
   // To avoid quadratic behavior of removing interior rows as we go,
   // we keep a copy. But we don't actually copy anything until we've
   // found the first match (so if the source code info has no locations
   // that need to be changed, there is zero copy overhead).
 
+  // The original repeated field of source code locations in the file.
   RepeatedPtrField<SourceCodeInfo_Location>* locs = info->mutable_location();
+
+  // The new repeated field of source code locations being built to replace
+  // locs.
   RepeatedPtrField<SourceCodeInfo_Location> new_locs;
+
+  // Indicates whether we have started copying locations to new_locs. To avoid
+  // unnecessary copying overhead when no locations need modification, copying
+  // remains false until the first matching uninterpreted option location is
+  // found.
   bool copying = false;
 
-  SourceCodePath pathv;
+  // The uninterpreted option path (e.g., [options, index]) currently being
+  // matched and replaced.
+  SourceCodePath match_src;
+
+  // The interpreted option path (e.g., [options, custom_option_tag]) that
+  // replaces match_src.
+  SourceCodePath match_dest;
+
+  // Indicates whether we are currently traversing child locations of an
+  // uninterpreted option that was matched in a previous iteration. When true,
+  // child sub-locations are inspected and either remapped or removed.
   bool matched = false;
 
   for (RepeatedPtrField<SourceCodeInfo_Location>::iterator loc = locs->begin();
@@ -10194,11 +9844,11 @@ void DescriptorBuilder::OptionInterpreter::UpdateSourceCodeInfo(
     if (matched) {
       // see if this location is in the range to remove
       bool loc_matches = true;
-      if (loc->path_size() < static_cast<int64_t>(pathv.size())) {
+      if (loc->path_size() < static_cast<int64_t>(match_src.size())) {
         loc_matches = false;
       } else {
-        for (size_t j = 0; j < pathv.size(); j++) {
-          if (loc->path(j) != pathv[j]) {
+        for (size_t j = 0; j < match_src.size(); j++) {
+          if (loc->path(j) != match_src[j]) {
             loc_matches = false;
             break;
           }
@@ -10206,19 +9856,29 @@ void DescriptorBuilder::OptionInterpreter::UpdateSourceCodeInfo(
       }
 
       if (loc_matches) {
+        if (loc->path_size() == static_cast<int64_t>(match_src.size() + 1)) {
+          int uninterpreted_field = loc->path(match_src.size());
+
+          SourceCodeInfo_Location* mapped_loc = new_locs.Add();
+          *mapped_loc = *loc;
+          mapped_loc->mutable_path()->Assign(match_dest.begin(),
+                                             match_dest.end());
+          mapped_loc->add_path(uninterpreted_field);
+
+          // TODO: b/168903973 - recursively process options with aggregate
+          // values and add locations. Example: [(my_opt) = {a: 1, b: 2}]
+          // Locations of `a` and `b` are not added yet.
+        }
         // don't copy this row since it is a sub-location that we're removing
+        // (or we already mapped it if it's a direct child)
         continue;
       }
 
       matched = false;
     }
 
-    pathv.clear();
-    for (int j = 0; j < loc->path_size(); j++) {
-      pathv.push_back(loc->path(j));
-    }
-
-    auto entry = interpreted_paths_.find(pathv);
+    SourceCodePath curr_path(loc->path().begin(), loc->path().end());
+    auto entry = interpreted_paths_.find(curr_path);
 
     if (entry == interpreted_paths_.end()) {
       // not a match
@@ -10229,26 +9889,22 @@ void DescriptorBuilder::OptionInterpreter::UpdateSourceCodeInfo(
     }
 
     matched = true;
+    match_src = std::move(curr_path);
+    match_dest = entry->second;
 
     if (!copying) {
       // initialize the copy we are building
       copying = true;
       new_locs.Reserve(locs->size());
-      for (RepeatedPtrField<SourceCodeInfo_Location>::iterator it =
-               locs->begin();
-           it != loc; it++) {
-        *new_locs.Add() = *it;
-      }
+      // Copy all the locations we've seen so far
+      new_locs.Add(locs->begin(), loc);
     }
 
     // add replacement and update its path
     SourceCodeInfo_Location* replacement = new_locs.Add();
     *replacement = *loc;
-    replacement->clear_path();
-    for (SourceCodePath::iterator rit = entry->second.begin();
-         rit != entry->second.end(); rit++) {
-      replacement->add_path(*rit);
-    }
+    replacement->mutable_path()->Assign(entry->second.begin(),
+                                        entry->second.end());
   }
 
   // if we made a changed copy, put it in place

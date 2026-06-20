@@ -271,7 +271,7 @@ static bool PyUpb_IterInput(PyObject* value, const upb_FieldDef* field,
       Py_ssize_t count = view.len / view.itemsize;
       if (count == 0) {
         PyBuffer_Release(&view);
-        return true;
+        return bulk_cb(NULL, 0, 0, ctx);
       }
       if (view.format[0] != 'O') {
         if (upb_FieldDef_CType(field) == kUpb_CType_Enum) {
@@ -796,7 +796,10 @@ static PyObject* PyUpb_RepeatedContainer_Pop(PyObject* _self, PyObject* args) {
   if (index < 0) index += size;
 #if PROTOBUF_PY_FUTURE_REMOVE_POP_CLAMP
 #else
-  if (index >= size) index = size - 1;
+  if (index >= size) {
+    PyErr_WarnEx(PyExc_FutureWarning, "pop index out of range", 1);
+    index = size - 1;
+  }
 #endif  // PROTOBUF_PY_FUTURE_REMOVE_POP_CLAMP
   PyObject* ret = PyUpb_RepeatedContainer_Item(_self, index);
   if (!ret) return NULL;
