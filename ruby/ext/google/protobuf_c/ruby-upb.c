@@ -5843,84 +5843,6 @@ void _upb_EncodeRoundTripFloat(float val, char* buf, size_t size) {
 }
 
 
-#include <stdlib.h>
-#include <string.h>
-
-// Must be last.
-
-// Determine the locale-specific radix character by calling sprintf() to print
-// the number 1.5, then stripping off the digits.  As far as I can tell, this
-// is the only portable, thread-safe way to get the C library to divulge the
-// locale's radix character.  No, localeconv() is NOT thread-safe.
-
-static int GetLocaleRadix(char *data, size_t capacity) {
-  char temp[16];
-  const int size = snprintf(temp, sizeof(temp), "%.1f", 1.5);
-  UPB_ASSERT(temp[0] == '1');
-  UPB_ASSERT(temp[size - 1] == '5');
-  if (size < capacity) {
-    return 0;
-  }
-  temp[size - 1] = '\0';
-  strncpy(data, temp + 1, size);
-  return size - 2;
-}
-
-// Populates a string identical to *input except that the character pointed to
-// by pos (which should be '.') is replaced with the locale-specific radix.
-
-static void LocalizeRadix(const char *input, const char *pos, char *output,
-                          int output_size) {
-  const int len1 = pos - input;
-
-  char radix[8];
-  const int len2 = GetLocaleRadix(radix, sizeof(radix));
-
-  const int n = output_size - len1 - len2 - 1;
-  if (n < 0) {
-    return;
-  }
-
-  memcpy(output, input, len1);
-  memcpy(output + len1, radix, len2);
-  strncpy(output + len1 + len2, input + len1 + 1, n);
-  output[output_size - 1] = '\0';
-}
-
-double _upb_NoLocaleStrtod(const char *str, char **endptr) {
-  // We cannot simply set the locale to "C" temporarily with setlocale()
-  // as this is not thread-safe.  Instead, we try to parse in the current
-  // locale first.  If parsing stops at a '.' character, then this is a
-  // pretty good hint that we're actually in some other locale in which
-  // '.' is not the radix character.
-
-  char *temp_endptr;
-  double result = strtod(str, &temp_endptr);
-  if (endptr != NULL) *endptr = temp_endptr;
-  if (*temp_endptr != '.') return result;
-
-  // Parsing halted on a '.'.  Perhaps we're in a different locale?  Let's
-  // try to replace the '.' with a locale-specific radix character and
-  // try again.
-
-  char localized[80];
-  LocalizeRadix(str, temp_endptr, localized, sizeof localized);
-  char *localized_endptr;
-  result = strtod(localized, &localized_endptr);
-  if ((localized_endptr - &localized[0]) > (temp_endptr - str)) {
-    // This attempt got further, so replacing the decimal must have helped.
-    // Update endptr to point at the right location.
-    if (endptr != NULL) {
-      // size_diff is non-zero if the localized radix has multiple bytes.
-      int size_diff = strlen(localized) - strlen(str);
-      *endptr = (char *)str + (localized_endptr - &localized[0] - size_diff);
-    }
-  }
-
-  return result;
-}
-
-
 // Must be last.
 
 int upb_Unicode_ToUTF8(uint32_t cp, char* out) {
@@ -6436,7 +6358,7 @@ void UPB_PRIVATE(_upb_Arena_UpdateGrowthState)(upb_Arena* a, size_t span,
 // allocation failure.
 void* UPB_PRIVATE(_upb_Arena_SlowMalloc)(upb_Arena* a, size_t span) {
   upb_ArenaInternal* ai = upb_Arena_Internal(a);
-  if (!ai->block_alloc) return NULL;
+  if (!_upb_ArenaInternal_BlockAlloc(ai)) return NULL;
 
   bool one_off = false;
   size_t block_size = UPB_PRIVATE(_upb_Arena_NextBlockSize)(a, span, &one_off);
@@ -16961,9 +16883,52 @@ const char* _upb_Decoder_DecodeKnownField(upb_Decoder* d, const char* ptr,
   }
 }
 
-static const char* _upb_Decoder_DecodeUnknownField(
-    upb_Decoder* d, const char* ptr, upb_Message* msg, uint32_t field_number,
-    uint32_t wire_type, wireval val, const char* start) {
+UPB_FORCEINLINE
+bool _upb_Decoder_CanSkipUnknownField(upb_Decoder* d, uint32_t next_field_num,
+                                      uint32_t next_wire_type,
+                                      const upb_MiniTable* mt, uint32_t* gap_lo,
+                                      uint32_t* gap_hi, bool is_extendable) {
+  if (next_wire_type == kUpb_WireType_EndGroup) {
+    return false;
+  }
+
+  if (UPB_UNLIKELY(upb_MiniTable_IsMessageSet(mt))) {
+    if (next_field_num == kUpb_MsgSet_Item) {
+      return false;
+    }
+  }
+
+  if (next_field_num <= *gap_lo || next_field_num >= *gap_hi) {
+    if (UPB_LIKELY(next_field_num == *gap_hi)) {
+      // Common case of fields in ascending order encountering a known
+      // field
+      return false;
+    }
+    if (UPB_UNLIKELY(next_field_num == 0)) {
+      upb_ErrorHandler_ThrowError(d->err, kUpb_DecodeStatus_Malformed);
+    }
+    if (next_field_num == *gap_lo) {
+      return false;
+    }
+    if (!UPB_PRIVATE(_upb_MiniTable_FindUnknownGap)(mt, next_field_num, gap_lo,
+                                                    gap_hi)) {
+      return false;
+    }
+  }
+
+  if (is_extendable) {
+    if (upb_ExtensionRegistry_Lookup(d->extreg, mt, next_field_num)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+UPB_NOINLINE
+static const char* _upb_Decoder_DecodeUnknowns(
+    upb_Decoder* d, const char* ptr, upb_Message* msg, const upb_MiniTable* mt,
+    uint32_t field_number, uint32_t wire_type, wireval val, const char* start) {
   if (field_number == 0) {
     upb_ErrorHandler_ThrowError(d->err, kUpb_DecodeStatus_Malformed);
   }
@@ -16971,23 +16936,63 @@ static const char* _upb_Decoder_DecodeUnknownField(
   upb_EpsCopyCapture capture;
   upb_EpsCopyCapture_Start(&capture, &d->input, start);
 
+  // We have already parsed the tag and "value" (or size) of the first unknown
+  // field. ptr is currently:
+  // - after value for Varint, 32Bit, 64Bit.
+  // - after size for Delimited.
+  // - after tag for StartGroup.
+
+  // We need to finish skipping the first field.
   if (wire_type == kUpb_WireType_Delimited) {
     upb_StringView sv;
     ptr = upb_EpsCopyInputStream_ReadStringEphemeral(&d->input, ptr, val.size,
                                                      &sv);
-    if (!ptr) upb_ErrorHandler_ThrowError(d->err, kUpb_DecodeStatus_Malformed);
   } else if (wire_type == kUpb_WireType_StartGroup) {
     ptr = UPB_PRIVATE(_upb_WireReader_SkipGroup)(ptr, field_number << 3,
                                                  d->depth, &d->input);
   }
 
+  // Fast check if next fields are also unknown, based on the gap between known
+  // fields our first unknown falls between.
+
+  uint32_t gap_lo = 0;
+  uint32_t gap_hi = 0;
+  bool has_gap = UPB_PRIVATE(_upb_MiniTable_FindUnknownGap)(mt, field_number,
+                                                            &gap_lo, &gap_hi);
+
+  if (has_gap) {
+    bool is_extendable =
+        (UPB_UNLIKELY(UPB_PRIVATE(_upb_MiniTable_IsExtendable)(mt)) ||
+         UPB_UNLIKELY(upb_MiniTable_IsMessageSet(mt))) &&
+        d->extreg;
+    while (!upb_EpsCopyInputStream_IsDone(EPS(d), &ptr)) {
+      const char* start_ptr = ptr;
+      uint32_t tag;
+      ptr = upb_WireReader_ReadTag(ptr, &tag, EPS(d));
+
+      uint32_t next_field_num = tag >> 3;
+      uint32_t next_wire_type = tag & 7;
+
+      if (_upb_Decoder_CanSkipUnknownField(d, next_field_num, next_wire_type,
+                                           mt, &gap_lo, &gap_hi,
+                                           is_extendable)) {
+        ptr = _upb_WireReader_SkipValueForceInline(ptr, tag, d->depth, EPS(d));
+      } else {
+        ptr = start_ptr;
+        break;
+      }
+    }
+  }
+
   upb_StringView sv;
   upb_EpsCopyCapture_End(&capture, &d->input, ptr, &sv);
 
-  if (!UPB_PRIVATE(_upb_Message_AddUnknown)(
-          msg, sv.data, sv.size, &d->arena,
-          _upb_Decoder_GetAddUnknownMode(d, sv.data))) {
-    upb_ErrorHandler_ThrowError(d->err, kUpb_DecodeStatus_OutOfMemory);
+  if (UPB_LIKELY(sv.size > 0)) {
+    if (!UPB_PRIVATE(_upb_Message_AddUnknown)(
+            msg, sv.data, sv.size, &d->arena,
+            _upb_Decoder_GetAddUnknownMode(d, sv.data))) {
+      upb_ErrorHandler_ThrowError(d->err, kUpb_DecodeStatus_OutOfMemory);
+    }
   }
 
   return ptr;
@@ -17021,8 +17026,8 @@ const char* _upb_Decoder_DecodeFieldData(
   } else {
     switch (op) {
       case kUpb_DecodeOp_UnknownField:
-        return _upb_Decoder_DecodeUnknownField(d, ptr, msg, field_number,
-                                               wire_type, val, start);
+        return _upb_Decoder_DecodeUnknowns(d, ptr, msg, mt, field_number,
+                                           wire_type, val, start);
       case kUpb_DecodeOp_MessageSetItem:
         return upb_Decoder_DecodeMessageSetItem(d, ptr, msg, mt);
       default:

@@ -2522,6 +2522,11 @@ UPB_PRIVATE(_upb_MiniTable_ExtModeBase)(const struct upb_MiniTable* m) {
   return UPB_PRIVATE(_upb_ExtMode_Base)(m->UPB_PRIVATE(ext));
 }
 
+UPB_FORCEINLINE bool UPB_PRIVATE(_upb_MiniTable_IsExtendable)(
+    const struct upb_MiniTable* m) {
+  return UPB_PRIVATE(_upb_MiniTable_ExtModeBase)(m) == kUpb_ExtMode_Extendable;
+}
+
 UPB_API_INLINE bool upb_MiniTable_IsMessageSet(const struct upb_MiniTable* m) {
   return UPB_PRIVATE(_upb_MiniTable_ExtModeBase)(m) ==
          kUpb_ExtMode_IsMessageSet;
@@ -15767,24 +15772,6 @@ UPB_INLINE int _upb_vsnprintf(char* buf, size_t size, const char* fmt,
 
 
 #endif  // UPB_PORT_VSNPRINTF_COMPAT_H_
-
-#ifndef UPB_LEX_STRTOD_H_
-#define UPB_LEX_STRTOD_H_
-
-// Must be last.
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-double _upb_NoLocaleStrtod(const char *str, char **endptr);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-
-#endif /* UPB_LEX_STRTOD_H_ */
 
 #ifndef UPB_PORT_ATOMIC_H_
 #define UPB_PORT_ATOMIC_H_
