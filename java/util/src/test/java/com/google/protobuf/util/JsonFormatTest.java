@@ -1916,6 +1916,25 @@ public class JsonFormatTest {
   }
 
   @Test
+  public void testParserIgnoringUnknownEnumsUnknownNumber() throws Exception {
+    // Unknown integer enum value for an open enum creates an unknown EnumValueDescriptor
+    // rather than being ignored as an unknown field.
+    TestAllTypes.Builder builder = TestAllTypes.newBuilder();
+    String json = "{\n  \"optionalNestedEnum\": 99999\n}";
+    JsonFormat.parser().ignoringUnknownFields().merge(json, builder);
+    assertThat(builder.getOptionalNestedEnumValue()).isEqualTo(99999);
+  }
+
+  @Test
+  public void testParserIgnoringUnknownEnumsBoolean() throws Exception {
+    // Boolean enum value when ignoring unknown fields is ignored (value remains default 0).
+    TestAllTypes.Builder builder = TestAllTypes.newBuilder();
+    String json = "{\n  \"optionalNestedEnum\": true\n}";
+    JsonFormat.parser().ignoringUnknownFields().merge(json, builder);
+    assertThat(builder.getOptionalNestedEnumValue()).isEqualTo(0);
+  }
+
+  @Test
   public void testParserSupportAliasEnums() throws Exception {
     TestAllTypes.Builder builder = TestAllTypes.newBuilder();
     String json = "{\n" + "  \"optionalAliasedEnum\": \"QUX\"\n" + "}";
@@ -1961,6 +1980,26 @@ public class JsonFormatTest {
   public void testParserIntegerEnumValue() throws Exception {
     TestAllTypes.Builder actualBuilder = TestAllTypes.newBuilder();
     mergeFromJson("{\"optionalNestedEnum\": 2}", actualBuilder);
+
+    TestAllTypes expected = TestAllTypes.newBuilder().setOptionalNestedEnum(NestedEnum.BAZ).build();
+    assertThat(actualBuilder.build()).isEqualTo(expected);
+  }
+
+  // TODO: b/534418787 - Investigate this behavior further, especially in conformance tests.
+  @Test
+  public void testParserSingleElementArrayForNonRepeatedEnum() throws Exception {
+    TestAllTypes.Builder actualBuilder = TestAllTypes.newBuilder();
+    mergeFromJson("{\"optionalNestedEnum\": [\"FOO\"]}", actualBuilder);
+
+    TestAllTypes expected = TestAllTypes.newBuilder().setOptionalNestedEnum(NestedEnum.FOO).build();
+    assertThat(actualBuilder.build()).isEqualTo(expected);
+  }
+
+  // TODO: b/534418787 - Investigate this behavior further, especially in conformance tests.
+  @Test
+  public void testParserSingleElementArrayForNonRepeatedIntegerEnum() throws Exception {
+    TestAllTypes.Builder actualBuilder = TestAllTypes.newBuilder();
+    mergeFromJson("{\"optionalNestedEnum\": [2]}", actualBuilder);
 
     TestAllTypes expected = TestAllTypes.newBuilder().setOptionalNestedEnum(NestedEnum.BAZ).build();
     assertThat(actualBuilder.build()).isEqualTo(expected);
@@ -2789,6 +2828,16 @@ public class JsonFormatTest {
   }
 
   @Test
+  public void hachiMaiDoSerialization() throws Exception {
+    Knight msg = Knight.newBuilder().setArmor(Armor.ARMOR_HACHI_MAI_DO).build();
+    assertThat(msg.getArmor()).isEqualTo(Armor.ARMOR_HACHI_MAI_DO);
+
+    String jsonRes = JsonFormat.printer().omittingInsignificantWhitespace().print(msg);
+
+    assertThat(jsonRes).isEqualTo("{\"armor\":\"8\"}");
+  }
+
+  @Test
   public void greatHelmIntOverride() throws Exception {
     Knight msg = Knight.newBuilder().setArmor(Armor.ARMOR_GREAT_HELM).build();
 
@@ -2859,10 +2908,32 @@ public class JsonFormatTest {
   }
 
   @Test
+  public void hachiMaiDoParsing() throws Exception {
+    Knight.Builder builder = Knight.newBuilder();
+    JsonFormat.parser().merge("{\"armor\":\"8\"}", builder);
+    assertThat(builder.getArmor()).isEqualTo(Armor.ARMOR_HACHI_MAI_DO);
+  }
+
+  @Test
+  public void hachiMaiDoIntParsing() throws Exception {
+    Knight.Builder builder = Knight.newBuilder();
+    JsonFormat.parser().merge("{\"armor\":8}", builder);
+    assertThat(builder.getArmor()).isEqualTo(Armor.ARMOR_HACHI_MAI_DO);
+  }
+
+  @Test
   public void parseCustomStringTrue() throws Exception {
     Knight.Builder builder = Knight.newBuilder();
     JsonFormat.parser().merge("{\"armor\":\"true\"}", builder);
     assertThat(builder.getArmor()).isEqualTo(Armor.ARMOR_SHIELD);
+  }
+
+  @Test
+  public void parseCustomStringSingleElementArrayFails() throws Exception {
+    Knight.Builder builder = Knight.newBuilder();
+    assertThrows(
+        InvalidProtocolBufferException.class,
+        () -> JsonFormat.parser().merge("{\"armor\":[\"gr8 helm\"]}", builder));
   }
 
   @Test
@@ -2887,27 +2958,5 @@ public class JsonFormatTest {
     assertThrows(
         InvalidProtocolBufferException.class,
         () -> JsonFormat.parser().merge("{\"armor\":\"armor_GAUNtlet\"}", builder));
-  }
-
-  @Test
-  public void testParserRejectNonPrimitiveEnumEvenIfIgnoringUnknowns() throws Exception {
-    TestAllTypes.Builder builder = TestAllTypes.newBuilder();
-
-    // Invalid enum string is ignored when ignoringUnknownFields is enabled
-    JsonFormat.parser().ignoringUnknownFields().merge("{\"optionalNestedEnum\": \"XXX\"}", builder);
-
-    // Object or Array should fail even when ignoringUnknownFields is enabled
-    assertThrows(
-        InvalidProtocolBufferException.class,
-        () ->
-            JsonFormat.parser()
-                .ignoringUnknownFields()
-                .merge("{\"optionalNestedEnum\": {}}", builder));
-    assertThrows(
-        InvalidProtocolBufferException.class,
-        () ->
-            JsonFormat.parser()
-                .ignoringUnknownFields()
-                .merge("{\"optionalNestedEnum\": []}", builder));
   }
 }

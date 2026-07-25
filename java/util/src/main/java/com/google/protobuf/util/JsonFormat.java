@@ -75,7 +75,6 @@ import javax.annotation.Nullable;
 public class JsonFormat {
   private static final Logger logger = Logger.getLogger(JsonFormat.class.getName());
 
-
   private JsonFormat() {}
 
   /** Creates a {@link Printer} with default configurations. */
@@ -2438,48 +2437,49 @@ public class JsonFormat {
     @Nullable
     private EnumValueDescriptor parseEnum(EnumDescriptor enumDescriptor, JsonElement json)
         throws InvalidProtocolBufferException {
-
-      if (!json.isJsonPrimitive()) {
+      // Calling json.getAsString() works for both JsonPrimitive and single-element JsonArray (e.g.,
+      // ["FOO"] or [2]), throwing UnsupportedOperationException/IllegalStateException for other
+      // structures.
+      final String name;
+      try {
+        name = json.getAsString();
+      } catch (UnsupportedOperationException | IllegalStateException e) {
+        // UnsupportedOperationException is thrown by Gson when getAsString() is called on a
+        // JsonObject (e.g., "{}") or JsonNull (e.g., "null"). IllegalStateException is thrown when
+        // getAsString() is called on a JsonArray whose length is not exactly 1 (e.g., "[]" or
+        // '["FOO", "BAR"]').
         throw new InvalidProtocolBufferException(
-            "Invalid enum value: " + json + " for enum type: " + enumDescriptor.getFullName());
+            "Invalid enum value: " + json + " for enum type: " + enumDescriptor.getFullName(), e);
       }
 
-      JsonPrimitive primitive = json.getAsJsonPrimitive();
-      final boolean isString = primitive.isString();
-      final boolean isNumber = primitive.isNumber();
+      EnumValueDescriptor result = enumDescriptor.findValueByName(name);
+      if (result != null) {
+        return result;
+      }
 
-      if (isString) {
-        String value = primitive.getAsString();
-        EnumValueDescriptor result = enumDescriptor.findValueByName(value);
+      // Custom JSON string lookup is restricted strictly to string primitives, explicitly
+      // rejecting single-element arrays of custom names (e.g., ["custom_enum_name"]).
+      if (json.isJsonPrimitive() && json.getAsJsonPrimitive().isString()) {
+        AlternativeEnumJsonNames enumJsonNames =
+            enumJsonNamesCache.computeIfAbsent(enumDescriptor, AlternativeEnumJsonNames::new);
+        result = enumJsonNames.map.get(name);
         if (result != null) {
           return result;
         }
-
-        // Check custom JSON names first for strings
-        AlternativeEnumJsonNames enumJsonNames =
-            enumJsonNamesCache.computeIfAbsent(enumDescriptor, AlternativeEnumJsonNames::new);
-        EnumValueDescriptor ev = enumJsonNames.map.get(value);
-        if (ev != null) {
-          return ev;
-        }
       }
-
-      // Parse numbers (or stringified numbers as a fallback)
-      if (isString || isNumber) {
-        try {
-          int numericValue = parseInt32(json);
-          EnumValueDescriptor result =
-              enumDescriptor.isClosed()
-                  ? enumDescriptor.findValueByNumber(numericValue)
-                  : enumDescriptor.findValueByNumberCreatingIfUnknown(numericValue);
-          if (result != null) {
-            return result;
-          }
-        } catch (InvalidProtocolBufferException e) {
-          // Fall through.
+      try {
+        int numericValue = parseInt32(json);
+        result =
+            enumDescriptor.isClosed()
+                ? enumDescriptor.findValueByNumber(numericValue)
+                : enumDescriptor.findValueByNumberCreatingIfUnknown(numericValue);
+        if (result != null) {
+          return result;
         }
+      } catch (InvalidProtocolBufferException e) {
+        // Fall through when json is not a valid int32 value (e.g., when json is a string like
+        // "XXX" or boolean true).
       }
-
       // todo(elharo): if we are ignoring unknown fields, shouldn't we still
       // throw InvalidProtocolBufferException for a non-numeric value here?
       if (!ignoringUnknownFields) {
@@ -2567,20 +2567,20 @@ public class JsonFormat {
           throw new InvalidProtocolBufferException("Invalid field type: " + field.getType());
       }
     }
-  }
 
-  private static final class AlternativeEnumJsonNames {
-    final Map<String, EnumValueDescriptor> map;
+    private static final class AlternativeEnumJsonNames {
+      final Map<String, EnumValueDescriptor> map;
 
-    AlternativeEnumJsonNames(EnumDescriptor enumDescriptor) {
-      Map<String, EnumValueDescriptor> m = new HashMap<>();
-      for (EnumValueDescriptor ev : enumDescriptor.getValues()) {
-        JsonEnumValueOptions ext = ev.getOptions().getExtension(JsonEnumvalueOptionsProto.json);
-        if (ext.hasString()) {
-          m.put(ext.getString(), ev);
+      AlternativeEnumJsonNames(EnumDescriptor enumDescriptor) {
+        Map<String, EnumValueDescriptor> m = new HashMap<>();
+        for (EnumValueDescriptor ev : enumDescriptor.getValues()) {
+          JsonEnumValueOptions ext = ev.getOptions().getExtension(JsonEnumvalueOptionsProto.json);
+          if (ext.hasString()) {
+            m.put(ext.getString(), ev);
+          }
         }
+        this.map = Collections.unmodifiableMap(m);
       }
-      this.map = Collections.unmodifiableMap(m);
     }
   }
 }

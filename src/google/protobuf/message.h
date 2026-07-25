@@ -422,6 +422,13 @@ class PROTOBUF_EXPORT Message : public MessageLite {
 #if !defined(PROTOBUF_CUSTOM_VTABLE)
   constexpr Message() {}
 #endif  // PROTOBUF_CUSTOM_VTABLE
+
+#if defined(PROTOBUF_PROTECTED_MESSAGE_BASE_DESTRUCTOR)
+  // Explicitly define the destructor as protected so it can't be called
+  // directly.
+  ~Message() = default;
+#endif  // PROTOBUF_PROTECTED_MESSAGE_BASE_DESTRUCTOR
+
   using MessageLite::MessageLite;
 
   // Get a struct containing the metadata for the Message, which is used in turn
@@ -442,7 +449,7 @@ class PROTOBUF_EXPORT Message : public MessageLite {
 
   // Reflection based version for reflection based types.
   static void MergeImpl(MessageLite& to, const MessageLite& from);
-  void ClearImpl();
+  static void ClearImpl(MessageLite& msg);
   static size_t ByteSizeLongImpl(const MessageLite& msg);
   static uint8_t* _InternalSerializeImpl(const MessageLite& msg,
                                          uint8_t* target,
@@ -633,8 +640,10 @@ class PROTOBUF_EXPORT Reflection final {
                              const FieldDescriptor* field) const;
   [[nodiscard]] std::string GetString(const Message& message,
                                       const FieldDescriptor* field) const;
-  [[nodiscard]] const EnumValueDescriptor* GetEnum(
-      const Message& message, const FieldDescriptor* field) const;
+  [[nodiscard]] [[deprecated(
+      "Please use GetEnumValue() instead. GetEnum() will be "
+      "removed in Q1 2027.")]] const EnumValueDescriptor*
+  GetEnum(const Message& message, const FieldDescriptor* field) const;
 
   // GetEnumValue() returns an enum field's value as an integer rather than
   // an EnumValueDescriptor*. If the integer value does not correspond to a
@@ -818,8 +827,11 @@ class PROTOBUF_EXPORT Reflection final {
   [[nodiscard]] std::string GetRepeatedString(const Message& message,
                                               const FieldDescriptor* field,
                                               int index) const;
-  [[nodiscard]] const EnumValueDescriptor* GetRepeatedEnum(
-      const Message& message, const FieldDescriptor* field, int index) const;
+  [[nodiscard]] [[deprecated(
+      "Please use GetRepeatedEnumValue() instead. GetRepeatedEnum() will be "
+      "removed in Q1 2027.")]] const EnumValueDescriptor*
+  GetRepeatedEnum(const Message& message, const FieldDescriptor* field,
+                  int index) const;
   // GetRepeatedEnumValue() returns an enum field's value as an integer rather
   // than an EnumValueDescriptor*. If the integer value does not correspond to a
   // known value descriptor, a new value descriptor is created. (Such a value
@@ -1341,7 +1353,7 @@ class PROTOBUF_EXPORT Reflection final {
                         const OneofDescriptor* oneof_descriptor) const;
   inline uint32_t* MutableOneofCase(
       Message* message, const OneofDescriptor* oneof_descriptor) const;
-  inline bool HasExtensionSet(const Message& /* message */) const {
+  bool HasExtensionSet(const Message& /* message */) const {
     return schema_.HasExtensionSet();
   }
   const internal::ExtensionSet& GetExtensionSet(const Message& message) const;
@@ -1356,11 +1368,11 @@ class PROTOBUF_EXPORT Reflection final {
     return &message->_internal_metadata_;
   }
 
-  inline bool IsInlined(const FieldDescriptor* field) const {
+  bool IsInlined(const FieldDescriptor* field) const {
     return schema_.IsFieldInlined(field);
   }
 
-  inline bool IsMicroString(const FieldDescriptor* field) const {
+  bool IsMicroString(const FieldDescriptor* field) const {
     return schema_.IsFieldMicroString(field);
   }
 
@@ -1527,7 +1539,7 @@ extern template void Reflection::SwapFieldsImpl<false>(
 // around GetPrototype for details
 class PROTOBUF_EXPORT MessageFactory {
  public:
-  inline MessageFactory() = default;
+  MessageFactory() = default;
   MessageFactory(const MessageFactory&) = delete;
   MessageFactory& operator=(const MessageFactory&) = delete;
   virtual ~MessageFactory();

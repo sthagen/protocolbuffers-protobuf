@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "google/protobuf/breaking_changes.h"
 #include "python/convert.h"
 #include "python/descriptor.h"
 #include "python/extension_dict.h"
@@ -673,8 +674,9 @@ static void PyUpb_Message_SetField(PyUpb_Message* parent, const upb_FieldDef* f,
  */
 bool PyUpb_Message_AssureWritable(PyUpb_Message* self) {
   if (PyUpb_Message_IsFrozen((PyObject*)self)) {
-    PyUpb_SetFrozenError();
-    return false;
+    if (!PyUpb_CheckFrozen(true, "Message is immutable.")) {
+      return false;
+    }
   }
 
   if (!PyUpb_Message_IsStub(self)) return true;
@@ -1061,7 +1063,8 @@ bool PyUpb_Message_IsFrozen(PyObject* _self) {
   while (PyUpb_Message_IsStub(self)) {
     self = self->ptr.parent;
   }
-  bool is_frozen = upb_Message_IsFrozen(self->ptr.msg);
+  bool is_frozen =
+      upb_Message_IsFrozen(self->ptr.msg) || PyUpb_Arena_IsFrozen(self->arena);
   // Invariant: Since we only store the parent *message* (and not any parent
   // repeated field or map) in a stub's `ptr.parent`, we wouldn't correctly
   // handle the case where a parent message is unfrozen but a containing
@@ -1468,13 +1471,13 @@ PyObject* PyUpb_Message_MergeFromString(PyObject* _self, PyObject* arg) {
   upb_DecodeStatus status =
       upb_Decode(buf, size, self->ptr.msg, layout, extreg, options, arena);
   Py_XDECREF(mv_contiguous);
+  PyUpb_Message_SyncSubobjs(self);
   if (status != kUpb_DecodeStatus_Ok) {
     PyErr_Format(
         state->decode_error_class, "Error parsing message with type '%s': %s",
         upb_MessageDef_FullName(msgdef), upb_DecodeStatus_String(status));
     return NULL;
   }
-  PyUpb_Message_SyncSubobjs(self);
   return PyLong_FromSsize_t(size);
 }
 
