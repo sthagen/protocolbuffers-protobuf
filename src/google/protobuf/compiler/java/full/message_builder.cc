@@ -188,8 +188,7 @@ void MessageBuilderGenerator::Generate(io::Printer* printer) {
   // Integers for bit fields.
   int totalBits = 0;
   for (int i = 0; i < descriptor_->field_count(); i++) {
-    totalBits +=
-        field_generators_.get(descriptor_->field(i)).GetNumBitsForBuilder();
+    totalBits += field_generators_.get(descriptor_->field(i)).GetNumBits();
   }
   int totalInts = (totalBits + 31) / 32;
   for (int i = 0; i < totalInts; i++) {
@@ -633,13 +632,14 @@ void MessageBuilderGenerator::GenerateBuildPartial(io::Printer* printer) {
     }
   }
 
-  // One buildPartial#() per from_bit_field
+  // One buildPartial_autosplit_#() per from_bit_field
   int totalBuilderInts = (descriptor_->field_count() + 31) / 32;
   if (totalBuilderInts > 0) {
     for (int i = 0; i < totalBuilderInts; ++i) {
       printer->Print(
-          "if ($bit_field_name$ != 0) { buildPartial$piece$(result); }\n",
-          "bit_field_name", GetBitFieldName(i), "piece", absl::StrCat(i));
+          "if ($bit_field_name$ != 0) { "
+          "buildPartial_autosplit_$shard$(result); }\n",
+          "bit_field_name", GetBitFieldName(i), "shard", absl::StrCat(i));
     }
   }
 
@@ -672,10 +672,10 @@ void MessageBuilderGenerator::GenerateBuildPartial(io::Printer* printer) {
     printer->Print("}\n\n");
   }
 
-  // Build non-oneof fields
+  // Build all fields in shards organized by bitfield membership.
   int start_field = 0;
   for (int i = 0; i < totalBuilderInts; i++) {
-    start_field = GenerateBuildPartialPiece(printer, i, start_field);
+    start_field = GenerateBuildPartialShard(printer, i, start_field);
   }
 
   // Build Oneofs
@@ -703,14 +703,14 @@ void MessageBuilderGenerator::GenerateBuildPartial(io::Printer* printer) {
   }
 }
 
-int MessageBuilderGenerator::GenerateBuildPartialPiece(io::Printer* printer,
-                                                       int piece,
+int MessageBuilderGenerator::GenerateBuildPartialShard(io::Printer* printer,
+                                                       int shard,
                                                        int first_field) {
   printer->Print(
-      "private void buildPartial$piece$($classname$ result) {\n"
+      "private void buildPartial_autosplit_$shard$($classname$ result) {\n"
       "  int from_$bit_field_name$ = $bit_field_name$;\n",
-      "classname", name_resolver_->GetImmutableClassName(descriptor_), "piece",
-      absl::StrCat(piece), "bit_field_name", GetBitFieldName(piece));
+      "classname", name_resolver_->GetImmutableClassName(descriptor_), "shard",
+      absl::StrCat(shard), "bit_field_name", GetBitFieldName(shard));
   printer->Indent();
   absl::btree_set<int> declared_to_bitfields;
 
@@ -719,7 +719,7 @@ int MessageBuilderGenerator::GenerateBuildPartialPiece(io::Printer* printer,
   for (; bit < 32 && next < descriptor_->field_count(); ++next) {
     const ImmutableFieldGenerator& field =
         field_generators_.get(descriptor_->field(next));
-    bit += field.GetNumBitsForBuilder();
+    bit += field.GetNumBits();
 
     // Skip oneof fields that are handled separately
     if (IsRealOneof(descriptor_->field(next))) {
@@ -732,13 +732,13 @@ int MessageBuilderGenerator::GenerateBuildPartialPiece(io::Printer* printer,
       continue;
     }
     // Skip fields without presence bits in the builder
-    if (field.GetNumBitsForBuilder() == 0) {
+    if (field.GetNumBits() == 0) {
       continue;
     }
 
     // Track message bits if necessary
-    if (field.GetNumBitsForMessage() > 0) {
-      int to_bitfield = field.GetMessageBitIndex() / 32;
+    if (field.GetNumBits() > 0) {
+      int to_bitfield = field.GetBitIndex() / 32;
       if (declared_to_bitfields.count(to_bitfield) == 0) {
         printer->Print("int to_$bit_field_name$ = 0;\n", "bit_field_name",
                        GetBitFieldName(to_bitfield));

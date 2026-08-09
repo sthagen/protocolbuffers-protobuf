@@ -320,6 +320,14 @@ constexpr bool HasAnySanitizer() {
 #endif
 }
 
+constexpr bool RunLargeMemoryTests() {
+  // For tests that need a lot of memory, we check that we have a 64-bit
+  // platform.
+  // And we also check we are not using sanitizers. They increase memory
+  // requirements and can be too slow for those tests.
+  return sizeof(void*) == 8 && !HasAnySanitizer();
+}
+
 constexpr bool PerformDebugChecks() {
   if (HasAnySanitizer()) return true;
 #if defined(NDEBUG)
@@ -958,14 +966,7 @@ inline int CheckedAdd(ScalarType1 a, ScalarType2 b) {
 enum class BoundsCheckMode { kNoEnforcement, kReturnDefault, kAbort };
 
 PROTOBUF_EXPORT constexpr BoundsCheckMode GetBoundsCheckMode() {
-#if defined(PROTO2_OPENSOURCE) || \
-    defined(PROTOBUF_INTERNAL_BOUNDS_CHECK_MODE_ABORT)
   return BoundsCheckMode::kAbort;
-#elif defined(PROTOBUF_INTERNAL_BOUNDS_CHECK_MODE_RETURN_DEFAULT)
-  return BoundsCheckMode::kReturnDefault;
-#else
-  return BoundsCheckMode::kNoEnforcement;
-#endif
 }
 
 

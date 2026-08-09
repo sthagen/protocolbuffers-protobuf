@@ -11,7 +11,6 @@ Recommended.Proto2.JsonInput.BoolMapFieldKeyNotQuoted
 Recommended.Proto2.JsonInput.DoubleFieldInfinityNotQuoted
 Recommended.Proto2.JsonInput.DoubleFieldNanNotQuoted
 Recommended.Proto2.JsonInput.DoubleFieldNegativeInfinityNotQuoted
-Recommended.Proto2.JsonInput.FieldNameDuplicate
 Recommended.Proto2.JsonInput.FieldNameExtension.Validator
 Recommended.Proto2.JsonInput.FieldNameNotQuoted
 Recommended.Proto2.JsonInput.FloatFieldInfinityNotQuoted
@@ -39,7 +38,6 @@ Recommended.Proto3.JsonInput.DoubleFieldInfinityNotQuoted
 Recommended.Proto3.JsonInput.DoubleFieldNanNotQuoted
 Recommended.Proto3.JsonInput.DoubleFieldNegativeInfinityNotQuoted
 Recommended.Proto3.JsonInput.FieldMaskInvalidCharacter
-Recommended.Proto3.JsonInput.FieldNameDuplicate
 Recommended.Proto3.JsonInput.FieldNameNotQuoted
 Recommended.Proto3.JsonInput.FloatFieldInfinityNotQuoted
 Recommended.Proto3.JsonInput.FloatFieldNanNotQuoted
@@ -86,7 +84,6 @@ Recommended.Editions_Proto2.JsonInput.BoolMapFieldKeyNotQuoted
 Recommended.Editions_Proto2.JsonInput.DoubleFieldInfinityNotQuoted
 Recommended.Editions_Proto2.JsonInput.DoubleFieldNanNotQuoted
 Recommended.Editions_Proto2.JsonInput.DoubleFieldNegativeInfinityNotQuoted
-Recommended.Editions_Proto2.JsonInput.FieldNameDuplicate
 Recommended.Editions_Proto2.JsonInput.FieldNameExtension.Validator
 Recommended.Editions_Proto2.JsonInput.FieldNameNotQuoted
 Recommended.Editions_Proto2.JsonInput.FloatFieldInfinityNotQuoted
@@ -114,7 +111,6 @@ Recommended.Editions_Proto3.JsonInput.DoubleFieldInfinityNotQuoted
 Recommended.Editions_Proto3.JsonInput.DoubleFieldNanNotQuoted
 Recommended.Editions_Proto3.JsonInput.DoubleFieldNegativeInfinityNotQuoted
 Recommended.Editions_Proto3.JsonInput.FieldMaskInvalidCharacter
-Recommended.Editions_Proto3.JsonInput.FieldNameDuplicate
 Recommended.Editions_Proto3.JsonInput.FieldNameNotQuoted
 Recommended.Editions_Proto3.JsonInput.FloatFieldInfinityNotQuoted
 Recommended.Editions_Proto3.JsonInput.FloatFieldNanNotQuoted
@@ -162,3 +158,23 @@ Required.*.ProtobufInput.BadTag_OverlongVarint                                  
 # Recommended.Proto2.ProtobufInput.RejectInvalidUtf8.String.Oneof                                                    # Should have failed to parse, but didn't.
 # Recommended.Proto2.ProtobufInput.RejectInvalidUtf8.String.Repeated                                                 # Should have failed to parse, but didn't.
 # Recommended.Proto2.ProtobufInput.RejectInvalidUtf8.String.Singular                                                 # Should have failed to parse, but didn't.
+
+Required.*.JsonInput.TimestampJsonInputDayTooLarge                                                    # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputDayTooShort                                                    # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputDayZero                                                        # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputHourTooLarge                                                   # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputHourTooLarge25                                                 # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputInvalidNanos                                                   # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputInvalidOffsetHour                                              # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputInvalidOffsetMinute                                            # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputMinuteTooLarge                                                 # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputMonthTooLarge                                                  # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputMonthTooShort                                                  # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputMonthZero                                                      # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputNonLeapFeb29                                                   # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputSecondTooLarge                                                 # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputYearTooLong                                                    # Should have failed to parse, but didn't.
+Required.*.JsonInput.TimestampJsonInputYearTooShort                                                   # Should have failed to parse, but didn't.
+Recommended.Proto2.ProtobufInput.ValidMessageSetEncoding.DuplicateDifferentTypeId.ProtobufOutput                      # Output was not equivalent to reference message
+Recommended.Proto2.ProtobufInput.ValidMessageSetEncoding.DuplicateValue.ProtobufOutput                                # Output was not equivalent to reference message
+Recommended.Proto2.ProtobufInput.ValidMessageSetEncoding.DuplicateValueOutOfOrder.ProtobufOutput                      # Output was not equivalent to reference message
