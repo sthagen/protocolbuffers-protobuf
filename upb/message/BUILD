@@ -75,7 +75,9 @@ cc_library(
         "//third_party/cel/c/internal:__pkg__",
         "//third_party/upb/wasm_abi/upb:__pkg__",
         "//upb:__pkg__",
+        "//upb/test:__pkg__",
         "//upb/wire:__pkg__",
+        "//upb/wire/decode_fast:__pkg__",
         "//video/youtube/utils/elements/client/component_type:__pkg__",
         "//video/youtube/utils/elements/client/component_type/subscription_processors:__pkg__",
         "//video/youtube/utils/elements/data_layer:__pkg__",
@@ -676,6 +678,7 @@ filegroup(
         exclude = [
             "promote_test.cc",
             "convert_fuzz_test.cc",
+            "compare_fuzz_test.cc",
         ],
     ),
     visibility = ["//upb:__pkg__"],
