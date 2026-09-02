@@ -119,6 +119,8 @@ enum class LazyAnnotation : int8_t {
 };
 
 // Information about a registered extension.
+// TODO: Change ExtensionInfo to hold a ClassData instead of a
+// prototype.
 struct ExtensionInfo {
   constexpr ExtensionInfo()
       : is_packed(false), is_utf8(false), enum_validity_check() {}
@@ -156,47 +158,15 @@ struct ExtensionInfo {
   LazyAnnotation is_lazy = LazyAnnotation::kUndefined;
 
   struct EnumValidityCheck {
-    // TODO: Fully remove the function pointer approach.
-    EnumValidityFuncWithArg* func;
-    const void* arg;
-
+    const uint32_t* enum_data;
     bool IsValid(int value) const {
-      return func != nullptr ? func(arg, value)
-                             : internal::ValidateEnum(
-                                   value, static_cast<const uint32_t*>(arg));
+      return internal::ValidateEnum(value, enum_data);
     }
   };
 
   struct MessageInfo {
-#ifdef PROTOBUF_MESSAGE_GLOBALS
-    const internal::MessageGlobalsBase* globals = nullptr;
-#else
-    const MessageLite* prototype = nullptr;
-#endif
-    // The TcParse table used for this object. Never null. (except in platforms
-    // that don't constant initialize default instances)
-    const internal::TcParseTableBase* tc_table = nullptr;
-
-    // Create from prototype
-    const MessageLite* GetPrototype() const {
-#ifdef PROTOBUF_MESSAGE_GLOBALS
-      return internal::MessageGlobalsBase::ToDefaultInstance(globals);
-#else
-      return prototype;
-#endif
-    }
-
-    const internal::TcParseTableBase* GetTcTable() const { return tc_table; }
-
-    const ClassData* GetClassData() const {
-#if defined(PROTOBUF_MESSAGE_GLOBALS)
-      return internal::MessageGlobalsBase::GetClassData(globals);
-#elif defined(PROTOBUF_CONSTINIT_DEFAULT_INSTANCES)
-      return tc_table->class_data;
-#else
-      return internal::GetClassData(*prototype);
-#endif
-    }
+    // Never null.
+    const internal::ClassData* class_data;
   };
 
   union {
@@ -287,17 +257,17 @@ class PROTOBUF_EXPORT ExtensionSet {
   // to look up extensions for parsed field numbers.  Note that dynamic parsing
   // does not use ParseField(); only protocol-compiler-generated parsing
   // methods do.
-  static void RegisterExtension(const MessageLite* extendee, int number,
+  static void RegisterExtension(const ClassData* extendee, int number,
                                 FieldType type, bool is_repeated,
                                 bool is_packed, bool is_utf8 = false);
-  static void RegisterEnumExtension(const MessageLite* extendee, int number,
+  static void RegisterEnumExtension(const ClassData* extendee, int number,
                                     FieldType type, bool is_repeated,
                                     bool is_packed,
                                     const uint32_t* validation_data);
-  static void RegisterMessageExtension(const MessageLite* extendee, int number,
+  static void RegisterMessageExtension(const ClassData* extendee, int number,
                                        FieldType type, bool is_repeated,
                                        bool is_packed,
-                                       const MessageLite* prototype,
+                                       const ClassData* inner_data,
                                        LazyEagerVerifyFnType verify_func,
                                        LazyAnnotation is_lazy);
 
