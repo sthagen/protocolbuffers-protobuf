@@ -129,6 +129,14 @@ Error, UINTPTR_MAX is undefined
   (((SIZE_MAX - offsetof(type, member[0])) /                \
     (offsetof(type, member[1]) - offsetof(type, member[0]))) < (size_t)count)
 
+// Inverse of UPB_SIZEOF_FLEX; given the size in memory, how many elements can
+// the flexible array member store?
+#define UPB_FLEX_CAPACITY(type, member, size)   \
+  ((size) < sizeof(type)                        \
+       ? (size_t)0                              \
+       : ((size) - offsetof(type, member[0])) / \
+             (offsetof(type, member[1]) - offsetof(type, member[0])))
+
 #define UPB_ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #define UPB_MAPTYPE_STRING 0
@@ -304,12 +312,11 @@ Error, UINTPTR_MAX is undefined
 #define UPB_NODEREF
 #endif
 
-// Will be defined properly once call sites are updated
-#if false && UPB_HAS_C_ATTRIBUTE(nodiscard)
+#if UPB_HAS_C_ATTRIBUTE(nodiscard)
 #define UPB_NODISCARD [[nodiscard]]
-#elif false && UPB_HAS_ATTRIBUTE(warn_unused_result)
+#elif UPB_HAS_ATTRIBUTE(warn_unused_result)
 #define UPB_NODISCARD __attribute__((warn_unused_result))
-#elif false && UPB_HAS_CPP_ATTRIBUTE(nodiscard)
+#elif UPB_HAS_CPP_ATTRIBUTE(nodiscard)
 #define UPB_NODISCARD [[nodiscard]]
 #else
 #define UPB_NODISCARD
@@ -7529,9 +7536,10 @@ void upb_AllocationCount_FailOn(size_t n) {
 #endif
 }
 
-upb_alloc upb_alloc_global = {&upb_global_allocfunc};
+upb_alloc upb_alloc_global = {&upb_global_allocfunc, NULL};
 
 
+#include <limits.h>
 #include <string.h>
 
 
@@ -7600,10 +7608,6 @@ typedef struct upb_ArenaInternal {
 
   // Total space allocated in blocks, atomic only for SpaceAllocated
   UPB_ATOMIC(uintptr_t) space_allocated;
-
-  // The cleanup for the allocator. This is called after all the blocks are
-  // freed in an arena.
-  upb_AllocCleanupFunc* upb_alloc_cleanup;
 
   // When multiple arenas are fused together, each arena points to a parent
   // arena (root points to itself). The root tracks how many live arenas
@@ -7939,6 +7943,17 @@ void UPB_PRIVATE(_upb_Arena_UseBlock)(upb_Arena* a, void* ptr, size_t size) {
   size = UPB_ALIGN_DOWN(size, UPB_MALLOC_ALIGN);
 #endif
   if (size <= UPB_PRIVATE(_upb_ArenaHas)(a)) return;
+
+  // Harvest remaining space from the retired active block into power-of-2
+  // pool bins.
+  if (a->UPB_ONLYBITS(ptr) && a->UPB_ONLYBITS(end)) {
+    char* curr = (char*)a->UPB_ONLYBITS(ptr);
+    char* end = (char*)a->UPB_ONLYBITS(end);
+    if (end > curr) {
+      UPB_PRIVATE(_upb_Arena_Harvest)(a, curr, end - curr);
+    }
+  }
+
   a->UPB_ONLYBITS(ptr) = ptr;
   a->UPB_ONLYBITS(end) = UPB_PTR_AT(ptr, size, char);
   UPB_PRIVATE(upb_Xsan_PoisonRegion)(ptr, size);
@@ -8027,6 +8042,54 @@ void* UPB_PRIVATE(_upb_Arena_SlowMalloc)(upb_Arena* a, size_t span) {
   }
 }
 
+// Having a sentinel empty pool allows us to unconditionally load the bin count,
+// avoiding a branch to check for null on the hot path.
+const UPB_PRIVATE(_upb_ArenaPool) UPB_PRIVATE(_upb_Arena_EmptyPool) = {0};
+
+static size_t _upb_Arena_PoolCapacity(size_t size) {
+  UPB_ASSERT(size >= sizeof(UPB_PRIVATE(_upb_ArenaPool)));
+  return (size - offsetof(UPB_PRIVATE(_upb_ArenaPool), UPB_PRIVATE(bins)[0])) /
+         sizeof(void*);
+}
+
+void UPB_PRIVATE(_upb_Arena_GrowPool)(upb_Arena* a, void* ptr, size_t size) {
+  UPB_ASSERT(a);
+  UPB_ASSERT(ptr);
+  UPB_PRIVATE(upb_Xsan_PoisonRegion)(ptr, size);
+  UPB_ASSERT(size >= UPB_PRIVATE(kUpb_Arena_MinPoolBlockSize));
+
+  const size_t kMaxBins =
+      (sizeof(size_t) * CHAR_BIT) - _UPB_ARENA_MIN_POOL_BIN_LG2;
+  size_t new_cap = UPB_MIN(kMaxBins, _upb_Arena_PoolCapacity(size));
+
+  UPB_PRIVATE(_upb_ArenaPool)* new_pool =
+      (UPB_PRIVATE(_upb_ArenaPool)*)UPB_PRIVATE(upb_Xsan_NewUnpoisonedRegion)(
+          UPB_XSAN(a), ptr,
+          UPB_SIZEOF_FLEX(UPB_PRIVATE(_upb_ArenaPool), UPB_PRIVATE(bins),
+                          new_cap));
+  UPB_PRIVATE(_upb_ArenaPool)* old_pool = a->UPB_ONLYBITS(pool);
+  size_t old_num_bins = old_pool->UPB_PRIVATE(num_bins);
+
+  UPB_PRIVATE(_upb_ArenaFreeBlock)** dst = new_pool->UPB_PRIVATE(bins);
+  UPB_PRIVATE(_upb_ArenaFreeBlock)** src = old_pool->UPB_PRIVATE(bins);
+
+  size_t i;
+  for (i = 0; i < old_num_bins; i++) {
+    *dst++ = *src++;
+  }
+  if (old_pool != &UPB_PRIVATE(_upb_Arena_EmptyPool)) {
+    UPB_PRIVATE(upb_Xsan_PoisonRegion)(
+        old_pool, UPB_SIZEOF_FLEX(UPB_PRIVATE(_upb_ArenaPool),
+                                  UPB_PRIVATE(bins), old_num_bins));
+  }
+  for (i = old_num_bins; i < new_cap; i++) {
+    *dst++ = NULL;
+  }
+
+  new_pool->UPB_PRIVATE(num_bins) = new_cap;
+  a->UPB_ONLYBITS(pool) = new_pool;
+}
+
 static upb_Arena* _upb_Arena_InitSlow(upb_alloc* alloc, size_t first_size) {
   if (!upb_AllocationCount_IncrementAndCheck()) {
     return NULL;
@@ -8048,6 +8111,8 @@ static upb_Arena* _upb_Arena_InitSlow(upb_alloc* alloc, size_t first_size) {
   a->body.size_hint = UPB_MIN(block_size, UINT32_MAX);
   a->head.UPB_ONLYBITS(ptr) = NULL;
   a->head.UPB_ONLYBITS(end) = NULL;
+  a->head.UPB_ONLYBITS(pool) =
+      (UPB_PRIVATE(_upb_ArenaPool)*)&UPB_PRIVATE(_upb_Arena_EmptyPool);
 
   upb_Atomic_Init(&a->body.parent_or_count, _upb_Arena_TaggedFromRefcount(1));
   upb_Atomic_Init(&a->body.next, NULL);
@@ -8058,7 +8123,6 @@ static upb_Arena* _upb_Arena_InitSlow(upb_alloc* alloc, size_t first_size) {
 #ifndef NDEBUG
   a->body.refs = NULL;
 #endif
-  a->body.upb_alloc_cleanup = NULL;
   UPB_PRIVATE(upb_Xsan_Init)(UPB_XSAN(&a->body));
 
   UPB_PRIVATE(_upb_Arena_AddBlock)(&a->head, block);
@@ -8103,10 +8167,11 @@ upb_Arena* upb_Arena_Init(void* mem, size_t n, upb_alloc* alloc) {
 #endif
   a->body.size_hint = 128;
   a->body.last_block_size = 128;
-  a->body.upb_alloc_cleanup = NULL;
   a->body.block_alloc = _upb_Arena_MakeBlockAlloc(alloc, 1);
   a->head.UPB_PRIVATE(ptr) = (void*)UPB_ALIGN_MALLOC((uintptr_t)(a + 1));
   a->head.UPB_PRIVATE(end) = UPB_PTR_AT(mem, n, char);
+  a->head.UPB_ONLYBITS(pool) =
+      (UPB_PRIVATE(_upb_ArenaPool)*)&UPB_PRIVATE(_upb_Arena_EmptyPool);
   UPB_PRIVATE(upb_Xsan_Init)(UPB_XSAN(&a->body));
 #ifdef UPB_TRACING_ENABLED
   upb_Arena_LogInit(&a->head, n);
@@ -8130,7 +8195,6 @@ static void _upb_Arena_DoFree(upb_ArenaInternal* ai) {
     }
     upb_alloc* block_alloc = _upb_ArenaInternal_BlockAlloc(ai);
     upb_MemBlock* block = ai->blocks;
-    upb_AllocCleanupFunc* alloc_cleanup = ai->upb_alloc_cleanup;
     while (block != NULL) {
       // Load first since we are deleting block.
       upb_MemBlock* next_block = block->next;
@@ -8144,8 +8208,8 @@ static void _upb_Arena_DoFree(upb_ArenaInternal* ai) {
       }
       block = next_block;
     }
-    if (alloc_cleanup != NULL) {
-      alloc_cleanup(block_alloc);
+    if (block_alloc && block_alloc->cleanup != NULL) {
+      block_alloc->cleanup(block_alloc);
     }
     ai = next_arena;
   }
@@ -8295,13 +8359,6 @@ static void _upb_Arena_DoFuseArenaLists(upb_ArenaInternal* const parent,
   upb_ArenaInternal* old_parent_tail = _upb_Arena_LinkForward(parent, child);
   _upb_Arena_UpdateParentTail(parent, child);
   _upb_Arena_LinkBackward(child, old_parent_tail);
-}
-
-void upb_Arena_SetAllocCleanup(upb_Arena* a, upb_AllocCleanupFunc* func) {
-  UPB_PRIVATE(upb_Xsan_AccessReadWrite)(UPB_XSAN(a));
-  upb_ArenaInternal* ai = upb_Arena_Internal(a);
-  UPB_ASSERT(ai->upb_alloc_cleanup == NULL);
-  ai->upb_alloc_cleanup = func;
 }
 
 // Thread safe.
@@ -8756,32 +8813,43 @@ bool upb_Array_Resize(upb_Array* arr, size_t size, upb_Arena* arena) {
 
 bool UPB_PRIVATE(_upb_Array_Realloc)(upb_Array* array, size_t min_capacity,
                                      upb_Arena* arena) {
-  size_t new_capacity = UPB_MAX(array->UPB_PRIVATE(capacity), 4);
+  size_t target_capacity = UPB_MAX(min_capacity, 4);
+  size_t new_capacity = upb_RoundUpToPowerOfTwo(target_capacity);
+  if (new_capacity == SIZE_MAX) return false;
+
   const int lg2 = UPB_PRIVATE(_upb_Array_ElemSizeLg2)(array);
   size_t old_bytes = array->UPB_PRIVATE(capacity) << lg2;
   void* ptr = upb_Array_MutableDataPtr(array);
-
-  // Log2 ceiling of size.
-  while (new_capacity < min_capacity) {
-    if (upb_ShlOverflow(&new_capacity, 1)) {
-      new_capacity = SIZE_MAX;
-      break;
-    }
-  }
-
-  // If capacity doubling overflowed to SIZE_MAX, fail. No valid array can hold
-  // SIZE_MAX elements, and downstream size calculations would overflow.
-  if (new_capacity == SIZE_MAX) return false;
+  UPB_ASSERT(ptr);
 
   size_t new_bytes = new_capacity;
   if (upb_ShlOverflow(&new_bytes, lg2)) {
     return false;
   }
-  ptr = upb_Arena_Realloc(arena, ptr, old_bytes, new_bytes);
-  if (!ptr) return false;
+  if (upb_Arena_TryExtend(arena, ptr, old_bytes, new_bytes)) {
+    array->UPB_PRIVATE(capacity) = new_capacity;
+  } else {
+    size_t pool_bytes =
+        UPB_MAX(new_bytes, UPB_PRIVATE(kUpb_Arena_MinPoolBlockSize));
 
-  UPB_PRIVATE(_upb_Array_SetTaggedPtr)(array, ptr, lg2);
-  array->UPB_PRIVATE(capacity) = new_capacity;
+    void* new_ptr = upb_Arena_AllocPool(arena, pool_bytes);
+    if (!new_ptr) return false;
+
+    if (old_bytes > 0) {
+      memcpy(new_ptr, ptr, old_bytes);
+    }
+
+    const size_t array_size =
+        UPB_ALIGN_UP(sizeof(struct upb_Array), UPB_MALLOC_ALIGN);
+    bool is_contiguous = (ptr == UPB_PTR_AT(array, array_size, void));
+    if (!is_contiguous) {
+      UPB_PRIVATE(_upb_Arena_Harvest)(arena, ptr, old_bytes);
+    }
+
+    ptr = new_ptr;
+    UPB_PRIVATE(_upb_Array_SetTaggedPtr)(array, ptr, lg2);
+    array->UPB_PRIVATE(capacity) = pool_bytes >> lg2;
+  }
   return true;
 }
 
@@ -10571,36 +10639,7 @@ bool upb_Message_ShallowCopy(upb_Message* dst, const upb_Message* src,
   UPB_ASSERT(!upb_Message_IsFrozen(dst));
   memcpy(dst, src, m->UPB_PRIVATE(size));
 
-  const upb_Message_Internal* in = UPB_PRIVATE(_upb_Message_GetInternal)(src);
-  if (!in) return true;
-
-  size_t size = UPB_SIZEOF_FLEX(upb_Message_Internal, aux_data, in->size);
-  upb_Message_Internal* dst_in = upb_Arena_Malloc(arena, size);
-  if (!dst_in) return false;
-
-  dst_in->size = 0;
-  dst_in->capacity = in->size;
-
-  for (size_t i = 0; i < in->size; i++) {
-    upb_TaggedAuxPtr tagged_ptr = in->aux_data[i];
-    if (upb_TaggedAuxPtr_IsExtension(tagged_ptr)) {
-      const upb_Extension* msg_ext = upb_TaggedAuxPtr_Extension(tagged_ptr);
-      upb_Extension* dst_ext = upb_Arena_Malloc(arena, sizeof(upb_Extension));
-      if (!dst_ext) return false;
-      *dst_ext = *msg_ext;
-      dst_in->aux_data[dst_in->size++] = upb_TaggedAuxPtr_MakeExtension(
-          dst_ext, upb_TaggedAuxPtr_Type(tagged_ptr));
-    } else if (upb_TaggedAuxPtr_IsUnknownStringView(tagged_ptr)) {
-      upb_StringView* dst_sv = upb_Arena_Malloc(arena, sizeof(upb_StringView));
-      if (!dst_sv) return false;
-      *dst_sv = *upb_TaggedPtrAux_StringViewRepr(tagged_ptr);
-      dst_in->aux_data[dst_in->size++] =
-          upb_TaggedAuxPtr_MakeUnknownDataAliased(dst_sv);
-    }
-  }
-
-  UPB_PRIVATE(_upb_Message_SetInternal)(dst, dst_in);
-  return true;
+  return UPB_PRIVATE(_upb_Message_CopyInternal)(dst, src, arena);
 }
 
 // Performs a shallow clone.
@@ -10747,8 +10786,19 @@ const float kUpb_FltInfinity = UPB_INFINITY;
 const double kUpb_Infinity = UPB_INFINITY;
 const double kUpb_NaN = UPB_NAN;
 
-static size_t _upb_Message_SizeOfInternal(uint32_t count) {
-  return UPB_SIZEOF_FLEX(upb_Message_Internal, aux_data, count);
+UPB_INLINE size_t _upb_Message_InternalBlockSize(uint32_t count) {
+  size_t bytes = UPB_SIZEOF_FLEX(upb_Message_Internal, aux_data, count);
+  return upb_RoundUpToPowerOfTwo(
+      UPB_MAX(bytes, UPB_PRIVATE(kUpb_Arena_MinPoolBlockSize)));
+}
+
+UPB_INLINE uint32_t _upb_Message_InternalCapacity(size_t block_bytes) {
+  size_t capacity =
+      UPB_FLEX_CAPACITY(upb_Message_Internal, aux_data, block_bytes);
+  if (capacity > UINT32_MAX) {
+    return UINT32_MAX;
+  }
+  return (uint32_t)capacity;
 }
 
 bool UPB_PRIVATE(_upb_Message_ReserveSlot)(struct upb_Message* msg,
@@ -10757,29 +10807,85 @@ bool UPB_PRIVATE(_upb_Message_ReserveSlot)(struct upb_Message* msg,
   upb_Message_Internal* in = UPB_PRIVATE(_upb_Message_GetInternal)(msg);
   if (!in) {
     // No internal data, allocate from scratch.
-    uint32_t capacity = 4;
-    in = upb_Arena_Malloc(a, _upb_Message_SizeOfInternal(capacity));
+    size_t block_bytes = _upb_Message_InternalBlockSize(1);
+    in = (upb_Message_Internal*)upb_Arena_AllocPool(a, block_bytes);
     if (!in) return false;
     in->size = 0;
-    in->capacity = capacity;
+    in->capacity = _upb_Message_InternalCapacity(block_bytes);
     UPB_PRIVATE(_upb_Message_SetInternal)(msg, in);
   } else if (in->capacity == in->size) {
     if (in->size == UINT32_MAX) return false;
     // Internal data is too small, reallocate.
-    size_t needed_pow2 = upb_RoundUpToPowerOfTwo(in->size + 1);
-    if (needed_pow2 > UINT32_MAX) return false;
-    uint32_t new_capacity = needed_pow2;
     if (UPB_SIZEOF_FLEX_WOULD_OVERFLOW(upb_Message_Internal, aux_data,
-                                       new_capacity)) {
+                                       in->size + 1)) {
       return false;
     }
-    in = upb_Arena_Realloc(a, in, _upb_Message_SizeOfInternal(in->capacity),
-                           _upb_Message_SizeOfInternal(new_capacity));
-    if (!in) return false;
-    in->capacity = new_capacity;
-    UPB_PRIVATE(_upb_Message_SetInternal)(msg, in);
+    size_t old_bytes =
+        UPB_SIZEOF_FLEX(upb_Message_Internal, aux_data, in->capacity);
+    size_t new_bytes = _upb_Message_InternalBlockSize(in->size + 1);
+    if (new_bytes == SIZE_MAX ||
+        _upb_Message_InternalCapacity(new_bytes) > UINT32_MAX) {
+      return false;
+    }
+    if (upb_Arena_TryExtend(a, in, old_bytes, new_bytes)) {
+      in->capacity = _upb_Message_InternalCapacity(new_bytes);
+    } else {
+      upb_Message_Internal* new_in =
+          (upb_Message_Internal*)upb_Arena_AllocPool(a, new_bytes);
+      if (!new_in) return false;
+      memcpy(new_in, in,
+             UPB_SIZEOF_FLEX(upb_Message_Internal, aux_data, in->size));
+      new_in->capacity = _upb_Message_InternalCapacity(new_bytes);
+      UPB_PRIVATE(_upb_Arena_Harvest)(a, in, old_bytes);
+      in = new_in;
+      UPB_PRIVATE(_upb_Message_SetInternal)(msg, in);
+    }
   }
   UPB_ASSERT(in->capacity - in->size >= 1);
+  return true;
+}
+
+bool UPB_PRIVATE(_upb_Message_CopyInternal)(struct upb_Message* dst,
+                                            const struct upb_Message* src,
+                                            upb_Arena* arena) {
+  const upb_Message_Internal* in = UPB_PRIVATE(_upb_Message_GetInternal)(src);
+  if (!in) return true;
+
+  size_t needed_bytes =
+      UPB_SIZEOF_FLEX(upb_Message_Internal, aux_data, in->size);
+  size_t block_bytes = _upb_Message_InternalBlockSize(in->size);
+  upb_Message_Internal* dst_in = NULL;
+  if (block_bytes != SIZE_MAX) {
+    dst_in = (upb_Message_Internal*)upb_Arena_TryAllocPool(arena, block_bytes);
+  }
+  if (!dst_in) {
+    block_bytes = needed_bytes;
+    dst_in = upb_Arena_Malloc(arena, block_bytes);
+    if (!dst_in) return false;
+  }
+
+  dst_in->size = 0;
+  dst_in->capacity = _upb_Message_InternalCapacity(block_bytes);
+
+  for (size_t i = 0; i < in->size; i++) {
+    upb_TaggedAuxPtr tagged_ptr = in->aux_data[i];
+    if (upb_TaggedAuxPtr_IsExtension(tagged_ptr)) {
+      const upb_Extension* msg_ext = upb_TaggedAuxPtr_Extension(tagged_ptr);
+      upb_Extension* dst_ext = upb_Arena_Malloc(arena, sizeof(upb_Extension));
+      if (!dst_ext) return false;
+      *dst_ext = *msg_ext;
+      dst_in->aux_data[dst_in->size++] = upb_TaggedAuxPtr_MakeExtension(
+          dst_ext, upb_TaggedAuxPtr_Type(tagged_ptr));
+    } else if (upb_TaggedAuxPtr_IsUnknownStringView(tagged_ptr)) {
+      upb_StringView* dst_sv = upb_Arena_Malloc(arena, sizeof(upb_StringView));
+      if (!dst_sv) return false;
+      *dst_sv = *upb_TaggedPtrAux_StringViewRepr(tagged_ptr);
+      dst_in->aux_data[dst_in->size++] =
+          upb_TaggedAuxPtr_MakeUnknownDataAliased(dst_sv);
+    }
+  }
+
+  UPB_PRIVATE(_upb_Message_SetInternal)(dst, dst_in);
   return true;
 }
 
@@ -11400,7 +11506,9 @@ static void upb_MtDecoder_AllocateSubs(upb_MtDecoder* d,
     size_t u32_ofs = ofs / kUpb_SubmsgOffsetBytes;
     UPB_ASSERT((ofs % 4) == 0);
     UPB_ASSERT((i * sizeof(upb_MiniTableField) + ofs) % ptr_size == 0);
-    if (u32_ofs > UINT16_MAX) {
+    // u32_ofs must be strictly less than UINT16_MAX: UINT16_MAX is reserved as
+    // kUpb_NoSub, the sentinel meaning "this field has no submessage".
+    if (u32_ofs >= UINT16_MAX) {
       upb_MdDecoder_ErrorJmp(&d->base, "Submessage offset overflow");
     }
     f->UPB_PRIVATE(submsg_ofs) = u32_ofs;
@@ -17665,7 +17773,8 @@ static const char* _upb_Decoder_DecodeEnumPacked(
           field->UPB_PRIVATE(mode) & kUpb_LabelFlags_IsExtension
               ? d->original_msg
               : msg;
-      if (!_upb_Encoder_AddEnumValueToUnknown(unknown_msg, field,
+      if (!_upb_Encoder_AddEnumValueToUnknown(unknown_msg,
+                                              field->UPB_PRIVATE(number),
                                               elem.uint64_val, &d->arena)) {
         upb_ErrorHandler_ThrowError(d->err, kUpb_DecodeStatus_OutOfMemory);
       }
@@ -19871,6 +19980,7 @@ const char* UPB_PRIVATE(_upb_WireReader_SkipGroup)(
 #undef UPB_SIZE
 #undef UPB_PTR_AT
 #undef UPB_SIZEOF_FLEX
+#undef UPB_FLEX_CAPACITY
 #undef UPB_SIZEOF_FLEX_WOULD_OVERFLOW
 #undef UPB_MAPTYPE_STRING
 #undef UPB_EXPORT
