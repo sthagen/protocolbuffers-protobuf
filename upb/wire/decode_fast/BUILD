@@ -39,6 +39,7 @@ cc_library(
         "field_fixed.c",
         "field_generic.c",
         "field_helpers.h",
+        "field_map.c",
         "field_message.c",
         "field_mismatch.c",
         "field_string.c",
@@ -65,6 +66,7 @@ cc_library(
         "//third_party/utf8_range",
         "//upb/base",
         "//upb/base:internal",
+        "//upb/hash",
         "//upb/message",
         "//upb/message:internal",
         "//upb/message:types",
@@ -163,6 +165,7 @@ cc_library(
     features = UPB_DEFAULT_FEATURES,
     visibility = [
         "//upb:__pkg__",
+        "//upb/mini_descriptor:__pkg__",
         "//upb/wire:__subpackages__",
     ],
     deps = [

@@ -39,17 +39,22 @@ add_custom_command(
     ${protobuf_BINARY_DIR}/conformance/conformance.pb.cc
     ${protobuf_BINARY_DIR}/conformance/test_protos/test_messages_edition2023.pb.h
     ${protobuf_BINARY_DIR}/conformance/test_protos/test_messages_edition2023.pb.cc
+    ${protobuf_BINARY_DIR}/conformance/test_protos/test_messages_edition2026.pb.h
+    ${protobuf_BINARY_DIR}/conformance/test_protos/test_messages_edition2026.pb.cc
     ${protobuf_BINARY_DIR}/conformance/test_protos/test_messages_edition_unstable.pb.h
     ${protobuf_BINARY_DIR}/conformance/test_protos/test_messages_edition_unstable.pb.cc
   DEPENDS ${protobuf_PROTOC_EXE}
     ${protobuf_SOURCE_DIR}/conformance/conformance.proto
     ${protobuf_SOURCE_DIR}/conformance/test_protos/test_messages_edition2023.proto
+    ${protobuf_SOURCE_DIR}/conformance/test_protos/test_messages_edition2026.proto
     ${protobuf_SOURCE_DIR}/conformance/test_protos/test_messages_edition_unstable.proto
   COMMAND ${protobuf_PROTOC_EXE}
       ${protobuf_SOURCE_DIR}/conformance/conformance.proto
       ${protobuf_SOURCE_DIR}/conformance/test_protos/test_messages_edition2023.proto
+      ${protobuf_SOURCE_DIR}/conformance/test_protos/test_messages_edition2026.proto
       ${protobuf_SOURCE_DIR}/conformance/test_protos/test_messages_edition_unstable.proto
       --proto_path=${protobuf_SOURCE_DIR}
+      --proto_path=${protobuf_SOURCE_DIR}/src
       --cpp_out=${protobuf_BINARY_DIR}
 )
 
@@ -94,6 +99,8 @@ add_library(libconformance_common STATIC
   ${protobuf_BINARY_DIR}/conformance/conformance.pb.cc
   ${protobuf_BINARY_DIR}/conformance/test_protos/test_messages_edition2023.pb.h
   ${protobuf_BINARY_DIR}/conformance/test_protos/test_messages_edition2023.pb.cc
+  ${protobuf_BINARY_DIR}/conformance/test_protos/test_messages_edition2026.pb.h
+  ${protobuf_BINARY_DIR}/conformance/test_protos/test_messages_edition2026.pb.cc
   ${protobuf_BINARY_DIR}/conformance/test_protos/test_messages_edition_unstable.pb.h
   ${protobuf_BINARY_DIR}/conformance/test_protos/test_messages_edition_unstable.pb.cc
   ${protobuf_BINARY_DIR}/editions/golden/test_messages_proto3_editions.pb.h
@@ -125,7 +132,7 @@ protobuf_configure_target(conformance_cpp)
 
 target_include_directories(
   conformance_test_runner
-  PUBLIC ${protobuf_SOURCE_DIR} ${protobuf_SOURCE_DIR}/conformance)
+  PUBLIC ${protobuf_SOURCE_DIR})
 
 target_include_directories(
   conformance_cpp
